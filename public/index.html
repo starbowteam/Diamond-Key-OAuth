@@ -23,41 +23,80 @@
             --grad-silver: linear-gradient(135deg, #2a2a33, #1a1a22);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: var(--bg-deep); font-family: 'Inter', sans-serif; color: var(--text-light); line-height: 1.5; overflow-x: hidden; }
+        body {
+            background: var(--bg-deep);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-light);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
         canvas { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; }
         .content { position: relative; z-index:1; min-height: 100vh; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 24px; flex-wrap: wrap; gap:20px; animation: fadeUp 0.6s ease; }
-        .logo a { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800; color: var(--silver-light); text-decoration: none; }
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 24px; flex-wrap: wrap; gap:20px; animation: fadeUp 0.6s ease;
+        }
+        .logo a {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 28px; font-weight: 800; color: var(--silver-light);
+            text-decoration: none;
+        }
         .nav-links { display: flex; gap: 32px; }
         .nav-links a { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.2s; }
         .nav-links a:hover { color: var(--text-light); }
         .page { display: none; max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; }
         .page.active { display: block; }
         .hero { padding: 100px 0 80px; text-align: center; }
-        .hero h1 { font-size: clamp(44px, 8vw, 72px); font-weight: 800; background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 24px; letter-spacing: -1px; min-height: 1.2em; }
+        .hero h1 {
+            font-size: clamp(44px, 8vw, 72px); font-weight: 800;
+            background: linear-gradient(135deg, #e0e0e0, #8a8a9a);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            margin-bottom: 24px; letter-spacing: -1px; min-height: 1.2em;
+        }
         .hero p { font-size: 1.25rem; color: var(--text-muted); max-width: 700px; margin: 0 auto 40px; }
-        .btn { display: inline-block; padding: 14px 36px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.3s; text-decoration: none; border: 1px solid var(--border-dim); background: transparent; color: var(--text-light); margin: 6px; }
+        .btn {
+            display: inline-block; padding: 14px 36px; border-radius: 40px; font-weight: 600;
+            cursor: pointer; transition: 0.3s; text-decoration: none; border: 1px solid var(--border-dim);
+            background: transparent; color: var(--text-light); margin: 6px;
+        }
         .btn-primary { background: var(--grad-silver); border-color: #3a3a44; }
         .btn-primary:hover { background: #2a2a33; border-color: var(--silver-dark); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
         .btn-outline { background: transparent; }
         .btn-outline:hover { background: rgba(255,255,255,0.03); border-color: var(--silver-dark); transform: translateY(-2px); }
         .section { padding: 80px 0; }
         .section-title { font-size: 2.5rem; font-weight: 700; text-align: center; margin-bottom: 56px; }
-        .section-title span { background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .section-title span { background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; }
-        .card { background: var(--bg-card); border-radius: 32px; padding: 32px 24px; border: 1px solid var(--border-dim); transition: all 0.3s; opacity: 0; transform: translateY(20px); }
+        .card {
+            background: var(--bg-card); border-radius: 32px; padding: 32px 24px;
+            border: 1px solid var(--border-dim); transition: all 0.3s; opacity: 0; transform: translateY(20px);
+        }
         .card.visible { opacity: 1; transform: translateY(0); transition: all 0.6s ease; }
         .card:hover { transform: translateY(-8px); border-color: #3a3a44; box-shadow: 0 20px 30px -12px rgba(0,0,0,0.5); }
         .card-icon { font-size: 40px; margin-bottom: 20px; color: var(--silver); }
         .card h3 { font-size: 1.5rem; margin-bottom: 12px; }
         .card p { color: var(--text-muted); }
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); align-items: center; justify-content: center; z-index:1000; animation: fadeIn 0.2s; }
-        .modal-content { background: var(--bg-card); border-radius: 32px; padding: 32px; max-width: 480px; width: 90%; text-align: center; border: 1px solid var(--border-dim); }
+        .modal {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); align-items: center;
+            justify-content: center; z-index:1000; animation: fadeIn 0.2s;
+        }
+        .modal-content {
+            background: var(--bg-card); border-radius: 32px; padding: 32px;
+            max-width: 480px; width: 90%; text-align: center; border: 1px solid var(--border-dim);
+        }
         .input-group { margin: 1rem 0; text-align: left; }
         .input-group label { font-weight: 600; font-size: 0.9rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; }
-        input, textarea { width: 100%; background: #1e1e2a; border: 1px solid var(--border-dim); color: var(--text-light); padding: 12px 16px; border-radius: 12px; font-size: 1rem; outline: none; margin-top: 6px; }
+        input, textarea {
+            width: 100%; background: #1e1e2a; border: 1px solid var(--border-dim); color: var(--text-light);
+            padding: 12px 16px; border-radius: 12px; font-size: 1rem; outline: none; margin-top: 6px;
+        }
         input:focus, textarea:focus { border-color: var(--silver-dark); }
-        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border-left: 4px solid var(--silver); padding: 12px 20px; border-radius: 12px; font-size: 0.9rem; z-index: 1100; animation: fadeUp 0.3s; }
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: var(--bg-card);
+            border-left: 4px solid var(--silver); padding: 12px 20px; border-radius: 12px;
+            font-size: 0.9rem; z-index: 1100; animation: fadeUp 0.3s;
+        }
         @keyframes fadeUp { 0% { opacity:0; transform: translateY(30px); } 100% { opacity:1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
         .footer { padding: 48px 0 32px; text-align: center; border-top: 1px solid var(--border-dim); margin-top: 40px; }
@@ -66,7 +105,10 @@
         .footer-links a:hover { color: var(--text-light); }
         .copyright { font-size: 0.85rem; color: #6b7280; }
         .tabs { display: flex; gap: 20px; margin-bottom: 30px; }
-        .tab { padding: 10px 24px; border-radius: 40px; border: 1px solid var(--border-dim); font-weight: 500; cursor: pointer; transition: 0.2s; color: var(--text-muted); }
+        .tab {
+            padding: 10px 24px; border-radius: 40px; border: 1px solid var(--border-dim);
+            font-weight: 500; cursor: pointer; transition: 0.2s; color: var(--text-muted);
+        }
         .tab.active { background: var(--grad-silver); color: #fff; border-color: #3a3a44; }
         .chat-container { max-height: 400px; overflow-y: auto; margin-bottom: 20px; }
         .chat-message { margin-bottom: 16px; display: flex; flex-direction: column; }
@@ -74,544 +116,707 @@
         .chat-message.user .chat-bubble { background: var(--grad-silver); align-self: flex-end; }
         .chat-bubble { padding: 12px 20px; border-radius: 28px; max-width: 80%; }
         .chat-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
-        .chat-sender { font-size: 0.7rem; font-weight: 600; margin-bottom: 2px; opacity: 0.7; }
+        .chat-sender {
+            font-size: 0.7rem; font-weight: 600; margin-bottom: 2px; opacity: 0.7;
+        }
         .quick-questions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-        .quick-question-btn { background:#1a1a22; border:1px solid var(--border-dim); color:var(--text-muted); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        .quick-question-btn {
+            background:#1a1a22; border:1px solid var(--border-dim); color:var(--text-muted);
+            padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: 0.2s;
+        }
         .quick-question-btn:hover { background: #2a2a33; color: #fff; }
         .auth-link { color: var(--text-light); }
-        @media (max-width: 768px) { .hero h1 { font-size: 2.5rem; } .section-title { font-size: 2rem; } .chat-container { max-height: 300px; } }
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .section-title { font-size: 2rem; }
+            .chat-container { max-height: 300px; }
+        }
     </style>
 </head>
 <body>
-<canvas id="threeCanvas"></canvas>
-<div class="content">
-    <div class="navbar">
-        <div class="logo"><a href="#home"><i class="fas fa-key" style="color:var(--silver);"></i> DIAMKEY</a></div>
-        <div class="nav-links">
-            <a href="#home" id="navHome">Главная</a>
-            <a href="#forum" id="navForum">Форум</a>
-            <a href="#profile" id="navProfile" style="display:none;">Профиль</a>
-            <a href="#support" id="navSupport" style="display:none;">Поддержка</a>
-            <a href="#" id="authBtn">Войти</a>
-        </div>
-    </div>
-
-    <div id="home-page" class="page active">
-        <div class="hero">
-            <h1 id="cipherTitle"></h1>
-            <p>Один аккаунт для Diamond Ai, Unlock, Dirmess. Получи уникальный токен и секретное слово — и входи куда угодно мгновенно.</p>
-            <div id="heroActions">
-                <button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button>
-                <a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a>
+    <canvas id="threeCanvas"></canvas>
+    <div class="content">
+        <div class="navbar">
+            <div class="logo">
+                <a href="#home"><i class="fas fa-key" style="color:var(--silver);"></i> DIAMKEY</a>
+            </div>
+            <div class="nav-links">
+                <a href="#home" id="navHome">Главная</a>
+                <a href="#forum" id="navForum">Форум</a>
+                <a href="#profile" id="navProfile" style="display:none;">Профиль</a>
+                <a href="#support" id="navSupport" style="display:none;">Поддержка</a>
+                <a href="#" id="authBtn">Войти</a>
             </div>
         </div>
-        <div class="section" id="features">
-            <div class="section-title">Возможности <span>DiamKey</span></div>
-            <div class="grid-3">
-                <div class="card"><div class="card-icon"><i class="fas fa-fingerprint"></i></div><h3>Один аккаунт</h3><p>Регистрируйся один раз и входи во все сервисы Diamond.</p></div>
-                <div class="card"><div class="card-icon"><i class="fas fa-lock"></i></div><h3>Секретное слово</h3><p>Криптостойкий ключ, созданный на основе SHA-256.</p></div>
-                <div class="card"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><h3>Приватность</h3><p>Все данные хранятся локально. Никто не получит доступ к твоим сервисам.</p></div>
-            </div>
-        </div>
-        <div class="footer">
-            <div class="footer-links">
-                <a href="#" id="privacyLink" title="Политика конфиденциальности"><i class="fas fa-lock"></i></a>
-                <a href="#" id="termsLink" title="Условия использования"><i class="fas fa-file-contract"></i></a>
-                <a href="https://discord.gg/diamondshop" target="_blank" title="Discord"><i class="fab fa-discord"></i></a>
-            </div>
-            <div class="copyright">© 2026 Diamond. Все права защищены.</div>
-        </div>
-    </div>
 
-    <div id="forum-page" class="page">
-        <div style="padding-top:60px;">
-            <h2 style="font-size:2.5rem; margin-bottom:30px; color:var(--silver-light);"><i class="fas fa-comments"></i> Форум</h2>
-            <div id="forumPosts" style="margin-bottom:40px;"></div>
-            <div id="forumForm" style="display:none;">
-                <textarea id="forumMessage" placeholder="Ваше сообщение..." style="min-height:80px;"></textarea>
-                <button class="btn btn-primary" id="sendForumBtn" style="margin-top:10px;">Отправить</button>
-            </div>
-            <p id="forumLoginPrompt">Войдите, чтобы участвовать в обсуждении.</p>
-        </div>
-    </div>
-
-    <div id="profile-page" class="page"></div>
-    <div id="support-page" class="page"></div>
-</div>
-
-<div class="modal" id="authModal"><div class="modal-content" id="authModalContent"></div></div>
-<div class="modal" id="profileEditModal"><div class="modal-content" id="profileEditModalContent"></div></div>
-<div class="modal" id="newTicketModal"><div class="modal-content" id="newTicketModalContent"></div></div>
-<div class="modal" id="privacyModal"><div class="modal-content" id="privacyModalContent"></div></div>
-<div class="modal" id="termsModal"><div class="modal-content" id="termsModalContent"></div></div>
-
-<script type="importmap">
-    { "imports": { "three": "https://unpkg.com/three@0.126.0/build/three.module.js" } }
-</script>
-<script type="module">
-    import * as THREE from 'three';
-    const canvas = document.getElementById('threeCanvas');
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0f);
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
-    camera.position.set(3, 1.8, 6);
-    camera.lookAt(0, 0, 0);
-    scene.add(new THREE.AmbientLight(0x404066));
-    const dirLight = new THREE.DirectionalLight(0xddddff, 1.2);
-    dirLight.position.set(2, 5, 3);
-    scene.add(dirLight);
-    const backLight = new THREE.PointLight(0x4466aa, 0.8);
-    backLight.position.set(-2, 1, -2);
-    scene.add(backLight);
-    const keyGroup = new THREE.Group();
-    const silverMat = new THREE.MeshStandardMaterial({ color: 0xa8a8b3, roughness: 0.25, metalness: 0.95 });
-    const darkMetal = new THREE.MeshStandardMaterial({ color: 0x4a4a55, roughness: 0.2, metalness: 1 });
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.15, 16, 32), silverMat);
-    ring.rotation.x = Math.PI/2;
-    ring.position.y = 0.6;
-    keyGroup.add(ring);
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 2.2, 12), silverMat);
-    shaft.position.y = -0.8;
-    keyGroup.add(shaft);
-    const bitGroup = new THREE.Group();
-    const toothGeo = new THREE.BoxGeometry(0.25, 0.4, 0.15);
-    [[-0.2,-1.4,0],[0.1,-1.55,0],[-0.2,-1.7,0],[0.1,-1.85,0]].forEach(([x,y,z])=>{
-        const tooth = new THREE.Mesh(toothGeo, darkMetal);
-        tooth.position.set(x,y,z);
-        bitGroup.add(tooth);
-    });
-    keyGroup.add(bitGroup);
-    for (let y=-0.3; y>-1.3; y-=0.25){
-        const groove = new THREE.Mesh(new THREE.TorusGeometry(0.17,0.03,8,16), darkMetal);
-        groove.position.y=y;
-        groove.rotation.x=Math.PI/2;
-        keyGroup.add(groove);
-    }
-    keyGroup.position.y=0.2;
-    scene.add(keyGroup);
-    const starsGeo = new THREE.BufferGeometry();
-    const starsCount=400;
-    const starsPositions=new Float32Array(starsCount*3);
-    for(let i=0;i<starsCount*3;i+=3){
-        starsPositions[i]=(Math.random()-0.5)*12;
-        starsPositions[i+1]=(Math.random()-0.5)*6;
-        starsPositions[i+2]=(Math.random()-0.5)*8;
-    }
-    starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPositions,3));
-    const starsMat=new THREE.PointsMaterial({color:0xffffff,size:0.03});
-    const stars=new THREE.Points(starsGeo,starsMat);
-    scene.add(stars);
-    let mouseX=0, mouseY=0;
-    window.addEventListener('mousemove',(e)=>{ mouseX=(e.clientX/window.innerWidth)*2-1; mouseY=-(e.clientY/window.innerHeight)*2+1; });
-    function animate(){
-        requestAnimationFrame(animate);
-        keyGroup.rotation.y+=0.005;
-        keyGroup.rotation.x+=0.001;
-        keyGroup.rotation.y+=mouseX*0.02;
-        keyGroup.rotation.x+=mouseY*0.02;
-        stars.rotation.y+=0.0002;
-        renderer.render(scene,camera);
-    }
-    animate();
-    window.addEventListener('resize',()=>{
-        camera.aspect=window.innerWidth/window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth,window.innerHeight);
-    });
-</script>
-<script>
-    (function() {
-        const API = '/api';
-        const ADMIN_EMAIL = 'abugay12@mail.ru';
-        let currentUser = null;
-
-        async function apiGet(path) { const res = await fetch(API + path); return res.json(); }
-        async function apiPost(path, body) {
-            const res = await fetch(API + path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-            return res.json();
-        }
-        async function apiPut(path, body) {
-            const res = await fetch(API + path, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-            return res.json();
-        }
-        async function apiDelete(path) { const res = await fetch(API + path, { method:'DELETE' }); return res.json(); }
-
-        function showToast(msg) {
-            const t = document.createElement('div'); t.className='toast'; t.innerText=msg;
-            document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
-        }
-
-        function navigate(page) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(page+'-page').classList.add('active');
-            document.getElementById('navProfile').style.display = currentUser ? 'inline' : 'none';
-            document.getElementById('navSupport').style.display = currentUser ? 'inline' : 'none';
-            if (page==='profile' && currentUser) renderProfile();
-            if (page==='support' && currentUser) renderSupport();
-            if (page==='forum') renderForum();
-            if (page==='home') { updateHeroButtons(); }
-        }
-
-        function updateAuthBtn() {
-            const btn = document.getElementById('authBtn');
-            if (currentUser) {
-                btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Выйти';
-                btn.onclick = logout;
-            } else {
-                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
-                btn.onclick = () => showAuth('login');
-            }
-        }
-
-        function updateHeroButtons() {
-            const hero = document.getElementById('heroActions');
-            if (!hero) return;
-            hero.innerHTML = currentUser
-                ? `<button class="btn btn-primary" onclick="navigate('profile')"><i class="fas fa-user"></i> Мой DiamKey</button>
-                   <button class="btn btn-outline" onclick="navigate('support')"><i class="fas fa-headset"></i> Поддержка</button>`
-                : `<button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button>`;
-            if (!currentUser) document.getElementById('getStartedBtn').onclick = () => showAuth('register');
-        }
-
-        function showAuth(mode) {
-            const modal = document.getElementById('authModal');
-            const content = document.getElementById('authModalContent');
-            if (mode==='login') {
-                content.innerHTML = `
-                    <i class="fas fa-key" style="font-size:48px; color:var(--silver);"></i>
-                    <h3>Вход в DiamKey</h3>
-                    <div class="input-group"><label>Email или логин</label><input id="loginIdentity"></div>
-                    <div class="input-group"><label>Пароль</label><input id="loginPassword" type="password"></div>
-                    <button class="btn btn-primary" id="doLogin">Войти</button>
-                    <p><a href="#" id="toRegister" class="auth-link">Создать аккаунт</a></p>
-                    <button class="btn btn-outline" id="closeAuthModal">Закрыть</button>
-                `;
-                document.getElementById('doLogin').onclick = login;
-                document.getElementById('toRegister').onclick = (e) => { e.preventDefault(); showAuth('register'); };
-            } else {
-                content.innerHTML = `
-                    <i class="fas fa-user-plus" style="font-size:48px; color:var(--silver);"></i>
-                    <h3>Регистрация DiamKey</h3>
-                    <div class="input-group"><label>Email</label><input id="regEmail" type="email"></div>
-                    <div class="input-group"><label>Логин</label><input id="regLogin"></div>
-                    <div class="input-group"><label>Пароль</label><input id="regPassword" type="password"></div>
-                    <button class="btn btn-primary" id="doRegister">Создать DiamKey</button>
-                    <p><a href="#" id="toLogin" class="auth-link">Уже есть аккаунт? Войти</a></p>
-                    <button class="btn btn-outline" id="closeAuthModal">Закрыть</button>
-                `;
-                document.getElementById('doRegister').onclick = register;
-                document.getElementById('toLogin').onclick = (e) => { e.preventDefault(); showAuth('login'); };
-            }
-            document.getElementById('closeAuthModal').onclick = () => modal.style.display='none';
-            modal.style.display='flex';
-        }
-
-        async function login() {
-            const identity = document.getElementById('loginIdentity').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const data = await apiPost('/login', { identity, password });
-            if (data.error) return showToast(data.error);
-            currentUser = data.user;
-            localStorage.setItem('diamkey_user', JSON.stringify(currentUser));
-            document.getElementById('authModal').style.display='none';
-            updateAuthBtn(); updateHeroButtons();
-            navigate('profile');
-        }
-
-        async function register() {
-            const email = document.getElementById('regEmail').value.trim();
-            const login = document.getElementById('regLogin').value.trim();
-            const password = document.getElementById('regPassword').value;
-            if (!email || !login || password.length<6) return showToast('Заполните все поля');
-            const data = await apiPost('/register', { email, login, password });
-            if (data.error) return showToast(data.error);
-            currentUser = data.user;
-            localStorage.setItem('diamkey_user', JSON.stringify(currentUser));
-            document.getElementById('authModal').style.display='none';
-            updateAuthBtn(); updateHeroButtons();
-            navigate('profile');
-        }
-
-        async function logout() {
-            currentUser = null;
-            localStorage.removeItem('diamkey_user');
-            updateAuthBtn(); updateHeroButtons();
-            navigate('home');
-        }
-
-        async function renderProfile() {
-            if (!currentUser) return;
-            const container = document.getElementById('profile-page');
-            const isAdmin = currentUser.email === ADMIN_EMAIL;
-            const avatar = currentUser.avatar || '';
-            container.innerHTML = `
-                <div style="padding:60px 0; max-width:900px; margin:0 auto;">
-                    <div class="tabs">
-                        <button class="tab active" data-tab="account">Мой DiamKey</button>
-                        ${isAdmin ? '<button class="tab" data-tab="admin">Админка</button>' : ''}
-                    </div>
-                    <div id="tab-account" class="tab-content" style="display:block;">
-                        <div style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
-                            <div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:var(--bg-card); border:2px solid var(--silver-dark);">
-                                ${avatar ? `<img src="${avatar}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:80px; color:var(--silver);"></i>'}
-                            </div>
-                            <div>
-                                <h2 style="color:var(--silver-light); margin-bottom:5px;">${currentUser.name || currentUser.login || currentUser.email} ${isAdmin ? '<i class="fas fa-check-circle" style="color:var(--silver);" title="Администратор"></i>' : ''}</h2>
-                                <p style="color:var(--text-muted);">${currentUser.description || 'Нет описания'}</p>
-                            </div>
-                        </div>
-                        <button class="btn btn-outline" onclick="editProfile()"><i class="fas fa-edit"></i> Редактировать</button>
-                        <div class="card visible" style="margin-top:20px;">
-                            <h4>Ключи доступа к сервисам Diamond EcoSystem</h4>
-                            <div class="input-group"><label>Публичный токен</label>
-                                <div style="display:flex; gap:10px;">
-                                    <input value="${currentUser.token}" readonly>
-                                    <button class="btn btn-outline" onclick="copyText('${currentUser.token}')"><i class="fas fa-copy"></i></button>
-                                </div>
-                            </div>
-                            <div class="input-group"><label>Секретное слово</label>
-                                <div style="display:flex; gap:10px;">
-                                    <input value="${currentUser.secretWord}" readonly>
-                                    <button class="btn btn-outline" onclick="copyText('${currentUser.secretWord}')"><i class="fas fa-copy"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    ${isAdmin ? `<div id="tab-admin" class="tab-content" style="display:none;"></div>` : ''}
+        <div id="home-page" class="page active">
+            <div class="hero">
+                <h1 id="cipherTitle"></h1>
+                <p>Один аккаунт для Diamond Ai, Unlock, Dirmess. Получи уникальный токен и секретное слово — и входи куда угодно мгновенно.</p>
+                <div id="heroActions">
+                    <button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button>
+                    <a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a>
                 </div>
-            `;
-            if (isAdmin) {
-                const users = await apiGet('/users');
-                const tickets = await apiGet('/tickets');
-                let ticketsHtml = tickets.map((t,i) => {
-                    const msgs = t.messages || [];
-                    return `<div style="border:1px solid var(--border-dim); padding:10px; margin-bottom:10px; border-radius:12px;">
-                        <strong>${t.email}</strong>
-                        <div class="chat-container" style="max-height:150px; overflow-y:auto;">
-                            ${msgs.map(m => `<div class="chat-message ${m.sender==='admin'?'bot':'user'}"><div class="chat-sender">${m.sender==='admin'?'Администратор':'Пользователь'}</div><div class="chat-bubble">${m.text}</div><div class="chat-time">${new Date(m.time).toLocaleTimeString()}</div></div>`).join('')}
+            </div>
+            <div class="section" id="features">
+                <div class="section-title">Возможности <span>DiamKey</span></div>
+                <div class="grid-3">
+                    <div class="card"><div class="card-icon"><i class="fas fa-fingerprint"></i></div><h3>Один аккаунт</h3><p>Регистрируйся один раз и входи во все сервисы Diamond.</p></div>
+                    <div class="card"><div class="card-icon"><i class="fas fa-lock"></i></div><h3>Секретное слово</h3><p>Криптостойкий ключ, созданный на основе SHA-256.</p></div>
+                    <div class="card"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><h3>Приватность</h3><p>Все данные хранятся локально. Никто не получит доступ к твоим сервисам.</p></div>
+                </div>
+            </div>
+            <div class="footer">
+                <div class="footer-links">
+                    <a href="#" id="privacyLink" title="Политика конфиденциальности"><i class="fas fa-lock"></i></a>
+                    <a href="#" id="termsLink" title="Условия использования"><i class="fas fa-file-contract"></i></a>
+                    <a href="https://discord.gg/diamondshop" target="_blank" title="Discord"><i class="fab fa-discord"></i></a>
+                </div>
+                <div class="copyright">© 2026 Diamond. Все права защищены.</div>
+            </div>
+        </div>
+
+        <div id="forum-page" class="page">
+            <div style="padding-top:60px;">
+                <h2 style="font-size:2.5rem; margin-bottom:30px; color:var(--silver-light);"><i class="fas fa-comments"></i> Форум</h2>
+                <div id="forumPosts" style="margin-bottom:40px;"></div>
+                <div id="forumForm" style="display:none;">
+                    <textarea id="forumMessage" placeholder="Ваше сообщение..." style="min-height:80px;"></textarea>
+                    <button class="btn btn-primary" id="sendForumBtn" style="margin-top:10px;">Отправить</button>
+                </div>
+                <p id="forumLoginPrompt">Войдите, чтобы участвовать в обсуждении.</p>
+            </div>
+        </div>
+
+        <div id="profile-page" class="page"></div>
+        <div id="support-page" class="page"></div>
+    </div>
+
+    <div class="modal" id="authModal"><div class="modal-content" id="authModalContent"></div></div>
+    <div class="modal" id="profileEditModal"><div class="modal-content" id="profileEditModalContent"></div></div>
+    <div class="modal" id="newTicketModal"><div class="modal-content" id="newTicketModalContent"></div></div>
+    <div class="modal" id="privacyModal"><div class="modal-content" id="privacyModalContent"></div></div>
+    <div class="modal" id="termsModal"><div class="modal-content" id="termsModalContent"></div></div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.126.0/build/three.module.js" } }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        const canvas = document.getElementById('threeCanvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0f);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+        camera.position.set(3, 1.8, 6);
+        camera.lookAt(0, 0, 0);
+        scene.add(new THREE.AmbientLight(0x404066));
+        const dirLight = new THREE.DirectionalLight(0xddddff, 1.2);
+        dirLight.position.set(2, 5, 3);
+        scene.add(dirLight);
+        const backLight = new THREE.PointLight(0x4466aa, 0.8);
+        backLight.position.set(-2, 1, -2);
+        scene.add(backLight);
+        const keyGroup = new THREE.Group();
+        const silverMat = new THREE.MeshStandardMaterial({ color: 0xa8a8b3, roughness: 0.25, metalness: 0.95 });
+        const darkMetal = new THREE.MeshStandardMaterial({ color: 0x4a4a55, roughness: 0.2, metalness: 1 });
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.15, 16, 32), silverMat);
+        ring.rotation.x = Math.PI/2;
+        ring.position.y = 0.6;
+        keyGroup.add(ring);
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 2.2, 12), silverMat);
+        shaft.position.y = -0.8;
+        keyGroup.add(shaft);
+        const bitGroup = new THREE.Group();
+        const toothGeo = new THREE.BoxGeometry(0.25, 0.4, 0.15);
+        [[-0.2,-1.4,0],[0.1,-1.55,0],[-0.2,-1.7,0],[0.1,-1.85,0]].forEach(([x,y,z])=>{
+            const tooth = new THREE.Mesh(toothGeo, darkMetal);
+            tooth.position.set(x,y,z);
+            bitGroup.add(tooth);
+        });
+        keyGroup.add(bitGroup);
+        for (let y=-0.3; y>-1.3; y-=0.25){
+            const groove = new THREE.Mesh(new THREE.TorusGeometry(0.17,0.03,8,16), darkMetal);
+            groove.position.y=y;
+            groove.rotation.x=Math.PI/2;
+            keyGroup.add(groove);
+        }
+        keyGroup.position.y=0.2;
+        scene.add(keyGroup);
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount=400;
+        const starsPositions=new Float32Array(starsCount*3);
+        for(let i=0;i<starsCount*3;i+=3){
+            starsPositions[i]=(Math.random()-0.5)*12;
+            starsPositions[i+1]=(Math.random()-0.5)*6;
+            starsPositions[i+2]=(Math.random()-0.5)*8;
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPositions,3));
+        const starsMat=new THREE.PointsMaterial({color:0xffffff,size:0.03});
+        const stars=new THREE.Points(starsGeo,starsMat);
+        scene.add(stars);
+        let mouseX=0, mouseY=0;
+        window.addEventListener('mousemove',(e)=>{ mouseX=(e.clientX/window.innerWidth)*2-1; mouseY=-(e.clientY/window.innerHeight)*2+1; });
+        function animate(){
+            requestAnimationFrame(animate);
+            keyGroup.rotation.y+=0.005;
+            keyGroup.rotation.x+=0.001;
+            keyGroup.rotation.y+=mouseX*0.02;
+            keyGroup.rotation.x+=mouseY*0.02;
+            stars.rotation.y+=0.0002;
+            renderer.render(scene,camera);
+        }
+        animate();
+        window.addEventListener('resize',()=>{
+            camera.aspect=window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth,window.innerHeight);
+        });
+    </script>
+    <script>
+        (function() {
+            const DB_USERS = 'diamkey_users';
+            const DB_SESSIONS = 'diamkey_sessions';
+            const DB_TICKETS = 'diamkey_tickets';
+            const DB_FORUM = 'diamkey_forum';
+            const ADMIN_EMAIL = 'abugay12@mail.ru';
+            let currentUser = null;
+
+            const getUsers = () => JSON.parse(localStorage.getItem(DB_USERS)||'[]');
+            const saveUsers = u => localStorage.setItem(DB_USERS, JSON.stringify(u));
+            const getSessions = () => JSON.parse(localStorage.getItem(DB_SESSIONS)||'[]');
+            const saveSessions = s => localStorage.setItem(DB_SESSIONS, JSON.stringify(s));
+            const getTickets = () => JSON.parse(localStorage.getItem(DB_TICKETS)||'[]');
+            const saveTickets = t => localStorage.setItem(DB_TICKETS, JSON.stringify(t));
+            const getForumPosts = () => JSON.parse(localStorage.getItem(DB_FORUM)||'[]');
+            const saveForumPosts = p => localStorage.setItem(DB_FORUM, JSON.stringify(p));
+
+            async function generateSecret(email) {
+                const msg = email + Date.now() + Math.random();
+                const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+                return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('').substring(0,24).toUpperCase();
+            }
+            function generateToken() {
+                const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost'];
+                const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key'];
+                const a = adj[Math.floor(Math.random()*adj.length)];
+                const b = nouns[Math.floor(Math.random()*nouns.length)];
+                const c = nouns[Math.floor(Math.random()*nouns.length)];
+                const num = Math.floor(1000+Math.random()*9000);
+                return `diamkey_${a}_${b}_${c}_${num}`;
+            }
+            function showToast(msg) {
+                const t = document.createElement('div'); t.className='toast'; t.innerText=msg;
+                document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
+            }
+
+            function navigate(page) {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                const pageEl = document.getElementById(page + '-page');
+                if (pageEl) pageEl.classList.add('active');
+                document.getElementById('navProfile').style.display = currentUser ? 'inline' : 'none';
+                document.getElementById('navSupport').style.display = currentUser ? 'inline' : 'none';
+                if (page === 'profile' && currentUser) showProfilePage();
+                if (page === 'support' && currentUser) showSupportPage();
+                if (page === 'forum') renderForum();
+                if (page === 'home') { window.scrollTo({ top: 0, behavior: 'smooth' }); updateHeroButtons(); }
+            }
+
+            function updateAuthButton() {
+                const btn = document.getElementById('authBtn');
+                if (currentUser) {
+                    btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Выйти';
+                    btn.onclick = e => { e.preventDefault(); logout(); };
+                } else {
+                    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
+                    btn.onclick = e => { e.preventDefault(); openAuthModal('login'); };
+                }
+            }
+            function updateHeroButtons() {
+                const heroActions = document.getElementById('heroActions');
+                if (!heroActions) return;
+                if (currentUser) {
+                    heroActions.innerHTML = `
+                        <button class="btn btn-primary" onclick="navigateToProfile()"><i class="fas fa-user"></i> Мой DiamKey</button>
+                        <button class="btn btn-outline" onclick="navigateToSupport()"><i class="fas fa-headset"></i> Поддержка</button>
+                    `;
+                } else {
+                    heroActions.innerHTML = `
+                        <button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button>
+                        <a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a>
+                    `;
+                    document.getElementById('getStartedBtn').addEventListener('click', () => openAuthModal('register'));
+                }
+            }
+            window.navigateToProfile = () => { navigate('profile'); window.location.hash = '#profile'; };
+            window.navigateToSupport = () => { navigate('support'); window.location.hash = '#support'; };
+
+            function openAuthModal(mode) {
+                const modal = document.getElementById('authModal');
+                const content = document.getElementById('authModalContent');
+                if (mode === 'login') {
+                    content.innerHTML = `
+                        <i class="fas fa-key" style="font-size:48px; color:var(--silver);"></i>
+                        <h3>Вход в DiamKey</h3>
+                        <div class="input-group"><label>Email или логин</label><input id="loginIdentity" placeholder="Введите email или логин"></div>
+                        <div class="input-group"><label>Пароль</label><input id="loginPassword" type="password" placeholder="········"></div>
+                        <button class="btn btn-primary" id="doLoginBtn" style="width:100%; margin:10px 0;">Войти</button>
+                        <p><a href="#" class="auth-link" id="showRegisterLink">Создать аккаунт</a></p>
+                        <button class="btn btn-outline" id="closeAuthModal" style="margin-top:12px;">Закрыть</button>
+                    `;
+                    document.getElementById('showRegisterLink').addEventListener('click', e => { e.preventDefault(); openAuthModal('register'); });
+                    document.getElementById('doLoginBtn').addEventListener('click', login);
+                } else {
+                    content.innerHTML = `
+                        <i class="fas fa-user-plus" style="font-size:48px; color:var(--silver);"></i>
+                        <h3>Регистрация DiamKey</h3>
+                        <div class="input-group"><label>Email</label><input id="regEmail" type="email" placeholder="your@email.com"></div>
+                        <div class="input-group"><label>Логин</label><input id="regLogin" placeholder="Придумайте логин"></div>
+                        <div class="input-group"><label>Пароль</label><input id="regPassword" type="password" placeholder="Минимум 6 символов"></div>
+                        <button class="btn btn-primary" id="doRegisterBtn" style="width:100%; margin:10px 0;">Создать DiamKey</button>
+                        <p><a href="#" class="auth-link" id="showLoginLink">Уже есть аккаунт? Войти</a></p>
+                        <button class="btn btn-outline" id="closeAuthModal" style="margin-top:12px;">Закрыть</button>
+                    `;
+                    document.getElementById('showLoginLink').addEventListener('click', e => { e.preventDefault(); openAuthModal('login'); });
+                    document.getElementById('doRegisterBtn').addEventListener('click', register);
+                }
+                document.getElementById('closeAuthModal').addEventListener('click', () => modal.style.display='none');
+                modal.style.display = 'flex';
+            }
+
+            async function login() {
+                const identity = document.getElementById('loginIdentity').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                const users = getUsers();
+                let user = users.find(u => (u.email === identity || u.login === identity) && u.password === password);
+                if (!user) return showToast('Неверный email/логин или пароль');
+                if (!user.token || !user.secretWord) {
+                    user.token = generateToken();
+                    user.secretWord = await generateSecret(user.email);
+                    const idx = users.findIndex(u => u.email === user.email);
+                    users[idx] = user;
+                    saveUsers(users);
+                }
+                currentUser = user;
+                localStorage.setItem('diamkey_current', JSON.stringify(user));
+                getSessions().push({ email: user.email, login: user.login, token: user.token, time: new Date().toISOString() });
+                saveSessions(getSessions());
+                document.getElementById('authModal').style.display='none';
+                updateAuthButton(); updateHeroButtons();
+                navigate('profile'); window.location.hash = '#profile';
+                showToast('Добро пожаловать, ' + (user.name || user.login || user.email));
+            }
+            async function register() {
+                const email = document.getElementById('regEmail').value.trim();
+                const login = document.getElementById('regLogin').value.trim();
+                const password = document.getElementById('regPassword').value;
+                if (!email || !login || password.length < 6) return showToast('Заполните все поля (пароль мин. 6 символов)');
+                const users = getUsers();
+                if (users.find(u => u.email === email)) return showToast('Email уже занят');
+                if (users.find(u => u.login === login)) return showToast('Логин уже занят');
+                const token = generateToken();
+                const secretWord = await generateSecret(email);
+                const newUser = {
+                    email, login, password, token, secretWord, createdAt: new Date().toISOString(),
+                    name: '', avatar: '', description: ''
+                };
+                users.push(newUser);
+                saveUsers(users);
+                currentUser = newUser;
+                localStorage.setItem('diamkey_current', JSON.stringify(newUser));
+                document.getElementById('authModal').style.display='none';
+                updateAuthButton(); updateHeroButtons();
+                navigate('profile'); window.location.hash = '#profile';
+                showToast('DiamKey создан!');
+            }
+            async function logout() {
+                currentUser = null;
+                localStorage.removeItem('diamkey_current');
+                updateAuthButton(); updateHeroButtons();
+                navigate('home'); window.location.hash = '#home';
+                showToast('Вы вышли');
+            }
+
+            function showProfilePage() {
+                if (!currentUser) return;
+                const container = document.getElementById('profile-page');
+                const isAdmin = currentUser.email === ADMIN_EMAIL;
+                const avatarSrc = currentUser.avatar || '';
+                const displayName = currentUser.name || currentUser.login || currentUser.email;
+
+                container.innerHTML = `
+                    <div style="padding:60px 0; max-width:900px; margin:0 auto;">
+                        <div class="tabs">
+                            <div class="tab active" data-tab="account">Мой DiamKey</div>
+                            ${isAdmin ? '<div class="tab" data-tab="admin">Админка</div>' : ''}
                         </div>
-                        <div style="display:flex; gap:6px; margin-top:5px;">
-                            <input id="adminReply_${i}" placeholder="Ответ..." style="flex:1;">
-                            <button class="btn btn-outline" onclick="adminReply(${i})">Отправить</button>
-                            <button class="btn btn-outline" onclick="deleteTicket(${i})"><i class="fas fa-trash"></i></button>
+                        <div id="tab-account" class="tab-content" style="display:block;">
+                            <div style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
+                                <div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:var(--bg-card); border:2px solid var(--silver-dark);">
+                                    ${avatarSrc ? `<img src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:80px; color:var(--silver);"></i>'}
+                                </div>
+                                <div>
+                                    <h2 style="color:var(--silver-light); margin-bottom:5px;">${displayName} ${isAdmin ? '<i class="fas fa-check-circle" style="color:var(--silver);" title="Администратор"></i>' : ''}</h2>
+                                    <p style="color:var(--text-muted);">${currentUser.description || 'Нет описания'}</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline" onclick="openProfileEditModal()"><i class="fas fa-edit"></i> Редактировать</button>
+                            <div class="card visible" style="margin-top:20px;">
+                                <h4>Ключи доступа к сервисам Diamond EcoSystem</h4>
+                                <div class="input-group"><label>Публичный токен ( Модель сайта )</label>
+                                    <div style="display:flex; gap:10px;">
+                                        <input value="${currentUser.token}" readonly style="flex:1;">
+                                        <button class="btn btn-outline" onclick="copyText('${currentUser.token}')"><i class="fas fa-copy"></i></button>
+                                    </div>
+                                </div>
+                                <div class="input-group"><label>Секретное слово ( Вводить при входе )</label>
+                                    <div style="display:flex; gap:10px;">
+                                        <input value="${currentUser.secretWord}" readonly style="flex:1;">
+                                        <button class="btn btn-outline" onclick="copyText('${currentUser.secretWord}')"><i class="fas fa-copy"></i></button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>`;
-                }).join('') || '<p>Нет тикетов</p>';
-                document.getElementById('tab-admin').innerHTML = `
-                    <h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-crown"></i> Админ-панель</h3>
-                    <div class="grid-3">
-                        <div class="card visible"><h4>Пользователи (${users.length})</h4>
-                            ${users.map(u => `<div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>${u.name || u.login || u.email}</span><button class="btn btn-outline" onclick="deleteUser('${u.email}')"><i class="fas fa-trash"></i></button></div>`).join('')}
+                        ${isAdmin ? `
+                        <div id="tab-admin" class="tab-content" style="display:none;">
+                            ${renderAdminPanel()}
+                        </div>` : ''}
+                    </div>
+                `;
+
+                container.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        container.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                        document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
+                    });
+                });
+            }
+
+            function renderAdminPanel() {
+                const users = getUsers();
+                const sessions = getSessions();
+                const tickets = getTickets();
+                let ticketsHtml = '';
+                if (tickets.length === 0) ticketsHtml = '<p>Нет тикетов</p>';
+                else {
+                    ticketsHtml = tickets.map((ticket, index) => {
+                        const msgs = ticket.messages || [];
+                        const lastMsg = msgs[msgs.length-1]?.text || 'Нет сообщений';
+                        return `
+                            <div style="border:1px solid var(--border-dim); padding:10px; margin-bottom:10px; border-radius:12px;">
+                                <strong>${ticket.email}</strong> - ${lastMsg.substring(0,30)}...
+                                <div style="margin-top:5px;">
+                                    <button class="btn btn-outline" onclick="toggleTicketDetail(${index})">Открыть</button>
+                                    <button class="btn btn-outline" onclick="deleteTicket(${index})">Удалить</button>
+                                </div>
+                                <div id="ticketDetail${index}" style="display:none; margin-top:10px;">
+                                    <div class="chat-container" style="max-height:150px; overflow-y:auto;">
+                                        ${msgs.map(m => {
+                                            const senderName = m.sender === 'admin' ? 'Администратор' : 'Пользователь';
+                                            const msgClass = m.sender === 'admin' ? 'bot' : 'user';
+                                            return `
+                                                <div class="chat-message ${msgClass}">
+                                                    <div class="chat-sender">${senderName}</div>
+                                                    <div class="chat-bubble">${m.text}</div>
+                                                    <div class="chat-time">${new Date(m.time).toLocaleTimeString()}</div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                    <div style="display:flex; gap:6px; margin-top:5px;">
+                                        <input id="adminReplyInput_${index}" placeholder="Ответ..." style="flex:1;">
+                                        <button class="btn btn-outline" onclick="adminReplyToTicket(${index})">Отправить</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                return `
+                    <div style="margin-top:20px;">
+                        <h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-crown"></i> Админ-панель</h3>
+                        <div class="grid-3">
+                            <div class="card visible"><h4>Пользователи (${users.length})</h4>
+                                ${users.map(u => `<div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>${u.name || u.login || u.email}</span><button class="btn btn-outline" style="padding:2px 10px;" onclick="deleteUser('${u.email}')"><i class="fas fa-trash"></i></button></div>`).join('')}
+                            </div>
+                            <div class="card visible"><h4>Сессии</h4>
+                                ${sessions.map((s,i) => `<div style="display:flex; justify-content:space-between;"><span>${s.login||s.email}</span><button class="btn btn-outline" style="padding:2px 10px;" onclick="endSession(${i})"><i class="fas fa-times"></i></button></div>`).join('')}
+                            </div>
+                            <div class="card visible"><h4>Тикеты</h4>
+                                ${ticketsHtml}
+                            </div>
                         </div>
-                        <div class="card visible"><h4>Тикеты</h4>${ticketsHtml}</div>
                     </div>
                 `;
             }
 
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.querySelectorAll('.tab-content').forEach(c => c.style.display='none');
-                    document.getElementById('tab-'+tab.dataset.tab).style.display='block';
-                });
-            });
-        }
+            window.toggleTicketDetail = (index) => {
+                const detail = document.getElementById('ticketDetail' + index);
+                if (detail) detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+            };
+            window.adminReplyToTicket = (index) => {
+                const input = document.getElementById('adminReplyInput_' + index);
+                if (!input) return;
+                const reply = input.value.trim();
+                if (!reply) return;
+                const tickets = getTickets();
+                if (!tickets[index]) return;
+                tickets[index].messages.push({ sender: 'admin', text: reply, time: new Date().toISOString() });
+                saveTickets(tickets);
+                showProfilePage();
+                showToast('Ответ отправлен');
+            };
+            window.deleteTicket = (index) => {
+                if (!confirm('Удалить тикет?')) return;
+                const tickets = getTickets();
+                tickets.splice(index, 1);
+                saveTickets(tickets);
+                showProfilePage();
+                showToast('Тикет удалён');
+            };
 
-        async function renderSupport() {
-            if (!currentUser) return;
-            const tickets = (await apiGet('/tickets')).filter(t => t.email===currentUser.email);
-            const container = document.getElementById('support-page');
-            container.innerHTML = `
-                <div style="padding:60px 0; max-width:900px; margin:0 auto;">
-                    <h2 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-headset"></i> Поддержка</h2>
-                    <button class="btn btn-primary" id="newTicketBtn"><i class="fas fa-plus"></i> Связаться с администратором</button>
-                    <div id="userTickets" style="margin-top:30px;">
-                        ${tickets.length ? tickets.map((t,i) => `
+            function showSupportPage() {
+                if (!currentUser) return;
+                const container = document.getElementById('support-page');
+                const tickets = getTickets().filter(t => t.email === currentUser.email);
+                let ticketsHtml = '';
+                if (tickets.length === 0) {
+                    ticketsHtml = '<p>У вас пока нет открытых тикетов.</p>';
+                } else {
+                    ticketsHtml = tickets.map((ticket, idx) => {
+                        const msgs = ticket.messages || [];
+                        return `
                             <div class="card visible" style="margin-bottom:20px;">
-                                <h4>Тикет #${i+1}</h4>
+                                <h4>Тикет #${idx+1}</h4>
                                 <div class="chat-container" style="max-height:200px; overflow-y:auto;">
-                                    ${t.messages.map(m => `
-                                        <div class="chat-message ${m.sender==='admin'?'bot':'user'}">
-                                            <div class="chat-sender">${m.sender==='admin'?'Администратор':'Вы'}</div>
-                                            <div class="chat-bubble">${m.text}</div>
-                                            <div class="chat-time">${new Date(m.time).toLocaleTimeString()}</div>
-                                        </div>
-                                    `).join('')}
+                                    ${msgs.map(m => {
+                                        const senderName = m.sender === 'admin' ? 'Администратор' : 'Вы';
+                                        const msgClass = m.sender === 'admin' ? 'bot' : 'user';
+                                        return `
+                                            <div class="chat-message ${msgClass}">
+                                                <div class="chat-sender">${senderName}</div>
+                                                <div class="chat-bubble">${m.text}</div>
+                                                <div class="chat-time">${new Date(m.time).toLocaleTimeString()}</div>
+                                            </div>
+                                        `;
+                                    }).join('')}
                                 </div>
                                 <div style="display:flex; gap:6px; margin-top:5px;">
-                                    <input id="ticketInput_${i}" placeholder="Введите сообщение..." style="flex:1;">
-                                    <button class="btn btn-outline" onclick="userReply('${t.id}')">Отправить</button>
+                                    <input id="userTicketInput_${idx}" placeholder="Введите сообщение..." style="flex:1;">
+                                    <button class="btn btn-outline" onclick="userReplyToTicket('${ticket.id}')">Отправить</button>
                                 </div>
                             </div>
-                        `).join('') : '<p>У вас пока нет открытых тикетов.</p>'}
-                    </div>
-                </div>
-            `;
-            document.getElementById('newTicketBtn').onclick = openNewTicket;
-        }
-
-        async function renderForum() {
-            const posts = await apiGet('/forum');
-            const container = document.getElementById('forumPosts');
-            container.innerHTML = posts.length ? posts.map((p,i) => `
-                <div class="card visible" style="margin-bottom:20px;">
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <div style="width:40px; height:40px; border-radius:50%; overflow:hidden; background:var(--bg-card);">
-                            ${p.avatar ? `<img src="${p.avatar}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user" style="color:var(--silver);"></i>'}
-                        </div>
-                        <div>
-                            <strong>${p.name || p.login || p.email}</strong>
-                            ${p.email===ADMIN_EMAIL ? '<i class="fas fa-check-circle" style="color:var(--silver); margin-left:4px;" title="Администратор"></i>' : ''}
-                            <small style="color:var(--text-muted);">${new Date(p.time).toLocaleString()}</small>
-                        </div>
-                        ${currentUser?.email===ADMIN_EMAIL ? `<button class="btn btn-outline" style="padding:2px 10px; margin-left:auto;" onclick="deleteForumPost(${i})"><i class="fas fa-trash"></i></button>` : ''}
-                    </div>
-                    <p style="margin-top:10px;">${p.message}</p>
-                </div>
-            `).join('') : '<p>Нет сообщений. Будьте первым!</p>';
-            document.getElementById('forumForm').style.display = currentUser ? 'block' : 'none';
-            document.getElementById('forumLoginPrompt').style.display = currentUser ? 'none' : 'block';
-            if (currentUser) {
-                document.getElementById('sendForumBtn').onclick = async () => {
-                    const msg = document.getElementById('forumMessage').value.trim();
-                    if (!msg) return;
-                    await apiPost('/forum', { email: currentUser.email, name: currentUser.name || '', login: currentUser.login || currentUser.email, avatar: currentUser.avatar || '', message: msg });
-                    document.getElementById('forumMessage').value = '';
-                    renderForum();
-                };
-            }
-        }
-
-        window.deleteForumPost = async (index) => {
-            await apiDelete('/forum/' + index);
-            renderForum();
-            showToast('Пост удалён');
-        };
-
-        window.deleteUser = async (email) => {
-            if (!confirm('Удалить пользователя ' + email + '?')) return;
-            await apiDelete('/users/' + email);
-            if (currentUser?.email === email) logout();
-            else { renderProfile(); showToast('Пользователь удалён'); }
-        };
-
-        window.adminReply = async (index) => {
-            const input = document.getElementById('adminReply_' + index);
-            if (!input) return;
-            const text = input.value.trim();
-            if (!text) return;
-            const tickets = await apiGet('/tickets');
-            if (!tickets[index]) return;
-            await apiPut('/tickets/' + tickets[index].id, { sender: 'admin', text });
-            input.value = '';
-            renderProfile();
-            showToast('Ответ отправлен');
-        };
-
-        window.deleteTicket = async (index) => {
-            const tickets = await apiGet('/tickets');
-            if (!tickets[index]) return;
-            await apiDelete('/tickets/' + tickets[index].id);
-            renderProfile();
-            showToast('Тикет удалён');
-        };
-
-        window.userReply = async (ticketId) => {
-            const tickets = await apiGet('/tickets');
-            const idx = tickets.findIndex(t => t.id === ticketId);
-            if (idx === -1) return;
-            const input = document.getElementById('ticketInput_' + idx);
-            if (!input) return;
-            const text = input.value.trim();
-            if (!text) return;
-            await apiPut('/tickets/' + ticketId, { sender: 'user', text });
-            input.value = '';
-            renderSupport();
-        };
-
-        async function openNewTicket() {
-            const modal = document.getElementById('newTicketModal');
-            modal.style.display = 'flex';
-            document.getElementById('newTicketModalContent').innerHTML = `
-                <h3>Новое обращение</h3>
-                <textarea id="newTicketMessage" placeholder="Опишите проблему..."></textarea>
-                <button class="btn btn-primary" id="sendNewTicketBtn">Отправить</button>
-                <button class="btn btn-outline" id="closeNewTicketModal">Отмена</button>
-            `;
-            document.getElementById('sendNewTicketBtn').onclick = async () => {
-                const msg = document.getElementById('newTicketMessage').value.trim();
-                if (!msg) return;
-                await apiPost('/tickets', { email: currentUser.email, message: msg });
-                modal.style.display = 'none';
-                renderSupport();
-                showToast('Тикет создан');
-            };
-            document.getElementById('closeNewTicketModal').onclick = () => modal.style.display = 'none';
-        }
-
-        window.editProfile = async () => {
-            const name = prompt('Имя:', currentUser.name || '');
-            if (name !== null) {
-                currentUser.name = name;
-                localStorage.setItem('diamkey_user', JSON.stringify(currentUser));
-                await apiPut('/users/' + currentUser.email, { name });
-                renderProfile();
-            }
-        };
-
-        window.copyText = (t) => { navigator.clipboard.writeText(t); showToast('Скопировано!'); };
-
-        // Эффект шифра
-        function cipher() {
-            const el = document.getElementById('cipherTitle');
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
-            let display = 'DIAMKEY'.split('');
-            setInterval(() => {
-                for (let i=0; i<display.length; i++) {
-                    if (Math.random()<0.05) display[i] = chars[Math.floor(Math.random()*chars.length)];
-                    else display[i] = 'DIAMKEY'[i];
+                        `;
+                    }).join('');
                 }
-                el.textContent = display.join('');
-            }, 150);
-        }
-
-        // Инициализация
-        window.addEventListener('DOMContentLoaded', async () => {
-            document.getElementById('privacyLink').onclick = e => { e.preventDefault(); document.getElementById('privacyModal').style.display='flex'; };
-            document.getElementById('termsLink').onclick = e => { e.preventDefault(); document.getElementById('termsModal').style.display='flex'; };
-            document.getElementById('privacyModalContent').innerHTML = '<h3>Политика</h3><p>Мы храним только минимальные данные.</p><button class="btn btn-outline" onclick="document.getElementById(\'privacyModal\').style.display=\'none\'">Закрыть</button>';
-            document.getElementById('termsModalContent').innerHTML = '<h3>Условия</h3><p>Запрещены взлом, спам.</p><button class="btn btn-outline" onclick="document.getElementById(\'termsModal\').style.display=\'none\'">Закрыть</button>';
-
-            document.getElementById('navHome').onclick = () => navigate('home');
-            document.getElementById('navForum').onclick = () => navigate('forum');
-            document.getElementById('navProfile').onclick = () => navigate('profile');
-            document.getElementById('navSupport').onclick = () => navigate('support');
-
-            window.addEventListener('click', e => { if (e.target.classList.contains('modal')) e.target.style.display='none'; });
-
-            const saved = localStorage.getItem('diamkey_user');
-            if (saved) {
-                currentUser = JSON.parse(saved);
-                updateAuthBtn();
-                updateHeroButtons();
-            } else {
-                updateAuthBtn();
-                updateHeroButtons();
+                container.innerHTML = `
+                    <div style="padding:60px 0; max-width:900px; margin:0 auto;">
+                        <h2 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-headset"></i> Поддержка</h2>
+                        <button class="btn btn-primary" id="newTicketBtn"><i class="fas fa-plus"></i> Связаться с администратором</button>
+                        <div id="userTickets" style="margin-top:30px;">${ticketsHtml}</div>
+                    </div>
+                `;
+                document.getElementById('newTicketBtn').addEventListener('click', openNewTicketModal);
+                document.querySelectorAll('[id^="userTicketInput_"]').forEach((input, idx) => {
+                    const btn = input.nextElementSibling;
+                    if (btn) {
+                        btn.addEventListener('click', () => {
+                            const ticketId = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+                            userReplyToTicket(ticketId);
+                        });
+                    }
+                });
             }
-            const hash = window.location.hash.slice(1) || 'home';
-            navigate(hash);
-            cipher();
 
-            const observer = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.1 });
-            document.querySelectorAll('.card').forEach(c => observer.observe(c));
-        });
+            function openNewTicketModal() {
+                const modal = document.getElementById('newTicketModal');
+                const content = document.getElementById('newTicketModalContent');
+                content.innerHTML = `
+                    <h3>Новое обращение</h3>
+                    <textarea id="newTicketMessage" placeholder="Опишите проблему..."></textarea>
+                    <button class="btn btn-primary" id="sendNewTicketBtn">Отправить</button>
+                    <button class="btn btn-outline" id="closeNewTicketModal">Отмена</button>
+                `;
+                modal.style.display = 'flex';
+                document.getElementById('sendNewTicketBtn').addEventListener('click', () => {
+                    const message = document.getElementById('newTicketMessage').value.trim();
+                    if (!message) return showToast('Введите сообщение');
+                    const tickets = getTickets();
+                    const newTicket = {
+                        id: Date.now().toString(),
+                        email: currentUser.email,
+                        messages: [{ sender: 'user', text: message, time: new Date().toISOString() }]
+                    };
+                    tickets.push(newTicket);
+                    saveTickets(tickets);
+                    modal.style.display = 'none';
+                    showSupportPage();
+                    showToast('Тикет создан, администратор скоро ответит');
+                });
+                document.getElementById('closeNewTicketModal').addEventListener('click', () => modal.style.display = 'none');
+            }
 
-        window.logout = logout;
-    })();
-</script>
+            window.userReplyToTicket = (ticketId) => {
+                const tickets = getTickets();
+                const ticket = tickets.find(t => t.id === ticketId);
+                if (!ticket) return;
+                const input = document.querySelector(`#userTicketInput_${tickets.indexOf(ticket)}`);
+                if (!input) return;
+                const text = input.value.trim();
+                if (!text) return;
+                ticket.messages.push({ sender: 'user', text, time: new Date().toISOString() });
+                saveTickets(tickets);
+                showSupportPage();
+            };
+
+            function openProfileEditModal() {
+                if (!currentUser) return;
+                const modal = document.getElementById('profileEditModal');
+                const content = document.getElementById('profileEditModalContent');
+                content.innerHTML = `
+                    <i class="fas fa-user-edit" style="font-size:48px; color:var(--silver);"></i>
+                    <h3>Редактирование профиля</h3>
+                    <div class="input-group"><label>Имя</label><input id="editName" value="${currentUser.name||''}" placeholder="Ваше имя"></div>
+                    <div class="input-group"><label>Описание</label><textarea id="editDescription">${currentUser.description||''}</textarea></div>
+                    <div class="input-group"><label>Аватар (загрузите файл)</label><input type="file" id="avatarFile" accept="image/*"></div>
+                    <button class="btn btn-primary" id="saveProfileBtn">Сохранить</button>
+                    <button class="btn btn-outline" id="closeProfileEditModal">Закрыть</button>
+                `;
+                modal.style.display='flex';
+                document.getElementById('saveProfileBtn').addEventListener('click', () => {
+                    const name = document.getElementById('editName').value.trim();
+                    const desc = document.getElementById('editDescription').value.trim();
+                    const fileInput = document.getElementById('avatarFile');
+                    const users = getUsers();
+                    const idx = users.findIndex(u => u.email === currentUser.email);
+                    if (idx === -1) return;
+                    const saveChanges = (avatarDataUrl = currentUser.avatar) => {
+                        users[idx].name = name;
+                        users[idx].description = desc;
+                        users[idx].avatar = avatarDataUrl;
+                        saveUsers(users);
+                        currentUser.name = name; currentUser.description = desc; currentUser.avatar = avatarDataUrl;
+                        localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
+                        showProfilePage(); showToast('Профиль обновлён'); modal.style.display='none';
+                    };
+                    if (fileInput.files && fileInput.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => saveChanges(e.target.result);
+                        reader.readAsDataURL(fileInput.files[0]);
+                    } else { saveChanges(); }
+                });
+                document.getElementById('closeProfileEditModal').addEventListener('click', () => modal.style.display='none');
+            }
+
+            function renderForum() {
+                const posts = getForumPosts();
+                const container = document.getElementById('forumPosts');
+                container.innerHTML = posts.length ? posts.map((p,i) => `
+                    <div class="card visible" style="margin-bottom:20px;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <div style="width:40px; height:40px; border-radius:50%; overflow:hidden; background:var(--bg-card);">
+                                ${p.avatar ? `<img src="${p.avatar}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user" style="color:var(--silver);"></i>'}
+                            </div>
+                            <div>
+                                <strong>${p.name || p.login || p.email}</strong>
+                                ${p.email === ADMIN_EMAIL ? '<i class="fas fa-check-circle" style="color:var(--silver); margin-left:4px;" title="Администратор"></i>' : ''}
+                                <small style="color:var(--text-muted);">${new Date(p.time).toLocaleString()}</small>
+                            </div>
+                            ${currentUser?.email===ADMIN_EMAIL ? `<button class="btn btn-outline" style="padding:2px 10px; margin-left:auto;" onclick="deleteForumPost(${i})"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                        <p style="margin-top:10px;">${p.message}</p>
+                    </div>
+                `).join('') : '<p>Нет сообщений. Будьте первым!</p>';
+                document.getElementById('forumForm').style.display = currentUser ? 'block' : 'none';
+                document.getElementById('forumLoginPrompt').style.display = currentUser ? 'none' : 'block';
+                if (currentUser) {
+                    document.getElementById('sendForumBtn').onclick = () => {
+                        const msg = document.getElementById('forumMessage').value.trim();
+                        if (!msg) return;
+                        const posts = getForumPosts();
+                        posts.push({ email: currentUser.email, name: currentUser.name || '', login: currentUser.login || currentUser.email, avatar: currentUser.avatar || '', message: msg, time: new Date().toISOString() });
+                        saveForumPosts(posts); renderForum(); document.getElementById('forumMessage').value = '';
+                    };
+                }
+            }
+            window.deleteForumPost = i => { let posts = getForumPosts(); posts.splice(i,1); saveForumPosts(posts); renderForum(); showToast('Удалено'); };
+
+            window.deleteUser = email => {
+                if (!confirm('Удалить?')) return;
+                let users = getUsers().filter(u => u.email !== email);
+                saveUsers(users);
+                if (currentUser?.email === email) logout();
+                else { showProfilePage(); showToast('Удалён'); }
+            };
+            window.endSession = idx => { let s = getSessions(); s.splice(idx,1); saveSessions(s); showProfilePage(); };
+            window.copyText = t => { navigator.clipboard.writeText(t); showToast('Скопировано!'); };
+
+            function startCipherEffect(element, finalText) {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+                let display = finalText.split('');
+                setInterval(() => {
+                    for (let i = 0; i < display.length; i++) {
+                        if (Math.random() < 0.05) display[i] = chars[Math.floor(Math.random()*chars.length)];
+                        else display[i] = finalText[i];
+                    }
+                    element.textContent = display.join('');
+                }, 150);
+            }
+
+            document.addEventListener('DOMContentLoaded', async () => {
+                document.getElementById('privacyModalContent').innerHTML = '<h3>Политика</h3><p>...</p><button class="btn btn-outline" onclick="document.getElementById(\'privacyModal\').style.display=\'none\'">Закрыть</button>';
+                document.getElementById('termsModalContent').innerHTML = '<h3>Условия</h3><p>...</p><button class="btn btn-outline" onclick="document.getElementById(\'termsModal\').style.display=\'none\'">Закрыть</button>';
+                document.getElementById('privacyLink').onclick = e => { e.preventDefault(); document.getElementById('privacyModal').style.display='flex'; };
+                document.getElementById('termsLink').onclick = e => { e.preventDefault(); document.getElementById('termsModal').style.display='flex'; };
+                document.getElementById('navHome').onclick = e => { e.preventDefault(); navigate('home'); window.location.hash='#home'; };
+                document.getElementById('navForum').onclick = e => { e.preventDefault(); navigate('forum'); window.location.hash='#forum'; };
+                document.getElementById('navProfile').onclick = e => { e.preventDefault(); navigate('profile'); window.location.hash='#profile'; };
+                document.getElementById('navSupport').onclick = e => { e.preventDefault(); navigate('support'); window.location.hash='#support'; };
+
+                window.addEventListener('click', e => { if (e.target.classList.contains('modal')) e.target.style.display='none'; });
+
+                const saved = localStorage.getItem('diamkey_current');
+                if (saved) {
+                    let user = JSON.parse(saved);
+                    if (!user.token || !user.secretWord) {
+                        user.token = generateToken();
+                        user.secretWord = await generateSecret(user.email);
+                        const users = getUsers();
+                        const idx = users.findIndex(u => u.email === user.email);
+                        users[idx] = user;
+                        saveUsers(users);
+                    }
+                    currentUser = user;
+                    localStorage.setItem('diamkey_current', JSON.stringify(user));
+                    updateAuthButton(); updateHeroButtons();
+                } else {
+                    updateAuthButton(); updateHeroButtons();
+                }
+                const hash = window.location.hash.slice(1) || 'home';
+                navigate(hash);
+                startCipherEffect(document.getElementById('cipherTitle'), 'DIAMKEY');
+                const observer = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.1 });
+                document.querySelectorAll('.card').forEach(c => observer.observe(c));
+                if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+
+            window.logout = logout;
+            window.openProfileEditModal = openProfileEditModal;
+            window.copyText = copyText;
+            window.deleteUser = deleteUser;
+            window.endSession = endSession;
+            window.deleteForumPost = deleteForumPost;
+            window.navigateToProfile = navigateToProfile;
+            window.navigateToSupport = navigateToSupport;
+            window.userReplyToTicket = userReplyToTicket;
+            window.adminReplyToTicket = adminReplyToTicket;
+            window.toggleTicketDetail = toggleTicketDetail;
+            window.deleteTicket = deleteTicket;
+        })();
+    </script>
 </body>
 </html>
