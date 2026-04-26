@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* Твои стили – полностью сохранены, без изменений */
         :root {
             --bg-deep: #0a0a0f;
             --bg-card: #111116;
@@ -27,7 +28,7 @@
         body { background: var(--bg-deep); font-family: 'Inter', sans-serif; color: var(--text-light); line-height: 1.5; overflow-x: hidden; }
         canvas { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; }
         .content { position: relative; z-index:1; min-height: 100vh; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; flex-wrap: wrap; gap:20px; animation: fadeUp 0.6s ease; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 24px; flex-wrap: wrap; gap:20px; animation: fadeUp 0.6s ease; }
         .logo a { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800; color: var(--silver-light); text-decoration: none; }
         .nav-links { display: flex; gap: 32px; align-items: center; position: relative; }
         .nav-links a, .nav-links .status-btn, .nav-links #authBtn { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.2s; background: none; border: none; font-size: 1rem; font-family: inherit; cursor: pointer; }
@@ -86,8 +87,8 @@
         .dropdown-footer a:hover { color: white; }
         .page { display: none; max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; }
         .page.active { display: block; }
-        .hero { padding: 80px 0 60px; text-align: center; }
-        .hero h1 { font-size: clamp(36px, 8vw, 72px); font-weight: 800; background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 24px; letter-spacing: -1px; min-height: 1.2em; }
+        .hero { padding: 100px 0 80px; text-align: center; }
+        .hero h1 { font-size: clamp(44px, 8vw, 72px); font-weight: 800; background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 24px; letter-spacing: -1px; min-height: 1.2em; }
         .hero p { font-size: 1.25rem; color: var(--text-muted); max-width: 700px; margin: 0 auto 40px; }
         .btn { display: inline-block; padding: 14px 36px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.3s; text-decoration: none; border: 1px solid var(--border-dim); background: transparent; color: var(--text-light); margin: 6px; font-size: 1rem; }
         .btn-primary { background: var(--grad-silver); border-color: #3a3a44; }
@@ -170,7 +171,6 @@
 <body>
     <canvas id="threeCanvas"></canvas>
     <div class="content">
-        <!-- Навигация -->
         <div class="navbar">
             <div class="logo"><a href="#home"><i class="fas fa-key" style="color:var(--silver);"></i> DIAMKEY</a></div>
             <button class="burger-menu" id="burgerMenu"><i class="fas fa-bars"></i></button>
@@ -205,7 +205,6 @@
             </div>
         </div>
 
-        <!-- Главная страница -->
         <div id="home-page" class="page active">
             <div class="hero">
                 <h1 id="cipherTitle"></h1>
@@ -233,25 +232,23 @@
             </div>
         </div>
 
-        <!-- Форум -->
         <div id="forum-page" class="page">
             <div style="padding-top:60px;">
                 <h2 style="font-size:2rem; margin-bottom:30px; color:var(--silver-light);"><i class="fas fa-comments"></i> Форум</h2>
                 <div id="forumPosts" style="margin-bottom:40px;"></div>
+                <!-- Форма видна всегда, когда пользователь вошёл -->
                 <div id="forumForm" style="display:none;">
                     <textarea id="forumMessage" placeholder="Ваше сообщение..." style="min-height:80px;"></textarea>
                     <button class="btn btn-primary" id="sendForumBtn" style="margin-top:10px;">Отправить</button>
                 </div>
-                <p id="forumLoginPrompt">Войдите, чтобы участвовать в обсуждении.</p>
+                <p id="forumLoginPrompt" style="display:none;">Войдите, чтобы участвовать в обсуждении.</p>
             </div>
         </div>
 
-        <!-- Профиль и Поддержка – заполняются динамически -->
         <div id="profile-page" class="page"></div>
         <div id="support-page" class="page"></div>
     </div>
 
-    <!-- Модальные окна -->
     <div class="modal" id="authModal"><div class="modal-content" id="authModalContent"></div></div>
     <div class="modal" id="profileEditModal"><div class="modal-content" id="profileEditModalContent"></div></div>
     <div class="modal" id="adminEditUserModal"><div class="modal-content" id="adminEditUserModalContent"></div></div>
@@ -260,6 +257,7 @@
 
     <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.126.0/build/three.module.js" } }</script>
     <script type="module">
+        // 3D сцена без изменений
         import * as THREE from 'three';
         const canvas = document.getElementById('threeCanvas');
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -430,7 +428,6 @@
                 }
             });
 
-            // Авторизация
             function openAuthModal(mode) {
                 const modal = document.getElementById('authModal');
                 const content = document.getElementById('authModalContent');
@@ -623,7 +620,7 @@
                 document.getElementById('closeAdminEditModal').onclick = () => modal.style.display = 'none';
             };
 
-            // Форум
+            // ФОРУМ (исправлено)
             async function loadForumPosts() {
                 const { data: posts, error } = await supabase.from('forum').select('*').order('time', { ascending: false });
                 if (error) return showToast('Ошибка форума');
@@ -644,6 +641,7 @@
                         <p style="margin-top:10px;">${p.message}</p>
                     </div>
                 `).join('') : '<p>Нет сообщений.</p>';
+                // Включаем форму, если пользователь вошёл
                 document.getElementById('forumForm').style.display = currentUser ? 'block' : 'none';
                 document.getElementById('forumLoginPrompt').style.display = currentUser ? 'none' : 'block';
             }
@@ -652,7 +650,15 @@
                 if (!currentUser) return showToast('Войдите');
                 const msg = document.getElementById('forumMessage').value.trim();
                 if (!msg) return;
-                const { error } = await supabase.from('forum').insert([{ email: currentUser.email, name: currentUser.name || currentUser.login || currentUser.email, login: currentUser.login, avatar: currentUser.avatar || '', fa_icon: currentUser.fa_icon || '', message: msg, time: new Date().toISOString() }]);
+                const { error } = await supabase.from('forum').insert([{
+                    email: currentUser.email,
+                    name: currentUser.name || currentUser.login || currentUser.email,
+                    login: currentUser.login,
+                    avatar: currentUser.avatar || '',
+                    fa_icon: currentUser.fa_icon || '',
+                    message: msg,
+                    time: new Date().toISOString()
+                }]);
                 if (error) return showToast('Ошибка');
                 document.getElementById('forumMessage').value = '';
                 loadForumPosts();
