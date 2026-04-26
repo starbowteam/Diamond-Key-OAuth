@@ -1,164 +1,157 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="DiamKey — единый аккаунт для сервисов Diamond">
-  <meta name="theme-color" content="#0a0a0f">
-  <title>DiamKey | Единый ключ</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='white'%3E%3Cpath d='M336 352c97.2 0 176-78.8 176-176S433.2 0 336 0S160 78.8 160 176c0 18.7 2.9 36.8 8.3 53.7L7 391c-4.5 4.5-7 10.6-7 17v80c0 13.3 10.7 24 24 24h80c13.3 0 24-10.7 24-24V448h40c13.3 0 24-10.7 24-24V384h40c6.4 0 12.5-2.5 17-7l33.3-33.3c16.9 5.4 35 8.3 53.7 8.3zM376 96a40 40 0 1 1 0 80 40 40 0 1 1 0-80z'/%3E%3C/svg%3E">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root {
-      --bg-deep: #0a0a0f;
-      --bg-card: #111116;
-      --border-dim: #1f1f2a;
-      --text-light: #e0e0e0;
-      --text-muted: #9ca3af;
-      --silver: #a8a8b3;
-      --silver-light: #c0c0cc;
-      --silver-dark: #7e7e8a;
-      --grad-silver: linear-gradient(135deg, #2a2a33, #1a1a22);
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--bg-deep); font-family: 'Inter', sans-serif; color: var(--text-light); line-height: 1.5; overflow-x: hidden; }
-    canvas { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; }
-    .content { position: relative; z-index:1; min-height: 100vh; }
-    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 24px; flex-wrap: wrap; gap:20px; animation: fadeUp 0.6s ease; }
-    .logo a { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800; color: var(--silver-light); text-decoration: none; }
-    .nav-links { display: flex; gap: 28px; align-items: center; position: relative; }
-    .nav-links a, .nav-links .status-btn, .nav-links #authBtn { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.2s; background: none; border: none; font-size: 1rem; font-family: inherit; cursor: pointer; }
-    .nav-links a:hover, .nav-links .status-btn:hover, .nav-links #authBtn:hover { color: var(--text-light); }
-    .burger-menu { display: none; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
-    .status-dropdown { display: none; position: absolute; top: 100%; right: 0; background: var(--bg-card); border: 1px solid var(--border-dim); border-radius: 24px; padding: 24px; min-width: 320px; z-index: 2000; backdrop-filter: blur(20px); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-    .status-dropdown.open { display: block; }
-    .service-item { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; text-decoration: none; color: inherit; border-radius: 16px; padding: 8px; transition: background 0.2s; }
-    .service-item:hover { background: rgba(255,255,255,0.03); }
-    .progress-ring { width: 48px; height: 48px; border-radius: 50%; background: conic-gradient(var(--progress-color) calc(var(--progress) * 1%), transparent 0); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: white; background-color: #1e1e2a; }
-    .service-info { flex: 1; }
-    .service-info strong { display: block; font-size: 1.1rem; margin-bottom: 4px; }
-    .service-info span { font-size: 0.8rem; color: var(--text-muted); }
-    .dropdown-footer { margin-top: 20px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
-    .dropdown-footer a { color: var(--silver-light); text-decoration: none; margin: 0 8px; }
-    .dropdown-footer a:hover { color: white; }
-    .page { display: none; max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; }
-    .page.active { display: block; }
-    .hero { padding: 100px 0 80px; text-align: center; }
-    .hero h1 { font-size: clamp(44px, 8vw, 72px); font-weight: 800; background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 24px; letter-spacing: -1px; min-height: 1.2em; }
-    .hero p { font-size: 1.25rem; color: var(--text-muted); max-width: 700px; margin: 0 auto 40px; }
-    .btn { display: inline-block; padding: 14px 36px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.3s; text-decoration: none; border: 1px solid var(--border-dim); background: transparent; color: var(--text-light); margin: 6px; font-size: 1rem; }
-    .btn-primary { background: var(--grad-silver); border-color: #3a3a44; }
-    .btn-primary:hover { background: #2a2a33; border-color: var(--silver-dark); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
-    .btn-outline { background: transparent; }
-    .btn-outline:hover { background: rgba(255,255,255,0.03); border-color: var(--silver-dark); transform: translateY(-2px); }
-    .section { padding: 80px 0; }
-    .section-title { font-size: 2.5rem; font-weight: 700; text-align: center; margin-bottom: 56px; }
-    .section-title span { background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; }
-    .card { background: var(--bg-card); border-radius: 32px; padding: 32px 24px; border: 1px solid var(--border-dim); transition: all 0.3s; opacity: 0; transform: translateY(20px); }
-    .card.visible { opacity: 1; transform: translateY(0); transition: all 0.6s ease; }
-    .card:hover { transform: translateY(-8px); border-color: #3a3a44; box-shadow: 0 20px 30px -12px rgba(0,0,0,0.5); }
-    .card-icon { font-size: 40px; margin-bottom: 20px; color: var(--silver); }
-    .card h3 { font-size: 1.5rem; margin-bottom: 12px; }
-    .card p { color: var(--text-muted); }
-    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); align-items: center; justify-content: center; z-index:1000; animation: fadeIn 0.2s; }
-    .modal-content { background: var(--bg-card); border-radius: 32px; padding: 32px; max-width: 480px; width: 90%; text-align: center; border: 1px solid var(--border-dim); }
-    .input-group { margin: 1rem 0; text-align: left; }
-    .input-group label { font-weight: 600; font-size: 0.9rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; }
-    input, textarea, select { width: 100%; background: #1e1e2a; border: 1px solid var(--border-dim); color: var(--text-light); padding: 12px 16px; border-radius: 12px; font-size: 1rem; outline: none; margin-top: 6px; }
-    select option { background: #111116; }
-    input:focus, textarea:focus, select:focus { border-color: var(--silver-dark); }
-    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border-left: 4px solid var(--silver); padding: 12px 20px; border-radius: 12px; font-size: 0.9rem; z-index: 1100; animation: fadeUp 0.3s; }
-    @keyframes fadeUp { 0% { opacity:0; transform: translateY(30px); } 100% { opacity:1; transform: translateY(0); } }
-    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-    .footer { padding: 48px 0 32px; text-align: center; border-top: 1px solid var(--border-dim); margin-top: 40px; }
-    .footer-links { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-bottom: 24px; }
-    .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 1.4rem; }
-    .footer-links a:hover { color: var(--text-light); }
-    .copyright { font-size: 0.85rem; color: #6b7280; }
-    .tabs { display: flex; gap: 20px; margin-bottom: 30px; }
-    .tab { padding: 10px 24px; border-radius: 40px; border: 1px solid var(--border-dim); font-weight: 500; cursor: pointer; transition: 0.2s; color: var(--text-muted); }
-    .tab.active { background: var(--grad-silver); color: #fff; border-color: #3a3a44; }
-    .chat-container { max-height: 400px; overflow-y: auto; margin-bottom: 20px; }
-    .chat-message { margin-bottom: 16px; display: flex; flex-direction: column; }
-    .chat-message.bot .chat-bubble { background: #1a1a22; align-self: flex-start; }
-    .chat-message.user .chat-bubble { background: var(--grad-silver); align-self: flex-end; }
-    .chat-bubble { padding: 12px 20px; border-radius: 28px; max-width: 80%; }
-    .chat-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
-    .chat-sender { font-size: 0.7rem; font-weight: 600; margin-bottom: 2px; opacity: 0.7; }
-    .quick-questions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-    .quick-question-btn { background:#1a1a22; border:1px solid var(--border-dim); color:var(--text-muted); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
-    .quick-question-btn:hover { background: #2a2a33; color: #fff; }
-    .auth-link { color: var(--text-light); }
-    @media (max-width: 1024px) { .nav-links { gap: 20px; } .hero h1 { font-size: 48px; } .section { padding: 60px 0; } .section-title { font-size: 2rem; margin-bottom: 40px; } }
-    @media (max-width: 768px) {
-      .navbar { position: relative; }
-      .nav-links { display: none; flex-direction: column; width: 100%; background: var(--bg-card); padding: 20px; border-radius: 20px; margin-top: 10px; }
-      .nav-links.active { display: flex; }
-      .burger-menu { display: block; }
-      .status-dropdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 90vw; }
-      .hero { padding: 40px 0 40px; }
-      .hero h1 { font-size: 32px; }
-      .hero p { font-size: 1rem; }
-      .btn { padding: 12px 28px; font-size: 0.9rem; }
-      .grid-3 { grid-template-columns: 1fr; gap: 20px; }
-      .card { padding: 24px 20px; }
-      .section-title { font-size: 1.8rem; margin-bottom: 30px; }
-      .modal-content { padding: 24px; }
-      .tabs { flex-wrap: wrap; gap: 10px; }
-      .tab { padding: 8px 18px; font-size: 0.9rem; }
-      .chat-container { max-height: 300px; }
-      .service-item { flex-direction: column; align-items: flex-start; }
-      .progress-ring { width: 40px; height: 40px; font-size: 0.7rem; }
-    }
-    @media (max-width: 480px) { .hero h1 { font-size: 28px; } .page { padding: 0 12px 20px; } .btn { width: 100%; margin: 6px 0; } .hero-buttons { flex-direction: column; align-items: center; } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="DiamKey — единый аккаунт для сервисов Diamond">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>DiamKey | Единый ключ</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='white'%3E%3Cpath d='M336 352c97.2 0 176-78.8 176-176S433.2 0 336 0S160 78.8 160 176c0 18.7 2.9 36.8 8.3 53.7L7 391c-4.5 4.5-7 10.6-7 17v80c0 13.3 10.7 24 24 24h80c13.3 0 24-10.7 24-24V448h40c13.3 0 24-10.7 24-24V384h40c6.4 0 12.5-2.5 17-7l33.3-33.3c16.9 5.4 35 8.3 53.7 8.3zM376 96a40 40 0 1 1 0 80 40 40 0 1 1 0-80z'/%3E%3C/svg%3E">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Твои стили без изменений */
+        :root {
+            --bg-deep: #0a0a0f;
+            --bg-card: #111116;
+            --border-dim: #1f1f2a;
+            --text-light: #e0e0e0;
+            --text-muted: #9ca3af;
+            --silver: #a8a8b3;
+            --silver-light: #c0c0cc;
+            --silver-dark: #7e7e8a;
+            --grad-silver: linear-gradient(135deg, #2a2a33, #1a1a22);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg-deep); font-family: 'Inter', sans-serif; color: var(--text-light); line-height: 1.5; overflow-x: hidden; }
+        canvas { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; }
+        .content { position: relative; z-index:1; min-height: 100vh; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 24px; flex-wrap: wrap; gap:20px; animation: fadeUp 0.6s ease; }
+        .logo a { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800; color: var(--silver-light); text-decoration: none; }
+        .nav-links { display: flex; gap: 32px; align-items: center; position: relative; }
+        .nav-links a, .nav-links .status-btn, .nav-links #authBtn { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.2s; background: none; border: none; font-size: 1rem; font-family: inherit; cursor: pointer; }
+        .nav-links a:hover, .nav-links .status-btn:hover, .nav-links #authBtn:hover { color: var(--text-light); }
+        .burger-menu { display: none; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+        .status-dropdown { display: none; position: absolute; top: 100%; right: 0; background: var(--bg-card); border: 1px solid var(--border-dim); border-radius: 24px; padding: 24px; min-width: 320px; z-index: 2000; backdrop-filter: blur(20px); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        .status-dropdown.open { display: block; }
+        .service-item { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; text-decoration: none; color: inherit; border-radius: 16px; padding: 8px; transition: background 0.2s; }
+        .service-item:hover { background: rgba(255,255,255,0.03); }
+        .progress-ring { width: 48px; height: 48px; border-radius: 50%; background: conic-gradient(var(--progress-color) calc(var(--progress) * 1%), transparent 0); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: white; background-color: #1e1e2a; }
+        .service-info { flex: 1; }
+        .service-info strong { display: block; font-size: 1.1rem; margin-bottom: 4px; }
+        .service-info span { font-size: 0.8rem; color: var(--text-muted); }
+        .dropdown-footer { margin-top: 20px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
+        .dropdown-footer a { color: var(--silver-light); text-decoration: none; margin: 0 8px; }
+        .dropdown-footer a:hover { color: white; }
+        .page { display: none; max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; }
+        .page.active { display: block; }
+        .hero { padding: 100px 0 80px; text-align: center; }
+        .hero h1 { font-size: clamp(44px, 8vw, 72px); font-weight: 800; background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 24px; letter-spacing: -1px; min-height: 1.2em; }
+        .hero p { font-size: 1.25rem; color: var(--text-muted); max-width: 700px; margin: 0 auto 40px; }
+        .btn { display: inline-block; padding: 14px 36px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.3s; text-decoration: none; border: 1px solid var(--border-dim); background: transparent; color: var(--text-light); margin: 6px; font-size: 1rem; }
+        .btn-primary { background: var(--grad-silver); border-color: #3a3a44; }
+        .btn-primary:hover { background: #2a2a33; border-color: var(--silver-dark); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+        .btn-outline { background: transparent; }
+        .btn-outline:hover { background: rgba(255,255,255,0.03); border-color: var(--silver-dark); transform: translateY(-2px); }
+        .section { padding: 80px 0; }
+        .section-title { font-size: 2.5rem; font-weight: 700; text-align: center; margin-bottom: 56px; }
+        .section-title span { background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; }
+        .card { background: var(--bg-card); border-radius: 32px; padding: 32px 24px; border: 1px solid var(--border-dim); transition: all 0.3s; opacity: 0; transform: translateY(20px); }
+        .card.visible { opacity: 1; transform: translateY(0); transition: all 0.6s ease; }
+        .card:hover { transform: translateY(-8px); border-color: #3a3a44; box-shadow: 0 20px 30px -12px rgba(0,0,0,0.5); }
+        .card-icon { font-size: 40px; margin-bottom: 20px; color: var(--silver); }
+        .card h3 { font-size: 1.5rem; margin-bottom: 12px; }
+        .card p { color: var(--text-muted); }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); align-items: center; justify-content: center; z-index:1000; animation: fadeIn 0.2s; }
+        .modal-content { background: var(--bg-card); border-radius: 32px; padding: 32px; max-width: 480px; width: 90%; text-align: center; border: 1px solid var(--border-dim); }
+        .input-group { margin: 1rem 0; text-align: left; }
+        .input-group label { font-weight: 600; font-size: 0.9rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, textarea, select { width: 100%; background: #1e1e2a; border: 1px solid var(--border-dim); color: var(--text-light); padding: 12px 16px; border-radius: 12px; font-size: 1rem; outline: none; margin-top: 6px; }
+        select option { background: #111116; }
+        input:focus, textarea:focus, select:focus { border-color: var(--silver-dark); }
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border-left: 4px solid var(--silver); padding: 12px 20px; border-radius: 12px; font-size: 0.9rem; z-index: 1100; animation: fadeUp 0.3s; }
+        @keyframes fadeUp { 0% { opacity:0; transform: translateY(30px); } 100% { opacity:1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        .footer { padding: 48px 0 32px; text-align: center; border-top: 1px solid var(--border-dim); margin-top: 40px; }
+        .footer-links { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-bottom: 24px; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 1.4rem; }
+        .footer-links a:hover { color: var(--text-light); }
+        .copyright { font-size: 0.85rem; color: #6b7280; }
+        .tabs { display: flex; gap: 20px; margin-bottom: 30px; }
+        .tab { padding: 10px 24px; border-radius: 40px; border: 1px solid var(--border-dim); font-weight: 500; cursor: pointer; transition: 0.2s; color: var(--text-muted); }
+        .tab.active { background: var(--grad-silver); color: #fff; border-color: #3a3a44; }
+        .chat-container { max-height: 400px; overflow-y: auto; margin-bottom: 20px; }
+        .chat-message { margin-bottom: 16px; display: flex; flex-direction: column; }
+        .chat-message.bot .chat-bubble { background: #1a1a22; align-self: flex-start; }
+        .chat-message.user .chat-bubble { background: var(--grad-silver); align-self: flex-end; }
+        .chat-bubble { padding: 12px 20px; border-radius: 28px; max-width: 80%; }
+        .chat-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+        .chat-sender { font-size: 0.7rem; font-weight: 600; margin-bottom: 2px; opacity: 0.7; }
+        .quick-questions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .quick-question-btn { background:#1a1a22; border:1px solid var(--border-dim); color:var(--text-muted); padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        .quick-question-btn:hover { background: #2a2a33; color: #fff; }
+        .auth-link { color: var(--text-light); }
+        @media (max-width: 1024px) { .nav-links { gap: 20px; } .hero h1 { font-size: 48px; } .section { padding: 60px 0; } .section-title { font-size: 2rem; margin-bottom: 40px; } }
+        @media (max-width: 768px) {
+            .navbar { position: relative; }
+            .nav-links { display: none; flex-direction: column; width: 100%; background: var(--bg-card); padding: 20px; border-radius: 20px; margin-top: 10px; }
+            .nav-links.active { display: flex; }
+            .burger-menu { display: block; }
+            .status-dropdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 90vw; }
+            .hero { padding: 40px 0 40px; }
+            .hero h1 { font-size: 32px; }
+            .hero p { font-size: 1rem; }
+            .btn { padding: 12px 28px; font-size: 0.9rem; }
+            .grid-3 { grid-template-columns: 1fr; gap: 20px; }
+            .card { padding: 24px 20px; }
+            .section-title { font-size: 1.8rem; margin-bottom: 30px; }
+            .modal-content { padding: 24px; }
+            .tabs { flex-wrap: wrap; gap: 10px; }
+            .tab { padding: 8px 18px; font-size: 0.9rem; }
+            .chat-container { max-height: 300px; }
+            .service-item { flex-direction: column; align-items: flex-start; }
+            .progress-ring { width: 40px; height: 40px; font-size: 0.7rem; }
+        }
+        @media (max-width: 480px) { .hero h1 { font-size: 28px; } .page { padding: 0 12px 20px; } .btn { width: 100%; margin: 6px 0; } .hero-buttons { flex-direction: column; align-items: center; } }
+    </style>
 </head>
 <body>
 <canvas id="threeCanvas"></canvas>
 <div class="content">
-  <div class="navbar">
-    <div class="logo"><a href="#home"><i class="fas fa-key" style="color:var(--silver);"></i> DIAMKEY</a></div>
-    <button class="burger-menu" id="burgerMenu"><i class="fas fa-bars"></i></button>
-    <div class="nav-links" id="navLinks">
-      <a href="#home" id="navHome">Главная</a>
-      <a href="#forum" id="navForum">Форум</a>
-      <a href="#profile" id="navProfile" style="display:none;">Профиль</a>
-      <a href="#support" id="navSupport" style="display:none;">Поддержка</a>
-      <button class="status-btn" id="statusBtn">Статус <i class="fas fa-chevron-down"></i></button>
-      <div class="status-dropdown" id="statusDropdown">
-        <a href="https://diamond-ai.ru" target="_blank" class="service-item"><i class="fas fa-robot" style="font-size:1.5rem; color:var(--silver);"></i><div class="service-info"><strong>Diamond AI</strong><span>Искусственный интеллект</span></div><div class="progress-ring" style="--progress:74; --progress-color:#4A90E2;">74%</div></a>
-        <a href="#" class="service-item"><i class="fas fa-ticket" style="font-size:1.5rem; color:var(--silver);"></i><div class="service-info"><strong>Unlock</strong><span>Обход блокировок</span></div><div class="progress-ring" style="--progress:19; --progress-color:#D4AF37;">19%</div></a>
-        <a href="https://dirmess.ru" target="_blank" class="service-item"><span style="font-weight:800; color:var(--silver-light);">.drm</span><div class="service-info"><strong>Dirmess</strong><span>Мессенджер Diamond</span></div><div class="progress-ring" style="--progress:7; --progress-color:#9B59B6;">7%</div></a>
-        <div class="dropdown-footer">Мы ждём вашей помощи, сотрудников, инвесторов<br><a href="https://discord.gg/diamondshop" target="_blank"><i class="fab fa-discord"></i> Присоединиться</a></div>
-      </div>
-      <a href="#" id="authBtn">Войти</a>
+    <div class="navbar">
+        <div class="logo"><a href="#home"><i class="fas fa-key" style="color:var(--silver);"></i> DIAMKEY</a></div>
+        <button class="burger-menu" id="burgerMenu"><i class="fas fa-bars"></i></button>
+        <div class="nav-links" id="navLinks">
+            <a href="#home" id="navHome">Главная</a>
+            <a href="#forum" id="navForum">Форум</a>
+            <a href="#profile" id="navProfile" style="display:none;">Профиль</a>
+            <a href="#support" id="navSupport" style="display:none;">Поддержка</a>
+            <button class="status-btn" id="statusBtn">Статус <i class="fas fa-chevron-down"></i></button>
+            <div class="status-dropdown" id="statusDropdown">
+                <a href="https://diamond-ai.ru" target="_blank" class="service-item"><i class="fas fa-robot" style="font-size:1.5rem; color:var(--silver);"></i><div class="service-info"><strong>Diamond AI</strong><span>Искусственный интеллект</span></div><div class="progress-ring" style="--progress:74; --progress-color:#4A90E2;">74%</div></a>
+                <a href="#" class="service-item"><i class="fas fa-ticket" style="font-size:1.5rem; color:var(--silver);"></i><div class="service-info"><strong>Unlock</strong><span>Обход блокировок</span></div><div class="progress-ring" style="--progress:19; --progress-color:#D4AF37;">19%</div></a>
+                <a href="https://dirmess.ru" target="_blank" class="service-item"><span style="font-weight:800; color:var(--silver-light);">.drm</span><div class="service-info"><strong>Dirmess</strong><span>Мессенджер Diamond</span></div><div class="progress-ring" style="--progress:7; --progress-color:#9B59B6;">7%</div></a>
+                <div class="dropdown-footer">Мы ждём вашей помощи, сотрудников, инвесторов<br><a href="https://discord.gg/diamondshop" target="_blank"><i class="fab fa-discord"></i> Присоединиться</a></div>
+            </div>
+            <a href="#" id="authBtn">Войти</a>
+        </div>
     </div>
-  </div>
 
-  <div id="home-page" class="page active">
-    <div class="hero"><h1 id="cipherTitle"></h1><p>Один аккаунт для Diamond Ai, Unlock, Dirmess. Получи уникальный токен и секретное слово — и входи куда угодно мгновенно.</p><div id="heroActions"><button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button><a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a></div></div>
-    <div class="section" id="features"><div class="section-title">Возможности <span>DiamKey</span></div><div class="grid-3"><div class="card"><div class="card-icon"><i class="fas fa-fingerprint"></i></div><h3>Один аккаунт</h3><p>Регистрируйся один раз и входи во все сервисы Diamond.</p></div><div class="card"><div class="card-icon"><i class="fas fa-lock"></i></div><h3>Секретное слово</h3><p>Криптостойкий ключ, созданный на основе SHA-256.</p></div><div class="card"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><h3>Облачная база</h3><p>Все данные хранятся в Supabase — доступно отовсюду.</p></div></div></div>
-    <div class="footer"><div class="footer-links"><a href="#" id="privacyLink" title="Политика конфиденциальности"><i class="fas fa-lock"></i></a><a href="#" id="termsLink" title="Условия использования"><i class="fas fa-file-contract"></i></a><a href="https://discord.gg/diamondshop" target="_blank" title="Discord"><i class="fab fa-discord"></i></a></div><div class="copyright">© 2026 Diamond. Все права защищены.</div></div>
-  </div>
-
-  <div id="forum-page" class="page">
-    <div style="padding-top:60px;">
-      <h2 style="font-size:2rem; margin-bottom:30px; color:var(--silver-light);"><i class="fas fa-comments"></i> Форум</h2>
-      <div id="forumPosts" style="margin-bottom:40px;"></div>
-      <div id="forumForm" style="display:none;">
-        <textarea id="forumMessage" placeholder="Ваше сообщение..." style="min-height:80px;"></textarea>
-        <button class="btn btn-primary" id="sendForumBtn" style="margin-top:10px;">Отправить</button>
-      </div>
-      <p id="forumLoginPrompt">Войдите, чтобы участвовать в обсуждении.</p>
+    <div id="home-page" class="page active">
+        <div class="hero"><h1 id="cipherTitle"></h1><p>Один аккаунт для Diamond Ai, Unlock, Dirmess. Получи уникальный токен и секретное слово — и входи куда угодно мгновенно.</p><div id="heroActions"><button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button><a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a></div></div>
+        <div class="section" id="features"><div class="section-title">Возможности <span>DiamKey</span></div><div class="grid-3"><div class="card"><div class="card-icon"><i class="fas fa-fingerprint"></i></div><h3>Один аккаунт</h3><p>Регистрируйся один раз и входи во все сервисы Diamond.</p></div><div class="card"><div class="card-icon"><i class="fas fa-lock"></i></div><h3>Секретное слово</h3><p>Криптостойкий ключ, созданный на основе SHA-256.</p></div><div class="card"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><h3>Облачная база</h3><p>Все данные хранятся в Supabase — доступно отовсюду.</p></div></div></div>
+        <div class="footer"><div class="footer-links"><a href="#" id="privacyLink" title="Политика конфиденциальности"><i class="fas fa-lock"></i></a><a href="#" id="termsLink" title="Условия использования"><i class="fas fa-file-contract"></i></a><a href="https://discord.gg/diamondshop" target="_blank" title="Discord"><i class="fab fa-discord"></i></a></div><div class="copyright">© 2026 Diamond. Все права защищены.</div></div>
     </div>
-  </div>
 
-  <div id="profile-page" class="page"></div>
-  <div id="support-page" class="page"></div>
+    <div id="forum-page" class="page">
+        <div style="padding-top:60px;"><h2 style="font-size:2rem; margin-bottom:30px; color:var(--silver-light);"><i class="fas fa-comments"></i> Форум</h2><div id="forumPosts" style="margin-bottom:40px;"></div><div id="forumForm" style="display:none;"><textarea id="forumMessage" placeholder="Ваше сообщение..." style="min-height:80px;"></textarea><button class="btn btn-primary" id="sendForumBtn" style="margin-top:10px;">Отправить</button></div><p id="forumLoginPrompt">Войдите, чтобы участвовать в обсуждении.</p></div>
+    </div>
+
+    <div id="profile-page" class="page"></div>
+    <div id="support-page" class="page"></div>
 </div>
 
 <div class="modal" id="authModal"><div class="modal-content" id="authModalContent"></div></div>
@@ -232,41 +225,40 @@ window.addEventListener('resize',()=>{
 
 <script>
 (function() {
-  // ---------- КОНФИГУРАЦИЯ ----------
   const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
   const ADMIN_EMAILS = ['abugay12@mail.ru', 'titiro953@gmail.com'];
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let currentUser = null;
 
-  // Утилиты
   function showToast(msg) { const t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
   function generateToken() { const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost']; const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key']; const a = adj[Math.floor(Math.random()*adj.length)]; const b = nouns[Math.floor(Math.random()*nouns.length)]; const c = nouns[Math.floor(Math.random()*nouns.length)]; const num = Math.floor(1000+Math.random()*9000); return `diamkey_${a}_${b}_${c}_${num}`; }
-  async function generateSecret(email) { const msg = email + Date.now() + Math.random(); const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg)); return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('').substring(0,24).toUpperCase(); }
+  async function generateSecret(email) { const msg = email + Date.now() + Math.random(); const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg)); const hashArray = Array.from(new Uint8Array(hashBuffer)); return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 24).toUpperCase(); }
 
-  // Навигация
+  // 🔧 Глобальная навигация
   function navigate(page) {
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    const el = document.getElementById(page+'-page');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const el = document.getElementById(page + '-page');
     if (el) el.classList.add('active');
     document.getElementById('navProfile').style.display = currentUser ? 'inline' : 'none';
     document.getElementById('navSupport').style.display = currentUser ? 'inline' : 'none';
-    if (page==='profile' && currentUser) showProfilePage();
-    if (page==='support' && currentUser) showSupportPage();
-    if (page==='forum') loadForumPosts();
-    if (page==='home') { updateHeroButtons(); window.scrollTo({top:0,behavior:'smooth'}); }
+    if (page === 'profile' && currentUser) showProfilePage();
+    if (page === 'support' && currentUser) showSupportPage();
+    if (page === 'forum') loadForumPosts();
+    if (page === 'home') { updateHeroButtons(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   }
-  window.navigateToProfile = ()=>navigate('profile');
-  window.navigateToSupport = ()=>navigate('support');
+  window.navigate = navigate; // ✅ Делаем глобальной
+  window.navigateToProfile = () => navigate('profile');
+  window.navigateToSupport = () => navigate('support');
 
   function updateAuthButton() {
     const btn = document.getElementById('authBtn');
     if (currentUser) {
       btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Выйти';
-      btn.onclick = (e)=>{ e.preventDefault(); logout(); };
+      btn.onclick = (e) => { e.preventDefault(); logout(); };
     } else {
       btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
-      btn.onclick = (e)=>{ e.preventDefault(); openAuthModal('login'); };
+      btn.onclick = (e) => { e.preventDefault(); openAuthModal('login'); };
     }
   }
 
@@ -277,15 +269,14 @@ window.addEventListener('resize',()=>{
       heroActions.innerHTML = `<button class="btn btn-primary" onclick="navigate('profile')"><i class="fas fa-user"></i> Мой DiamKey</button><button class="btn btn-outline" onclick="navigate('support')"><i class="fas fa-headset"></i> Поддержка</button>`;
     } else {
       heroActions.innerHTML = `<button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button><a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a>`;
-      document.getElementById('getStartedBtn').addEventListener('click', ()=>openAuthModal('register'));
+      document.getElementById('getStartedBtn').addEventListener('click', () => openAuthModal('register'));
     }
   }
 
   // Бургер и дропдаун
-  document.getElementById('burgerMenu').addEventListener('click',()=>document.getElementById('navLinks').classList.toggle('active'));
-  document.querySelectorAll('#navLinks a, #navLinks .status-btn').forEach(el=>el.addEventListener('click',()=>{ if(window.innerWidth<=768) document.getElementById('navLinks').classList.remove('active'); }));
-
-  document.addEventListener('click',(e)=>{
+  document.getElementById('burgerMenu').addEventListener('click', () => document.getElementById('navLinks').classList.toggle('active'));
+  document.querySelectorAll('#navLinks a, #navLinks .status-btn').forEach(el => el.addEventListener('click', () => { if (window.innerWidth <= 768) document.getElementById('navLinks').classList.remove('active'); }));
+  document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('statusDropdown'), btn = document.getElementById('statusBtn');
     if (!dropdown || !btn) return;
     if (btn.contains(e.target)) dropdown.classList.toggle('open');
@@ -295,16 +286,16 @@ window.addEventListener('resize',()=>{
   // Авторизация
   function openAuthModal(mode) {
     const modal = document.getElementById('authModal'), content = document.getElementById('authModalContent');
-    if (mode==='login') {
+    if (mode === 'login') {
       content.innerHTML = `<i class="fas fa-key" style="font-size:48px; color:var(--silver);"></i><h3>Вход в DiamKey</h3>
         <div class="input-group"><label>Email или логин</label><input id="loginIdentity" placeholder="Введите email или логин"></div>
         <div class="input-group"><label>Пароль</label><input id="loginPassword" type="password" placeholder="········"></div>
         <button class="btn btn-primary" id="doLoginBtn">Войти</button>
         <p><a href="#" class="auth-link" id="showRegisterLink">Создать аккаунт</a></p>
         <button class="btn btn-outline" id="closeAuthModal">Закрыть</button>`;
-      document.getElementById('showRegisterLink').addEventListener('click',(e)=>{ e.preventDefault(); openAuthModal('register'); });
+      document.getElementById('showRegisterLink').addEventListener('click', (e) => { e.preventDefault(); openAuthModal('register'); });
       document.getElementById('doLoginBtn').addEventListener('click', login);
-      document.getElementById('closeAuthModal').addEventListener('click',()=>modal.style.display='none');
+      document.getElementById('closeAuthModal').addEventListener('click', () => modal.style.display = 'none');
     } else {
       content.innerHTML = `<i class="fas fa-user-plus" style="font-size:48px; color:var(--silver);"></i><h3>Регистрация DiamKey</h3>
         <div class="input-group"><label>Email</label><input id="regEmail" type="email" placeholder="your@email.com"></div>
@@ -313,11 +304,11 @@ window.addEventListener('resize',()=>{
         <button class="btn btn-primary" id="doRegisterBtn">Создать DiamKey</button>
         <p><a href="#" class="auth-link" id="showLoginLink">Уже есть аккаунт? Войти</a></p>
         <button class="btn btn-outline" id="closeAuthModal">Закрыть</button>`;
-      document.getElementById('showLoginLink').addEventListener('click',(e)=>{ e.preventDefault(); openAuthModal('login'); });
+      document.getElementById('showLoginLink').addEventListener('click', (e) => { e.preventDefault(); openAuthModal('login'); });
       document.getElementById('doRegisterBtn').addEventListener('click', register);
-      document.getElementById('closeAuthModal').addEventListener('click',()=>modal.style.display='none');
+      document.getElementById('closeAuthModal').addEventListener('click', () => modal.style.display = 'none');
     }
-    modal.style.display='flex';
+    modal.style.display = 'flex';
   }
 
   async function login() {
@@ -325,8 +316,8 @@ window.addEventListener('resize',()=>{
     const password = document.getElementById('loginPassword')?.value;
     if (!identity || !password) return showToast('Заполните все поля');
     const { data: users, error } = await supabase.from('users').select('*').or(`email.eq.${identity},login.eq.${identity}`).eq('password', password);
-    if (error) return showToast('Ошибка: '+error.message);
-    if (!users || users.length===0) return showToast('Неверный email/логин или пароль');
+    if (error) return showToast('Ошибка: ' + error.message);
+    if (!users || users.length === 0) return showToast('Неверный email/логин или пароль');
     let user = users[0];
     if (!user.token || !user.secret_word) {
       const token = generateToken();
@@ -335,28 +326,31 @@ window.addEventListener('resize',()=>{
       if (updErr) return showToast('Ошибка обновления ключей');
       user.token = token; user.secretWord = secretWord;
     }
-    currentUser = { email:user.email, login:user.login, token:user.token, secretWord:user.secret_word, name:user.name||'', avatar:user.avatar||'', description:user.description||'', fa_icon:user.fa_icon||'' };
+    currentUser = { email: user.email, login: user.login, token: user.token, secretWord: user.secret_word, name: user.name || '', avatar: user.avatar || '', description: user.description || '', fa_icon: user.fa_icon || '' };
     localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
-    document.getElementById('authModal').style.display='none';
+    document.getElementById('authModal').style.display = 'none';
     updateAuthButton(); updateHeroButtons();
     navigate('profile');
-    showToast('Добро пожаловать, '+(currentUser.name||currentUser.login||currentUser.email));
+    showToast('Добро пожаловать, ' + (currentUser.name || currentUser.login || currentUser.email));
   }
 
   async function register() {
     const email = document.getElementById('regEmail')?.value.trim();
     const login = document.getElementById('regLogin')?.value.trim();
     const password = document.getElementById('regPassword')?.value;
-    if (!email || !login || password.length<6) return showToast('Заполните все поля (пароль мин. 6 символов)');
+    if (!email || !login || password.length < 6) return showToast('Заполните все поля (пароль мин. 6 символов)');
     const { data: existing } = await supabase.from('users').select('email, login').or(`email.eq.${email},login.eq.${login}`);
-    if (existing?.length) { const conflict = existing.find(u=>u.email===email)?'Email':'Логин'; return showToast(conflict+' уже занят'); }
+    if (existing && existing.length > 0) {
+      const conflict = existing.find(u => u.email === email) ? 'Email' : 'Логин';
+      return showToast(conflict + ' уже занят');
+    }
     const token = generateToken();
     const secretWord = await generateSecret(email);
-    const { error } = await supabase.from('users').insert([{ email, login, password, token, secret_word:secretWord, name:'', avatar:'', description:'', fa_icon:'' }]);
-    if (error) return showToast('Ошибка регистрации: '+error.message);
-    currentUser = { email, login, token, secretWord, name:'', avatar:'', description:'', fa_icon:'' };
+    const { error } = await supabase.from('users').insert([{ email, login, password, token, secret_word: secretWord, name: '', avatar: '', description: '', fa_icon: '' }]);
+    if (error) return showToast('Ошибка регистрации: ' + error.message);
+    currentUser = { email, login, token, secretWord, name: '', avatar: '', description: '', fa_icon: '' };
     localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
-    document.getElementById('authModal').style.display='none';
+    document.getElementById('authModal').style.display = 'none';
     updateAuthButton(); updateHeroButtons();
     navigate('profile');
     showToast('Аккаунт DiamKey создан!');
@@ -379,11 +373,11 @@ window.addEventListener('resize',()=>{
     const displayName = currentUser.name || currentUser.login || currentUser.email;
     const faIcon = currentUser.fa_icon ? `<i class="${currentUser.fa_icon}" style="color:var(--silver); margin-right:6px;"></i>` : '';
     container.innerHTML = `<div style="padding:60px 0; max-width:900px; margin:0 auto;">
-      <div class="tabs"><div class="tab active" data-tab="account">Мой DiamKey</div>${isAdmin?'<div class="tab" data-tab="admin">Админка</div>':''}</div>
+      <div class="tabs"><div class="tab active" data-tab="account">Мой DiamKey</div>${isAdmin ? '<div class="tab" data-tab="admin">Админка</div>' : ''}</div>
       <div id="tab-account" class="tab-content" style="display:block;">
         <div style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
-          <div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:var(--bg-card); border:2px solid var(--silver-dark);">${avatarSrc?`<img src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover;">`:'<i class="fas fa-user-circle" style="font-size:80px; color:var(--silver);"></i>'}</div>
-          <div><h2 style="color:var(--silver-light); margin-bottom:5px;">${faIcon}${displayName} ${isAdmin?'<i class="fas fa-check-circle" style="color:var(--silver);" title="Администратор"></i>':''}</h2><p style="color:var(--text-muted);">${currentUser.description||'Нет описания'}</p></div>
+          <div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:var(--bg-card); border:2px solid var(--silver-dark);">${avatarSrc ? `<img src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:80px; color:var(--silver);"></i>'}</div>
+          <div><h2 style="color:var(--silver-light); margin-bottom:5px;">${faIcon}${displayName} ${isAdmin ? '<i class="fas fa-check-circle" style="color:var(--silver);" title="Администратор"></i>' : ''}</h2><p style="color:var(--text-muted);">${currentUser.description || 'Нет описания'}</p></div>
         </div>
         <button class="btn btn-outline" onclick="window.openProfileEditModal()"><i class="fas fa-edit"></i> Редактировать</button>
         <div class="card visible" style="margin-top:20px;">
@@ -391,51 +385,51 @@ window.addEventListener('resize',()=>{
           <div class="input-group"><label>Публичный токен</label><div style="display:flex; gap:10px;"><input value="${currentUser.token}" readonly style="flex:1;"><button class="btn btn-outline" onclick="copyText('${currentUser.token}')"><i class="fas fa-copy"></i></button></div></div>
           <div class="input-group"><label>Секретное слово</label><div style="display:flex; gap:10px;"><input value="${currentUser.secretWord}" readonly style="flex:1;"><button class="btn btn-outline" onclick="copyText('${currentUser.secretWord}')"><i class="fas fa-copy"></i></button></div></div>
         </div>
-      </div>${isAdmin?'<div id="tab-admin" class="tab-content" style="display:none;"></div>':''}</div>`;
+      </div>${isAdmin ? '<div id="tab-admin" class="tab-content" style="display:none;"></div>' : ''}</div>`;
     if (isAdmin) {
       const { data: users } = await supabase.from('users').select('*');
       const { data: tickets } = await supabase.from('tickets').select('*');
-      let ticketsHtml = tickets?.length ? tickets.map((t,i)=>{
+      let ticketsHtml = tickets?.length ? tickets.map((t, i) => {
         const msgs = t.messages || [];
         return `<div style="border:1px solid var(--border-dim); padding:10px; margin-bottom:10px; border-radius:12px;"><strong>${t.email}</strong>
-          <div class="chat-container" style="max-height:150px; overflow-y:auto;">${msgs.map(m=>`<div class="chat-message ${m.sender==='admin'?'bot':'user'}"><div class="chat-sender">${m.sender==='admin'?'Администратор':'Пользователь'}</div><div class="chat-bubble">${m.text}</div><div class="chat-time">${new Date(m.time).toLocaleTimeString()}</div></div>`).join('')}</div>
+          <div class="chat-container" style="max-height:150px; overflow-y:auto;">${msgs.map(m => `<div class="chat-message ${m.sender==='admin'?'bot':'user'}"><div class="chat-sender">${m.sender==='admin'?'Администратор':'Пользователь'}</div><div class="chat-bubble">${m.text}</div><div class="chat-time">${new Date(m.time).toLocaleTimeString()}</div></div>`).join('')}</div>
           <div style="display:flex; gap:6px; margin-top:5px;"><input id="adminReply_${i}" placeholder="Ответ..." style="flex:1;"><button class="btn btn-outline" onclick="window.adminReplyToTicket('${t.id}',${i})">Отправить</button><button class="btn btn-outline" onclick="window.deleteTicket('${t.id}')"><i class="fas fa-trash"></i></button></div></div>`;
       }).join('') : '<p>Нет тикетов</p>';
       document.getElementById('tab-admin').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-crown"></i> Админ-панель</h3>
         <div class="grid-3">
-          <div class="card visible"><h4>Пользователи (${users?.length||0})</h4>${users?.map(u=>{
+          <div class="card visible"><h4>Пользователи (${users?.length||0})</h4>${users?.map(u => {
             const uIcon = u.fa_icon ? `<i class="${u.fa_icon}" style="margin-right:4px; color:var(--silver);"></i>` : '';
             return `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:10px;">
-              <div style="display:flex; align-items:center; gap:10px;"><div style="width:32px; height:32px; border-radius:50%; overflow:hidden; background:var(--bg-card); display:flex; align-items:center; justify-content:center;">${u.avatar?`<img src="${u.avatar}" style="width:100%; height:100%; object-fit:cover;">`:'<i class="fas fa-user" style="color:var(--silver); font-size:0.9rem;"></i>'}</div><div><strong>${uIcon}${u.name||u.login||u.email}</strong><div style="font-size:0.7rem; color:var(--text-muted);">${u.email}</div></div></div>
+              <div style="display:flex; align-items:center; gap:10px;"><div style="width:32px; height:32px; border-radius:50%; overflow:hidden; background:var(--bg-card); display:flex; align-items:center; justify-content:center;">${u.avatar ? `<img src="${u.avatar}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user" style="color:var(--silver); font-size:0.9rem;"></i>'}</div><div><strong>${uIcon}${u.name || u.login || u.email}</strong><div style="font-size:0.7rem; color:var(--text-muted);">${u.email}</div></div></div>
               <div style="display:flex; gap:6px;"><button class="btn btn-outline" style="padding:2px 10px;" onclick="window.editUserByAdmin('${u.email}')"><i class="fas fa-edit"></i></button><button class="btn btn-outline" style="padding:2px 10px;" onclick="window.deleteUser('${u.email}')"><i class="fas fa-trash"></i></button></div>
             </div>`;
           }).join('')}</div>
           <div class="card visible"><h4>Тикеты</h4>${ticketsHtml}</div>
         </div>`;
     }
-    container.querySelectorAll('.tab').forEach(tab=>{
-      tab.addEventListener('click',()=>{
-        container.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    container.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        container.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
-        document.getElementById('tab-'+tab.dataset.tab).style.display='block';
+        container.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
       });
     });
   }
 
   // Админ-редактирование
   window.editUserByAdmin = async (email) => {
-    const { data: users } = await supabase.from('users').select('*').eq('email',email);
+    const { data: users } = await supabase.from('users').select('*').eq('email', email);
     if (!users?.length) return showToast('Пользователь не найден');
     const user = users[0];
     const modal = document.getElementById('adminEditUserModal'), content = document.getElementById('adminEditUserModalContent');
-    const faOptions = [ {value:'', label:'Без иконки'}, {value:'fa-solid fa-star', label:'⭐ Звезда'}, {value:'fa-solid fa-crown', label:'👑 Корона'}, {value:'fa-solid fa-heart', label:'❤️ Сердце'}, {value:'fa-solid fa-fire', label:'🔥 Огонь'}, {value:'fa-solid fa-check', label:'✅ Галочка'} ];
+    const faOptions = [ { value:'', label:'Без иконки' }, { value:'fa-solid fa-star', label:'⭐ Звезда' }, { value:'fa-solid fa-crown', label:'👑 Корона' }, { value:'fa-solid fa-heart', label:'❤️ Сердце' }, { value:'fa-solid fa-fire', label:'🔥 Огонь' }, { value:'fa-solid fa-check', label:'✅ Галочка' } ];
     const optionsHtml = faOptions.map(o => `<option value="${o.value}" ${user.fa_icon===o.value?'selected':''}>${o.label}</option>`).join('');
     content.innerHTML = `<h3>Редактирование пользователя</h3>
       <div class="input-group"><label>Имя</label><input id="editAdminName" value="${user.name||''}"></div>
       <div class="input-group"><label>Логин</label><input id="editAdminLogin" value="${user.login||''}"></div>
       <div class="input-group"><label>Email</label><input id="editAdminEmail" value="${user.email||''}"></div>
-      <div class="input-group"><label>Пароль</label><input id="editAdminPassword" type="password" placeholder="Новый пароль (оставьте пустым)"></div>
+      <div class="input-group"><label>Пароль</label><input id="editAdminPassword" type="password" placeholder="Новый пароль"></div>
       <div class="input-group"><label>Аватар (загрузите файл)</label><input type="file" id="editAdminAvatar" accept="image/*"></div>
       <div class="input-group"><label>Иконка</label><select id="editAdminFaIcon">${optionsHtml}</select></div>
       <div class="input-group"><label>Токен</label><input value="${user.token}" readonly></div>
@@ -450,11 +444,11 @@ window.addEventListener('resize',()=>{
       const password = document.getElementById('editAdminPassword').value.trim();
       const fa_icon = document.getElementById('editAdminFaIcon').value;
       const avatarFile = document.getElementById('editAdminAvatar').files[0];
-      const updates = { name, login, email:emailNew, fa_icon };
+      const updates = { name, login, email: emailNew, fa_icon };
       if (password) updates.password = password;
       const apply = async (avatar) => {
         if (avatar) updates.avatar = avatar;
-        const { error } = await supabase.from('users').update(updates).eq('email',email);
+        const { error } = await supabase.from('users').update(updates).eq('email', email);
         if (error) return showToast('Ошибка сохранения');
         modal.style.display = 'none';
         showProfilePage();
@@ -471,7 +465,7 @@ window.addEventListener('resize',()=>{
 
   // Форум
   async function loadForumPosts() {
-    const { data: posts, error } = await supabase.from('forum').select('*').order('time',{ascending:false});
+    const { data: posts, error } = await supabase.from('forum').select('*').order('time', { ascending: false });
     if (error) return showToast('Ошибка форума');
     const container = document.getElementById('forumPosts');
     if (!container) return;
@@ -493,7 +487,15 @@ window.addEventListener('resize',()=>{
     if (!currentUser) return showToast('Войдите в аккаунт');
     const msg = document.getElementById('forumMessage').value.trim();
     if (!msg) return showToast('Введите сообщение');
-    const { error } = await supabase.from('forum').insert([{ email:currentUser.email, name:currentUser.name||currentUser.login||currentUser.email, login:currentUser.login, avatar:currentUser.avatar||'', fa_icon:currentUser.fa_icon||'', message:msg, time:new Date().toISOString() }]);
+    const { error } = await supabase.from('forum').insert([{
+      email: currentUser.email,
+      name: currentUser.name || currentUser.login || currentUser.email,
+      login: currentUser.login,
+      avatar: currentUser.avatar || '',
+      fa_icon: currentUser.fa_icon || '',
+      message: msg,
+      time: new Date().toISOString()
+    }]);
     if (error) return showToast('Ошибка отправки');
     document.getElementById('forumMessage').value = '';
     loadForumPosts();
@@ -502,47 +504,47 @@ window.addEventListener('resize',()=>{
   // Поддержка
   async function showSupportPage() {
     if (!currentUser) return;
-    const { data: tickets } = await supabase.from('tickets').select('*').eq('email',currentUser.email);
+    const { data: tickets } = await supabase.from('tickets').select('*').eq('email', currentUser.email);
     const container = document.getElementById('support-page');
-    container.innerHTML = `<div style="padding:60px 0; max-width:900px; margin:0 auto;"><h2 style="color:var(--silver-light);"><i class="fas fa-headset"></i> Поддержка</h2><button class="btn btn-primary" id="newTicketBtn"><i class="fas fa-plus"></i> Связаться с администратором</button><div id="userTickets" style="margin-top:30px;">${tickets?.length ? tickets.map((t,i)=>`<div class="card visible" style="margin-bottom:20px;"><h4>Тикет #${i+1}</h4><div class="chat-container" style="max-height:200px; overflow-y:auto;">${(t.messages||[]).map(m=>`<div class="chat-message ${m.sender==='admin'?'bot':'user'}"><div class="chat-sender">${m.sender==='admin'?'Администратор':'Вы'}</div><div class="chat-bubble">${m.text}</div><div class="chat-time">${new Date(m.time).toLocaleTimeString()}</div></div>`).join('')}</div><div style="display:flex; gap:6px; margin-top:5px;"><input id="ticketInput_${i}" placeholder="Введите сообщение..." style="flex:1;"><button class="btn btn-outline" onclick="window.userReplyToTicket('${t.id}',${i})">Отправить</button></div></div>`).join('') : '<p>У вас пока нет открытых тикетов.</p>'}</div></div>`;
-    document.getElementById('newTicketBtn').onclick = async ()=>{
+    container.innerHTML = `<div style="padding:60px 0; max-width:900px; margin:0 auto;"><h2 style="color:var(--silver-light);"><i class="fas fa-headset"></i> Поддержка</h2><button class="btn btn-primary" id="newTicketBtn"><i class="fas fa-plus"></i> Связаться с администратором</button><div id="userTickets" style="margin-top:30px;">${tickets?.length ? tickets.map((t,i) => `<div class="card visible" style="margin-bottom:20px;"><h4>Тикет #${i+1}</h4><div class="chat-container" style="max-height:200px; overflow-y:auto;">${(t.messages||[]).map(m => `<div class="chat-message ${m.sender==='admin'?'bot':'user'}"><div class="chat-sender">${m.sender==='admin'?'Администратор':'Вы'}</div><div class="chat-bubble">${m.text}</div><div class="chat-time">${new Date(m.time).toLocaleTimeString()}</div></div>`).join('')}</div><div style="display:flex; gap:6px; margin-top:5px;"><input id="ticketInput_${i}" placeholder="Введите сообщение..." style="flex:1;"><button class="btn btn-outline" onclick="window.userReplyToTicket('${t.id}',${i})">Отправить</button></div></div>`).join('') : '<p>У вас пока нет открытых тикетов.</p>'}</div></div>`;
+    document.getElementById('newTicketBtn').onclick = async () => {
       const message = prompt('Опишите проблему:');
       if (!message) return;
-      await supabase.from('tickets').insert([{ id:Date.now().toString(), email:currentUser.email, messages:[{sender:'user',text:message,time:new Date().toISOString()}] }]);
+      await supabase.from('tickets').insert([{ id: Date.now().toString(), email: currentUser.email, messages: [{ sender: 'user', text: message, time: new Date().toISOString() }] }]);
       showSupportPage(); showToast('Тикет создан');
     };
   }
 
   // Глобальные функции
-  window.deleteForumPost = async (id)=>{ await supabase.from('forum').delete().eq('id',id); loadForumPosts(); };
-  window.deleteUser = async (email)=>{ if(!confirm('Удалить пользователя?')) return; await supabase.from('users').delete().eq('email',email); showProfilePage(); };
-  window.adminReplyToTicket = async (ticketId, index)=>{
-    const input = document.getElementById('adminReply_'+index);
+  window.deleteForumPost = async (id) => { await supabase.from('forum').delete().eq('id', id); loadForumPosts(); };
+  window.deleteUser = async (email) => { if (!confirm('Удалить пользователя?')) return; await supabase.from('users').delete().eq('email', email); showProfilePage(); };
+  window.adminReplyToTicket = async (ticketId, index) => {
+    const input = document.getElementById('adminReply_' + index);
     if (!input) return;
     const text = input.value.trim();
     if (!text) return;
-    const { data: ticket } = await supabase.from('tickets').select('messages').eq('id',ticketId).single();
+    const { data: ticket } = await supabase.from('tickets').select('messages').eq('id', ticketId).single();
     if (!ticket) return;
-    const messages = [...(ticket.messages||[]), {sender:'admin',text,time:new Date().toISOString()}];
-    await supabase.from('tickets').update({messages}).eq('id',ticketId);
-    input.value=''; showProfilePage(); showToast('Ответ отправлен');
+    const messages = [...(ticket.messages || []), { sender: 'admin', text, time: new Date().toISOString() }];
+    await supabase.from('tickets').update({ messages }).eq('id', ticketId);
+    input.value = ''; showProfilePage(); showToast('Ответ отправлен');
   };
-  window.deleteTicket = async (ticketId)=>{ await supabase.from('tickets').delete().eq('id',ticketId); showProfilePage(); };
-  window.userReplyToTicket = async (ticketId, index)=>{
-    const input = document.getElementById('ticketInput_'+index);
+  window.deleteTicket = async (ticketId) => { await supabase.from('tickets').delete().eq('id', ticketId); showProfilePage(); };
+  window.userReplyToTicket = async (ticketId, index) => {
+    const input = document.getElementById('ticketInput_' + index);
     if (!input) return;
     const text = input.value.trim();
     if (!text) return;
-    const { data: ticket } = await supabase.from('tickets').select('messages').eq('id',ticketId).single();
+    const { data: ticket } = await supabase.from('tickets').select('messages').eq('id', ticketId).single();
     if (!ticket) return;
-    const messages = [...(ticket.messages||[]), {sender:'user',text,time:new Date().toISOString()}];
-    await supabase.from('tickets').update({messages}).eq('id',ticketId);
-    input.value=''; showSupportPage();
+    const messages = [...(ticket.messages || []), { sender: 'user', text, time: new Date().toISOString() }];
+    await supabase.from('tickets').update({ messages }).eq('id', ticketId);
+    input.value = ''; showSupportPage();
   };
-  window.copyText = (t)=>{ navigator.clipboard.writeText(t); showToast('Скопировано!'); };
+  window.copyText = (t) => { navigator.clipboard.writeText(t); showToast('Скопировано!'); };
 
   // Редактирование своего профиля
-  window.openProfileEditModal = async ()=>{
+  window.openProfileEditModal = async () => {
     if (!currentUser) return;
     const modal = document.getElementById('profileEditModal');
     modal.style.display = 'flex';
@@ -552,63 +554,64 @@ window.addEventListener('resize',()=>{
       <div class="input-group"><label>Аватар (загрузите файл)</label><input type="file" id="editAvatarFile" accept="image/*"></div>
       <button class="btn btn-primary" id="saveProfileBtn">Сохранить</button>
       <button class="btn btn-outline" id="closeProfileEditModal">Закрыть</button>`;
-    document.getElementById('saveProfileBtn').onclick = async ()=>{
+    document.getElementById('saveProfileBtn').onclick = async () => {
       const name = document.getElementById('editName').value.trim();
       const desc = document.getElementById('editDescription').value.trim();
       const avatarFile = document.getElementById('editAvatarFile').files[0];
-      const updates = { name, description:desc };
+      const updates = { name, description: desc };
       if (avatarFile) {
         const reader = new FileReader();
-        reader.onload = async (e)=>{
+        reader.onload = async (e) => {
           updates.avatar = e.target.result;
-          await supabase.from('users').update(updates).eq('email',currentUser.email);
-          currentUser.name=name; currentUser.description=desc; currentUser.avatar=updates.avatar;
+          await supabase.from('users').update(updates).eq('email', currentUser.email);
+          currentUser.name = name; currentUser.description = desc; currentUser.avatar = updates.avatar;
           localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
-          modal.style.display='none'; showProfilePage(); showToast('Профиль обновлён');
+          modal.style.display = 'none'; showProfilePage(); showToast('Профиль обновлён');
         };
         reader.readAsDataURL(avatarFile);
       } else {
-        await supabase.from('users').update(updates).eq('email',currentUser.email);
-        currentUser.name=name; currentUser.description=desc;
+        await supabase.from('users').update(updates).eq('email', currentUser.email);
+        currentUser.name = name; currentUser.description = desc;
         localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
-        modal.style.display='none'; showProfilePage(); showToast('Профиль обновлён');
+        modal.style.display = 'none'; showProfilePage(); showToast('Профиль обновлён');
       }
     };
-    document.getElementById('closeProfileEditModal').onclick = ()=>modal.style.display='none';
+    document.getElementById('closeProfileEditModal').onclick = () => modal.style.display = 'none';
   };
 
-  // Шифр
+  // Шифрующийся заголовок
   function startCipherEffect(el, text) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
     let display = text.split('');
-    setInterval(()=>{ for(let i=0;i<display.length;i++){ if(Math.random()<0.05) display[i]=chars[Math.floor(Math.random()*chars.length)]; else display[i]=text[i]; } el.textContent=display.join(''); },150);
+    setInterval(() => { for (let i = 0; i < display.length; i++) { if (Math.random() < 0.05) display[i] = chars[Math.floor(Math.random() * chars.length)]; else display[i] = text[i]; } el.textContent = display.join(''); }, 150);
   }
 
-  // Старт
-  document.addEventListener('DOMContentLoaded', async ()=>{
-    document.getElementById('privacyModalContent').innerHTML = '<h3>Политика конфиденциальности</h3><p>Данные хранятся в Supabase.</p><button class="btn btn-outline" onclick="document.getElementById(\'privacyModal\').style.display=\'none\'">Закрыть</button>';
-    document.getElementById('termsModalContent').innerHTML = '<h3>Условия использования</h3><p>Запрещены взлом, спам.</p><button class="btn btn-outline" onclick="document.getElementById(\'termsModal\').style.display=\'none\'">Закрыть</button>';
-    document.getElementById('privacyLink').addEventListener('click',(e)=>{ e.preventDefault(); document.getElementById('privacyModal').style.display='flex'; });
-    document.getElementById('termsLink').addEventListener('click',(e)=>{ e.preventDefault(); document.getElementById('termsModal').style.display='flex'; });
-    document.getElementById('navHome').addEventListener('click',(e)=>{ e.preventDefault(); navigate('home'); });
-    document.getElementById('navForum').addEventListener('click',(e)=>{ e.preventDefault(); navigate('forum'); });
-    document.getElementById('navProfile').addEventListener('click',(e)=>{ e.preventDefault(); navigate('profile'); });
-    document.getElementById('navSupport').addEventListener('click',(e)=>{ e.preventDefault(); navigate('support'); });
+  // Инициализация
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('privacyModalContent').innerHTML = '<h3>Политика конфиденциальности</h3><p>Данные хранятся в облачной базе Supabase.</p><button class="btn btn-outline" onclick="document.getElementById(\'privacyModal\').style.display=\'none\'">Закрыть</button>';
+    document.getElementById('termsModalContent').innerHTML = '<h3>Условия использования</h3><p>Запрещены взлом, спам и нарушение работы сервиса.</p><button class="btn btn-outline" onclick="document.getElementById(\'termsModal\').style.display=\'none\'">Закрыть</button>';
+    document.getElementById('privacyLink').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('privacyModal').style.display = 'flex'; });
+    document.getElementById('termsLink').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('termsModal').style.display = 'flex'; });
+    document.getElementById('navHome').addEventListener('click', (e) => { e.preventDefault(); navigate('home'); });
+    document.getElementById('navForum').addEventListener('click', (e) => { e.preventDefault(); navigate('forum'); });
+    document.getElementById('navProfile').addEventListener('click', (e) => { e.preventDefault(); navigate('profile'); });
+    document.getElementById('navSupport').addEventListener('click', (e) => { e.preventDefault(); navigate('support'); });
     document.getElementById('sendForumBtn').addEventListener('click', sendForumMessage);
-    window.addEventListener('click',(e)=>{ if(e.target.classList.contains('modal')) e.target.style.display='none'; });
+    window.addEventListener('click', (e) => { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; });
     const saved = localStorage.getItem('diamkey_current');
     if (saved) {
       try {
         currentUser = JSON.parse(saved);
-        const { data: check } = await supabase.from('users').select('*').eq('email',currentUser.email).maybeSingle();
+        const { data: check } = await supabase.from('users').select('*').eq('email', currentUser.email).maybeSingle();
         if (!check) { currentUser = null; localStorage.removeItem('diamkey_current'); }
-      } catch(e) { currentUser = null; }
+      } catch (e) { currentUser = null; }
     }
-    updateAuthButton(); updateHeroButtons();
+    updateAuthButton();
+    updateHeroButtons();
     navigate('home');
     startCipherEffect(document.getElementById('cipherTitle'), 'DIAMKEY');
-    const observer = new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); }); },{threshold:0.1});
-    document.querySelectorAll('.card').forEach(c=>observer.observe(c));
+    const observer = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.1 });
+    document.querySelectorAll('.card').forEach(c => observer.observe(c));
   });
 
   window.logout = logout;
