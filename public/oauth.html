@@ -76,11 +76,7 @@
       margin-bottom: 8px;
     }
     .btn:hover { background: #2a2a33; border-color: #4a4a55; }
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--border-dim);
-      color: var(--text-muted);
-    }
+    .btn-outline { background: transparent; border: 1px solid var(--border-dim); color: var(--text-muted); }
     .btn-outline:hover { background: rgba(255,255,255,0.03); }
     .error-msg { color: #e05d5d; font-size: 0.9rem; margin-top: 8px; display: none; }
     .success-msg { color: #5d9b7a; font-size: 0.9rem; margin-top: 8px; display: none; }
@@ -92,7 +88,6 @@
   <h2>Вход через DiamKey</h2>
   <p id="appName">Сервис Diamond запрашивает доступ</p>
   <div id="authBlock">
-    <!-- Форма входа -->
     <input id="loginInput" placeholder="Логин" autocomplete="off">
     <input id="passwordInput" type="password" placeholder="Пароль">
     <button class="btn" id="loginBtn">Войти</button>
@@ -123,7 +118,7 @@
   if (saved) {
     try {
       const currentUser = JSON.parse(saved);
-      // Пользователь есть – сразу создаём тикет и редиректим
+      // Уже вошёл — сразу создаём тикет и редиректим (или показываем сообщение)
       createTicketAndRedirect(currentUser);
     } catch (e) {
       console.error('Ошибка парсинга сессии', e);
@@ -168,7 +163,6 @@
       return;
     }
 
-    // Успех – сохраняем сессию
     const sessionUser = {
       login: user.login,
       email: user.email,
@@ -176,8 +170,7 @@
       name: user.name || '',
       avatar: user.avatar || '',
       description: user.description || '',
-      fa_icon: user.fa_icon || '',
-      isAdmin: user.is_admin || false
+      fa_icon: user.fa_icon || ''
     };
     localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
 
@@ -200,7 +193,6 @@
       return;
     }
 
-    // Проверка уникальности логина
     const { data: exist } = await supabase
       .from('users')
       .select('login')
@@ -212,7 +204,6 @@
       return;
     }
 
-    // Генерация секретного слова
     const secretWord = await generateSecret(login);
     const { error } = await supabase.from('users').insert([{
       login,
@@ -222,8 +213,7 @@
       name: '',
       avatar: '',
       description: '',
-      fa_icon: '',
-      is_admin: false
+      fa_icon: ''
     }]);
 
     if (error) {
@@ -239,8 +229,7 @@
       name: '',
       avatar: '',
       description: '',
-      fa_icon: '',
-      isAdmin: false
+      fa_icon: ''
     };
     localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
 
