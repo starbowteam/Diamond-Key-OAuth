@@ -799,7 +799,7 @@ window.addEventListener('resize',()=>{
     updateAuthButton();
     updateHeroButtons();
     navigate('home');
-    tartCipherEffect(document.getElementById('cipherTitle'), 'DIAMKEY');  // ← вот эта строка
+    StartCipherEffect(document.getElementById('cipherTitle'), 'DIAMKEY');  // ← вот эта строка
     const observer = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.1 });
     document.querySelectorAll('.card').forEach(c => observer.observe(c));
   });
