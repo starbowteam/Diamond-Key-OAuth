@@ -121,9 +121,11 @@
 </div>
 
 <script>
-  const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // переименовываем переменную, чтобы не конфликтовать с глобальной supabase
+  const _supabase = window.supabase.createClient(
+    'https://pqgwrokpizeelfrjmgoc.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk'
+  );
 
   const params = new URLSearchParams(window.location.search);
   const redirect = params.get('redirect');
@@ -179,7 +181,7 @@
       return;
     }
 
-    const { data: user, error } = await supabase
+    const { data: user, error } = await _supabase
       .from('users')
       .select('*')
       .eq('login', login)
@@ -221,7 +223,7 @@
       return;
     }
 
-    const { data: exist } = await supabase
+    const { data: exist } = await _supabase
       .from('users')
       .select('login')
       .eq('login', login)
@@ -233,7 +235,7 @@
     }
 
     const secretWord = await generateSecret(login);
-    const { error } = await supabase.from('users').insert([{
+    const { error } = await _supabase.from('users').insert([{
       login,
       password,
       secret_word: secretWord,
@@ -283,9 +285,9 @@
       return;
     }
     const ticket = 'diam_ticket_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
-    const { error } = await supabase.from('oauth_tickets').insert([{
+    const { error } = await _supabase.from('oauth_tickets').insert([{
       ticket,
-      login: user.login   // <-- сохраняем login вместо email
+      login: user.login   // сохраняем login (не email)
     }]);
     if (error) {
       console.error('Ошибка создания тикета:', error);
