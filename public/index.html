@@ -241,12 +241,27 @@ window.addEventListener('resize',()=>{
   const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
   const OLD_ADMIN_EMAILS = ['abugay12@mail.ru', 'titiro953@gmail.com'];
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let currentUser = null;
 
   function showToast(msg) { const t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
-  function generateToken() { const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost']; const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key']; const a = adj[Math.floor(Math.random()*adj.length)]; const b = nouns[Math.floor(Math.random()*nouns.length)]; const c = nouns[Math.floor(Math.random()*nouns.length)]; const num = Math.floor(1000+Math.random()*9000); return `diamkey_${a}_${b}_${c}_${num}`; }
-  async function generateSecret(login) { const msg = login + Date.now() + Math.random(); const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg)); const hashArray = Array.from(new Uint8Array(hashBuffer)); return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 24).toUpperCase(); }
+
+  // Генераторы
+  function generateToken() {
+    const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost'];
+    const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key'];
+    const a = adj[Math.floor(Math.random()*adj.length)];
+    const b = nouns[Math.floor(Math.random()*nouns.length)];
+    const c = nouns[Math.floor(Math.random()*nouns.length)];
+    const num = Math.floor(1000+Math.random()*9000);
+    return `diamkey_${a}_${b}_${c}_${num}`;
+  }
+  async function generateSecret(login) {
+    const msg = login + Date.now() + Math.random();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 24).toUpperCase();
+  }
 
   function navigate(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -329,17 +344,17 @@ window.addEventListener('resize',()=>{
     const identity = document.getElementById('loginIdentity')?.value.trim();
     const password = document.getElementById('loginPassword')?.value;
     if (!identity || !password) return showToast('Введите логин и пароль');
-    const { data: user, error } = await supabase.from('users').select('*').eq('login', identity).eq('password', password).maybeSingle();
+    const { data: user, error } = await _supabase.from('users').select('*').eq('login', identity).eq('password', password).maybeSingle();
     if (error || !user) return showToast('Неверный логин или пароль');
     if (!user.secret_word) {
       const secretWord = await generateSecret(user.login);
-      await supabase.from('users').update({ secret_word: secretWord }).eq('login', user.login);
+      await _supabase.from('users').update({ secret_word: secretWord }).eq('login', user.login);
       user.secret_word = secretWord;
     }
     const isAdmin = OLD_ADMIN_EMAILS.includes(user.email) || user.is_admin === true;
     currentUser = {
       login: user.login,
-      email: user.email,
+      email: user.email || (user.login + '@diamkey.local'),
       secretWord: user.secret_word,
       name: user.name || '',
       avatar: user.avatar || '',
@@ -357,15 +372,37 @@ window.addEventListener('resize',()=>{
     const login = document.getElementById('regLogin')?.value.trim();
     const password = document.getElementById('regPassword')?.value;
     if (!login || password.length < 6) return showToast('Введите логин и пароль (мин. 6 символов)');
-    const { data: exist } = await supabase.from('users').select('login').eq('login', login).maybeSingle();
+    const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
     if (exist) return showToast('Логин уже занят');
+
+    const token = generateToken();                    // генерируем токен
     const secretWord = await generateSecret(login);
-    const { error } = await supabase.from('users').insert([{
-      login, email: login+'@diamkey.local', password, secret_word: secretWord,
-      name: '', avatar: '', description: '', fa_icon: '', is_admin: false
+    const email = login + '@diamkey.local';
+
+    const { error } = await _supabase.from('users').insert([{
+      login,
+      email,
+      password,
+      token,                                       // передаём токен
+      secret_word: secretWord,
+      name: '',
+      avatar: '',
+      description: '',
+      fa_icon: '',
+      is_admin: false
     }]);
     if (error) return showToast('Ошибка регистрации: ' + error.message);
-    currentUser = { login, secretWord, name: '', avatar: '', description: '', fa_icon: '', isAdmin: false };
+
+    currentUser = {
+      login,
+      email,
+      secretWord,
+      name: '',
+      avatar: '',
+      description: '',
+      fa_icon: '',
+      isAdmin: false
+    };
     localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
     document.getElementById('authModal').style.display = 'none';
     updateAuthButton(); updateHeroButtons();
@@ -380,7 +417,7 @@ window.addEventListener('resize',()=>{
     navigate('home');
   }
 
-  // ========= ПРОФИЛЬ =========
+    // ========== ПРОФИЛЬ =========
   async function showProfilePage() {
     if (!currentUser) return;
     const container = document.getElementById('profile-page');
@@ -415,8 +452,8 @@ window.addEventListener('resize',()=>{
     </div>`;
 
     if (isAdmin) {
-      const { data: users } = await supabase.from('users').select('*');
-      const { data: tickets } = await supabase.from('tickets').select('*');
+      const { data: users } = await _supabase.from('users').select('*');
+      const { data: tickets } = await _supabase.from('tickets').select('*');
 
       document.getElementById('tab-admin').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-crown"></i> Админ-панель</h3>
         <div class="tabs" style="margin-bottom:20px;">
@@ -484,7 +521,7 @@ window.addEventListener('resize',()=>{
   }
 
   window.toggleAdmin = async (login, value) => {
-    const { error } = await supabase.from('users').update({ is_admin: value }).eq('login', login);
+    const { error } = await _supabase.from('users').update({ is_admin: value }).eq('login', login);
     if (error) {
       console.error('Ошибка при обновлении прав:', error);
       showToast('Ошибка обновления. Проверьте консоль.');
@@ -498,7 +535,7 @@ window.addEventListener('resize',()=>{
   };
 
   window.editUserByAdmin = async (login) => {
-    const { data: user } = await supabase.from('users').select('*').eq('login', login).maybeSingle();
+    const { data: user } = await _supabase.from('users').select('*').eq('login', login).maybeSingle();
     if (!user) return showToast('Пользователь не найден');
     const modal = document.getElementById('adminEditUserModal'), content = document.getElementById('adminEditUserModalContent');
     const faOptions = [ { value:'', label:'Без иконки' }, { value:'fa-solid fa-star', label:'⭐ Звезда' }, { value:'fa-solid fa-crown', label:'👑 Корона' }, { value:'fa-solid fa-heart', label:'❤️ Сердце' }, { value:'fa-solid fa-fire', label:'🔥 Огонь' }, { value:'fa-solid fa-check', label:'✅ Галочка' } ];
@@ -523,16 +560,16 @@ window.addEventListener('resize',()=>{
       if (password) updates.password = password;
       if (avatarFile) {
         const reader = new FileReader();
-        reader.onload = async (e) => { updates.avatar = e.target.result; await supabase.from('users').update(updates).eq('login', login); modal.style.display='none'; showProfilePage(); };
+        reader.onload = async (e) => { updates.avatar = e.target.result; await _supabase.from('users').update(updates).eq('login', login); modal.style.display='none'; showProfilePage(); };
         reader.readAsDataURL(avatarFile);
-      } else { await supabase.from('users').update(updates).eq('login', login); modal.style.display='none'; showProfilePage(); }
+      } else { await _supabase.from('users').update(updates).eq('login', login); modal.style.display='none'; showProfilePage(); }
     };
     document.getElementById('closeAdminEditModal').onclick = () => modal.style.display = 'none';
   };
 
   window.deleteTicket = async (ticketId) => {
     if (!confirm('Удалить тикет?')) return;
-    await supabase.from('tickets').delete().eq('id', ticketId);
+    await _supabase.from('tickets').delete().eq('id', ticketId);
     showProfilePage();
   };
   window.adminReplyToTicket = async (ticketId) => {
@@ -540,23 +577,23 @@ window.addEventListener('resize',()=>{
     if (!input) return;
     const text = input.value.trim();
     if (!text) return;
-    const { data: ticket } = await supabase.from('tickets').select('messages').eq('id', ticketId).single();
+    const { data: ticket } = await _supabase.from('tickets').select('messages').eq('id', ticketId).single();
     if (!ticket) return;
     const messages = [...(ticket.messages || []), { sender: 'admin', text, time: new Date().toISOString() }];
-    await supabase.from('tickets').update({ messages }).eq('id', ticketId);
+    await _supabase.from('tickets').update({ messages }).eq('id', ticketId);
     input.value = '';
     showProfilePage();
   };
   window.deleteUser = async (login) => {
     if (!confirm('Удалить пользователя?')) return;
-    await supabase.from('users').delete().eq('login', login);
+    await _supabase.from('users').delete().eq('login', login);
     showProfilePage();
   };
 
   // ================== ПОДДЕРЖКА ==================
   async function showSupportPage() {
     if (!currentUser) return;
-    const { data: tickets } = await supabase.from('tickets').select('*').eq('email', currentUser.email);
+    const { data: tickets } = await _supabase.from('tickets').select('*').eq('email', currentUser.email);
     const existingTicket = tickets?.length ? tickets[0] : null;
     const container = document.getElementById('support-page');
     container.innerHTML = `<div style="padding:60px 0; max-width:900px; margin:0 auto;">
@@ -586,22 +623,22 @@ window.addEventListener('resize',()=>{
         const input = document.getElementById('userTicketInput');
         const text = input.value.trim();
         if (!text) return;
-        const { data: ticket } = await supabase.from('tickets').select('messages').eq('id', existingTicket.id).single();
+        const { data: ticket } = await _supabase.from('tickets').select('messages').eq('id', existingTicket.id).single();
         if (!ticket) return;
         const messages = [...(ticket.messages || []), { sender: 'user', text, time: new Date().toISOString() }];
-        await supabase.from('tickets').update({ messages }).eq('id', existingTicket.id);
+        await _supabase.from('tickets').update({ messages }).eq('id', existingTicket.id);
         input.value = '';
         showSupportPage();
       };
       document.getElementById('deleteMyTicket').onclick = async () => {
         if (!confirm('Удалить тикет?')) return;
-        await supabase.from('tickets').delete().eq('id', existingTicket.id);
+        await _supabase.from('tickets').delete().eq('id', existingTicket.id);
         showSupportPage();
       };
     } else {
       actionArea.innerHTML = `<button class="btn btn-primary" id="openNewTicket"><i class="fas fa-plus"></i> Открыть тикет</button>`;
       document.getElementById('openNewTicket').onclick = async () => {
-        const { error } = await supabase.from('tickets').insert([{ id: Date.now().toString(), email: currentUser.email, messages: [] }]);
+        const { error } = await _supabase.from('tickets').insert([{ id: Date.now().toString(), email: currentUser.email, messages: [] }]);
         if (error) return showToast('Ошибка создания тикета');
         showSupportPage();
       };
@@ -652,7 +689,7 @@ window.addEventListener('resize',()=>{
     <p style="margin-top:10px;">${tempPost.message}</p>`;
     container.prepend(tempEl);
     input.value = '';
-    const { error } = await supabase.from('forum').insert([{
+    const { error } = await _supabase.from('forum').insert([{
       email: tempPost.email, name: tempPost.name, login: tempPost.login,
       avatar: tempPost.avatar, fa_icon: tempPost.fa_icon,
       message: tempPost.message, time: tempPost.time
@@ -662,7 +699,7 @@ window.addEventListener('resize',()=>{
   }
 
   async function loadForumPosts() {
-    const { data: posts, error } = await supabase.from('forum').select('*').order('time', { ascending: false });
+    const { data: posts, error } = await _supabase.from('forum').select('*').order('time', { ascending: false });
     if (error) return;
     const container = document.getElementById('forumPosts');
     if (!container) return;
@@ -683,7 +720,7 @@ window.addEventListener('resize',()=>{
     updateForumAccess();
   }
 
-  window.deleteForumPost = async (id) => { await supabase.from('forum').delete().eq('id', id); loadForumPosts(); };
+  window.deleteForumPost = async (id) => { await _supabase.from('forum').delete().eq('id', id); loadForumPosts(); };
 
   window.openProfileEditModal = async () => {
     if (!currentUser) return;
@@ -708,7 +745,7 @@ window.addEventListener('resize',()=>{
           localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
           modal.style.display = 'none';
           showProfilePage();
-          const { error } = await supabase.from('users').update(updates).eq('login', currentUser.login);
+          const { error } = await _supabase.from('users').update(updates).eq('login', currentUser.login);
           if (error) showToast('Ошибка сохранения аватара');
         };
         reader.readAsDataURL(avatarFile);
@@ -717,7 +754,7 @@ window.addEventListener('resize',()=>{
         localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
         modal.style.display = 'none';
         showProfilePage();
-        const { error } = await supabase.from('users').update(updates).eq('login', currentUser.login);
+        const { error } = await _supabase.from('users').update(updates).eq('login', currentUser.login);
         if (error) showToast('Ошибка сохранения');
       }
     };
@@ -747,7 +784,7 @@ window.addEventListener('resize',()=>{
     if (saved) {
       try {
         currentUser = JSON.parse(saved);
-        const { data: check } = await supabase.from('users').select('*').eq('login', currentUser.login).maybeSingle();
+        const { data: check } = await _supabase.from('users').select('*').eq('login', currentUser.login).maybeSingle();
         if (!check) { currentUser = null; localStorage.removeItem('diamkey_current'); }
         else { currentUser.isAdmin = OLD_ADMIN_EMAILS.includes(check.email) || check.is_admin === true; }
       } catch(e) { currentUser = null; }
@@ -762,6 +799,3 @@ window.addEventListener('resize',()=>{
 
   window.logout = logout;
 })();
-</script>
-</body>
-</html>
