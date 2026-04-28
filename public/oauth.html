@@ -129,7 +129,6 @@
   const redirect = params.get('redirect');
   const app = params.get('app') || 'сервис Diamond';
 
-  // Элементы DOM
   const statusTitle = document.getElementById('statusTitle');
   const statusText = document.getElementById('statusText');
   const autoBlock = document.getElementById('autoLoginBlock');
@@ -140,37 +139,31 @@
 
   statusText.innerText = `«${app}» запрашивает доступ`;
 
-  // 1. Проверяем, есть ли активная сессия DiamKey
+  // Проверяем сессию
   const saved = localStorage.getItem('diamkey_current');
   let currentUser = null;
-
   if (saved) {
     try {
       currentUser = JSON.parse(saved);
-    } catch (e) { /* игнорируем */ }
+    } catch (e) {}
   }
 
-  if (currentUser && currentUser.email) {
-    // Сессия есть – показываем загрузку и сразу создаём тикет
+  if (currentUser && currentUser.login) {
+    // Сессия есть – авто вход
     statusTitle.innerText = 'Вход почти выполнен';
-    statusText.innerText = '';
     autoBlock.style.display = 'block';
-
-    setTimeout(async () => {
-      await createTicketAndRedirect(currentUser);
-    }, 500);
+    setTimeout(() => createTicketAndRedirect(currentUser), 500);
   } else {
-    // Сессии нет – показываем форму входа
     authBlock.style.display = 'block';
   }
 
   // Переключение между входом и регистрацией
-  document.getElementById('showRegister').addEventListener('click', (e) => {
+  document.getElementById('showRegister').addEventListener('click', e => {
     e.preventDefault();
     authBlock.style.display = 'none';
     registerBlock.style.display = 'block';
   });
-  document.getElementById('showLogin').addEventListener('click', (e) => {
+  document.getElementById('showLogin').addEventListener('click', e => {
     e.preventDefault();
     registerBlock.style.display = 'none';
     authBlock.style.display = 'block';
@@ -201,7 +194,6 @@
 
     const sessionUser = {
       login: user.login,
-      email: user.email,
       secretWord: user.secret_word,
       name: user.name || '',
       avatar: user.avatar || '',
@@ -210,7 +202,6 @@
     };
     localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
 
-    // Показываем загрузку
     authBlock.style.display = 'none';
     registerBlock.style.display = 'none';
     autoBlock.style.display = 'block';
@@ -244,7 +235,6 @@
     const secretWord = await generateSecret(login);
     const { error } = await supabase.from('users').insert([{
       login,
-      email: login + '@diamkey.local',
       password,
       secret_word: secretWord,
       name: '',
@@ -261,7 +251,6 @@
 
     const sessionUser = {
       login,
-      email: login + '@diamkey.local',
       secretWord,
       name: '',
       avatar: '',
@@ -270,7 +259,6 @@
     };
     localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
 
-    // Показываем загрузку
     registerBlock.style.display = 'none';
     authBlock.style.display = 'none';
     autoBlock.style.display = 'block';
@@ -287,15 +275,24 @@
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 24).toUpperCase();
   }
 
+  // Создаём тикет и редиректим (теперь с login)
   async function createTicketAndRedirect(user) {
     if (!redirect) {
       statusTitle.innerText = 'Готово!';
-      statusText.innerText = 'Можете закрыть вкладку.';
-      autoBlock.innerHTML = '<i class="fas fa-check-circle" style="font-size:3rem; color:var(--success-msg-color, #5d9b7a);"></i>';
+      autoBlock.innerHTML = '<i class="fas fa-check-circle" style="font-size:3rem; color: var(--success-msg-color, #5d9b7a);"></i>';
       return;
     }
     const ticket = 'diam_ticket_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
-    await supabase.from('oauth_tickets').insert([{ ticket, email: user.email }]);
+    const { error } = await supabase.from('oauth_tickets').insert([{
+      ticket,
+      login: user.login   // <-- сохраняем login вместо email
+    }]);
+    if (error) {
+      console.error('Ошибка создания тикета:', error);
+      errorMsg.style.display = 'block';
+      errorMsg.innerText = 'Не удалось создать тикет. Попробуйте позже.';
+      return;
+    }
     setTimeout(() => {
       window.location.href = redirect + (redirect.includes('?') ? '&' : '?') + 'ticket=' + ticket;
     }, 1000);
