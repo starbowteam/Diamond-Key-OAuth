@@ -80,25 +80,42 @@
     .btn-outline:hover { background: rgba(255,255,255,0.03); }
     .error-msg { color: #e05d5d; font-size: 0.9rem; margin-top: 8px; display: none; }
     .success-msg { color: #5d9b7a; font-size: 0.9rem; margin-top: 8px; display: none; }
+    .loader {
+      font-size: 2rem;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-<div class="oauth-card">
-  <i class="fas fa-key key-icon"></i>
-  <h2>Вход через DiamKey</h2>
-  <p id="appName">Сервис Diamond запрашивает доступ</p>
-  <div id="authBlock">
+<div class="oauth-card" id="oauthCard">
+  <i class="fas fa-key key-icon" id="keyIcon"></i>
+  <h2 id="statusTitle">Вход через DiamKey</h2>
+  <p id="statusText">Сервис Diamond запрашивает доступ</p>
+
+  <!-- Блок автоматической загрузки (если уже есть сессия) -->
+  <div id="autoLoginBlock" style="display:none;">
+    <div class="loader"><i class="fas fa-circle-notch"></i></div>
+    <p style="color:var(--text-muted);">Уже входим...</p>
+  </div>
+
+  <!-- Форма входа (показывается, если сессии нет) -->
+  <div id="authBlock" style="display:none;">
     <input id="loginInput" placeholder="Логин" autocomplete="off">
     <input id="passwordInput" type="password" placeholder="Пароль">
     <button class="btn" id="loginBtn">Войти</button>
     <p style="margin-top:8px; color:var(--text-muted);">Нет аккаунта? <a href="#" id="showRegister" style="color:var(--text-light);">Зарегистрироваться</a></p>
   </div>
+
+  <!-- Форма регистрации -->
   <div id="registerBlock" style="display:none;">
     <input id="regLoginInput" placeholder="Придумайте логин" autocomplete="off">
     <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)">
     <button class="btn" id="registerBtn">Создать аккаунт</button>
     <p style="margin-top:8px; color:var(--text-muted);">Уже есть аккаунт? <a href="#" id="showLogin" style="color:var(--text-light);">Войти</a></p>
   </div>
+
   <p class="error-msg" id="errorMsg"></p>
   <p class="success-msg" id="successMsg"></p>
 </div>
@@ -111,39 +128,58 @@
   const params = new URLSearchParams(window.location.search);
   const redirect = params.get('redirect');
   const app = params.get('app') || 'сервис Diamond';
-  document.getElementById('appName').innerText = `«${app}» запрашивает доступ`;
 
-  // Проверяем, залогинен ли уже пользователь в DiamKey
+  // Элементы DOM
+  const statusTitle = document.getElementById('statusTitle');
+  const statusText = document.getElementById('statusText');
+  const autoBlock = document.getElementById('autoLoginBlock');
+  const authBlock = document.getElementById('authBlock');
+  const registerBlock = document.getElementById('registerBlock');
+  const errorMsg = document.getElementById('errorMsg');
+  const successMsg = document.getElementById('successMsg');
+
+  statusText.innerText = `«${app}» запрашивает доступ`;
+
+  // 1. Проверяем, есть ли активная сессия DiamKey
   const saved = localStorage.getItem('diamkey_current');
+  let currentUser = null;
+
   if (saved) {
     try {
-      const currentUser = JSON.parse(saved);
-      // Уже вошёл — сразу создаём тикет и редиректим (или показываем сообщение)
-      createTicketAndRedirect(currentUser);
-    } catch (e) {
-      console.error('Ошибка парсинга сессии', e);
-    }
+      currentUser = JSON.parse(saved);
+    } catch (e) { /* игнорируем */ }
+  }
+
+  if (currentUser && currentUser.email) {
+    // Сессия есть – показываем загрузку и сразу создаём тикет
+    statusTitle.innerText = 'Вход почти выполнен';
+    statusText.innerText = '';
+    autoBlock.style.display = 'block';
+
+    setTimeout(async () => {
+      await createTicketAndRedirect(currentUser);
+    }, 500);
+  } else {
+    // Сессии нет – показываем форму входа
+    authBlock.style.display = 'block';
   }
 
   // Переключение между входом и регистрацией
   document.getElementById('showRegister').addEventListener('click', (e) => {
     e.preventDefault();
-    document.getElementById('authBlock').style.display = 'none';
-    document.getElementById('registerBlock').style.display = 'block';
+    authBlock.style.display = 'none';
+    registerBlock.style.display = 'block';
   });
   document.getElementById('showLogin').addEventListener('click', (e) => {
     e.preventDefault();
-    document.getElementById('registerBlock').style.display = 'none';
-    document.getElementById('authBlock').style.display = 'block';
+    registerBlock.style.display = 'none';
+    authBlock.style.display = 'block';
   });
 
   // Вход
   document.getElementById('loginBtn').addEventListener('click', async () => {
     const login = document.getElementById('loginInput').value.trim();
     const password = document.getElementById('passwordInput').value;
-    const errorMsg = document.getElementById('errorMsg');
-    const successMsg = document.getElementById('successMsg');
-
     if (!login || !password) {
       errorMsg.style.display = 'block';
       errorMsg.innerText = 'Введите логин и пароль';
@@ -174,19 +210,20 @@
     };
     localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
 
-    successMsg.style.display = 'block';
-    successMsg.innerText = 'Вход выполнен!';
+    // Показываем загрузку
+    authBlock.style.display = 'none';
+    registerBlock.style.display = 'none';
+    autoBlock.style.display = 'block';
+    statusTitle.innerText = 'Вход выполнен';
+    statusText.innerText = '';
 
-    createTicketAndRedirect(sessionUser);
+    await createTicketAndRedirect(sessionUser);
   });
 
   // Регистрация
   document.getElementById('registerBtn').addEventListener('click', async () => {
     const login = document.getElementById('regLoginInput').value.trim();
     const password = document.getElementById('regPasswordInput').value;
-    const errorMsg = document.getElementById('errorMsg');
-    const successMsg = document.getElementById('successMsg');
-
     if (!login || password.length < 6) {
       errorMsg.style.display = 'block';
       errorMsg.innerText = 'Придумайте логин и пароль (мин. 6 символов)';
@@ -233,10 +270,14 @@
     };
     localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
 
-    successMsg.style.display = 'block';
-    successMsg.innerText = 'Аккаунт создан!';
+    // Показываем загрузку
+    registerBlock.style.display = 'none';
+    authBlock.style.display = 'none';
+    autoBlock.style.display = 'block';
+    statusTitle.innerText = 'Аккаунт создан';
+    statusText.innerText = '';
 
-    createTicketAndRedirect(sessionUser);
+    await createTicketAndRedirect(sessionUser);
   });
 
   async function generateSecret(login) {
@@ -248,7 +289,9 @@
 
   async function createTicketAndRedirect(user) {
     if (!redirect) {
-      document.getElementById('successMsg').innerText = 'Готово! Можете закрыть вкладку.';
+      statusTitle.innerText = 'Готово!';
+      statusText.innerText = 'Можете закрыть вкладку.';
+      autoBlock.innerHTML = '<i class="fas fa-check-circle" style="font-size:3rem; color:var(--success-msg-color, #5d9b7a);"></i>';
       return;
     }
     const ticket = 'diam_ticket_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
@@ -256,12 +299,6 @@
     setTimeout(() => {
       window.location.href = redirect + (redirect.includes('?') ? '&' : '?') + 'ticket=' + ticket;
     }, 1000);
-  }
-
-  // Скрываем лишнее, если сессия уже активна
-  if (saved) {
-    document.getElementById('authBlock').style.display = 'none';
-    document.getElementById('registerBlock').style.display = 'none';
   }
 </script>
 </body>
