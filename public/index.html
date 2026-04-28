@@ -246,7 +246,6 @@ window.addEventListener('resize',()=>{
 
   function showToast(msg) { const t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
 
-  // Генераторы
   function generateToken() {
     const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost'];
     const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key'];
@@ -375,7 +374,7 @@ window.addEventListener('resize',()=>{
     const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
     if (exist) return showToast('Логин уже занят');
 
-    const token = generateToken();                    // генерируем токен
+    const token = generateToken();
     const secretWord = await generateSecret(login);
     const email = login + '@diamkey.local';
 
@@ -383,7 +382,7 @@ window.addEventListener('resize',()=>{
       login,
       email,
       password,
-      token,                                       // передаём токен
+      token,
       secret_word: secretWord,
       name: '',
       avatar: '',
@@ -417,7 +416,7 @@ window.addEventListener('resize',()=>{
     navigate('home');
   }
 
-    // ========== ПРОФИЛЬ =========
+  // ========== ПРОФИЛЬ =========
   async function showProfilePage() {
     if (!currentUser) return;
     const container = document.getElementById('profile-page');
@@ -799,3 +798,6 @@ window.addEventListener('resize',()=>{
 
   window.logout = logout;
 })();
+</script>
+</body>
+</html>
