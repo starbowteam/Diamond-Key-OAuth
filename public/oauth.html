@@ -196,6 +196,7 @@
 
     const sessionUser = {
       login: user.login,
+      email: user.email || (user.login + '@diamkey.local'),
       secretWord: user.secret_word,
       name: user.name || '',
       avatar: user.avatar || '',
@@ -235,8 +236,10 @@
     }
 
     const secretWord = await generateSecret(login);
+    const email = login + '@diamkey.local'; // генерируем email, чтобы избежать ошибки
     const { error } = await _supabase.from('users').insert([{
       login,
+      email,
       password,
       secret_word: secretWord,
       name: '',
@@ -253,6 +256,7 @@
 
     const sessionUser = {
       login,
+      email,
       secretWord,
       name: '',
       avatar: '',
@@ -287,7 +291,7 @@
     const ticket = 'diam_ticket_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
     const { error } = await _supabase.from('oauth_tickets').insert([{
       ticket,
-      login: user.login   // сохраняем login (не email)
+      login: user.login   // сохраняем login
     }]);
     if (error) {
       console.error('Ошибка создания тикета:', error);
