@@ -145,7 +145,7 @@
   </div>
 
   <div id="home-page" class="page active">
-    <div class="hero"><h1 id="cipherTitle"></h1><p>Один аккаунт для Diamond Ai, Unlock, Dirmess. Получи уникальный токен и секретное слово — и входи куда угодно мгновенно.</p><div id="heroActions"><button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button><a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a></div></div>
+    <div class="hero"><h1 id="cipherTitle"></h1><p>Один аккаунт для Diamond Ai, Unlock, Dirmess. Получи секретное слово и входи куда угодно мгновенно.</p><div id="heroActions"><button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button><a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a></div></div>
     <div class="section" id="features"><div class="section-title">Возможности <span>DiamKey</span></div><div class="grid-3"><div class="card"><div class="card-icon"><i class="fas fa-fingerprint"></i></div><h3>Один аккаунт</h3><p>Регистрируйся один раз и входи во все сервисы Diamond.</p></div><div class="card"><div class="card-icon"><i class="fas fa-lock"></i></div><h3>Секретное слово</h3><p>Криптостойкий ключ, созданный на основе SHA-256.</p></div><div class="card"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><h3>Облачная база</h3><p>Все данные хранятся в Supabase — доступно отовсюду.</p></div></div></div>
     <div class="footer"><div class="footer-links"><a href="#" id="privacyLink" title="Политика конфиденциальности"><i class="fas fa-lock"></i></a><a href="#" id="termsLink" title="Условия использования"><i class="fas fa-file-contract"></i></a><a href="https://discord.gg/diamondshop" target="_blank" title="Discord"><i class="fab fa-discord"></i></a></div><div class="copyright">© 2026 Diamond. Все права защищены.</div></div>
   </div>
@@ -418,7 +418,6 @@ window.addEventListener('resize',()=>{
       const { data: users } = await supabase.from('users').select('*');
       const { data: tickets } = await supabase.from('tickets').select('*');
 
-      // Вкладка Админка
       document.getElementById('tab-admin').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-crown"></i> Админ-панель</h3>
         <div class="tabs" style="margin-bottom:20px;">
           <div class="tab active" data-sub="users">Пользователи</div>
@@ -451,7 +450,6 @@ window.addEventListener('resize',()=>{
           </div>
         </div>`;
 
-      // Подвкладки Админки
       container.querySelectorAll('#tab-admin .tab[data-sub]').forEach(tab => {
         tab.addEventListener('click', () => {
           container.querySelectorAll('#tab-admin .tab[data-sub]').forEach(t => t.classList.remove('active'));
@@ -461,7 +459,6 @@ window.addEventListener('resize',()=>{
         });
       });
 
-      // Вкладка Выдача
       document.getElementById('tab-grant').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-user-shield"></i> Выдача прав администратора</h3>
         <div class="card visible">
           ${users?.map(u => `
@@ -476,7 +473,6 @@ window.addEventListener('resize',()=>{
         </div>`;
     }
 
-    // Переключение основных вкладок
     container.querySelectorAll('.tab[data-tab]').forEach(tab => {
       tab.addEventListener('click', () => {
         container.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
@@ -489,7 +485,11 @@ window.addEventListener('resize',()=>{
 
   window.toggleAdmin = async (login, value) => {
     const { error } = await supabase.from('users').update({ is_admin: value }).eq('login', login);
-    if (error) return showToast('Ошибка обновления');
+    if (error) {
+      console.error('Ошибка при обновлении прав:', error);
+      showToast('Ошибка обновления. Проверьте консоль.');
+      return;
+    }
     if (currentUser.login === login) {
       currentUser.isAdmin = value;
       localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
