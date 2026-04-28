@@ -1,1 +1,279 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DiamKey — Авторизация</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='white'%3E%3Cpath d='M336 352c97.2 0 176-78.8 176-176S433.2 0 336 0S160 78.8 160 176c0 18.7 2.9 36.8 8.3 53.7L7 391c-4.5 4.5-7 10.6-7 17v80c0 13.3 10.7 24 24 24h80c13.3 0 24-10.7 24-24V448h40c13.3 0 24-10.7 24-24V384h40c6.4 0 12.5-2.5 17-7l33.3-33.3c16.9 5.4 35 8.3 53.7 8.3zM376 96a40 40 0 1 1 0 80 40 40 0 1 1 0-80z'/%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg-deep: #0a0a0f;
+      --bg-card: #111116;
+      --border-dim: #1f1f2a;
+      --text-light: #e0e0e0;
+      --text-muted: #9ca3af;
+      --silver: #a8a8b3;
+      --grad-silver: linear-gradient(135deg, #2a2a33, #1a1a22);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg-deep);
+      font-family: 'Inter', sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; color: var(--text-light);
+    }
+    .oauth-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: 32px;
+      padding: 40px 32px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .key-icon {
+      font-size: 64px;
+      color: var(--silver);
+      margin-bottom: 20px;
+      animation: float 2s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    h2 { font-weight: 700; color: var(--text-light); margin-bottom: 8px; }
+    p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px; }
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      background: #1e1e2a;
+      border: 1px solid var(--border-dim);
+      color: var(--text-light);
+      border-radius: 14px;
+      font-size: 1rem;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    input:focus { border-color: var(--silver-dark); }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      border: 1px solid var(--border-dim);
+      background: var(--grad-silver);
+      color: white;
+      transition: 0.2s;
+      margin-bottom: 8px;
+    }
+    .btn:hover { background: #2a2a33; border-color: #4a4a55; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-dim);
+      color: var(--text-muted);
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.03); }
+    .error-msg { color: #e05d5d; font-size: 0.9rem; margin-top: 8px; display: none; }
+    .success-msg { color: #5d9b7a; font-size: 0.9rem; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+<div class="oauth-card">
+  <i class="fas fa-key key-icon"></i>
+  <h2>Вход через DiamKey</h2>
+  <p id="appName">Сервис Diamond запрашивает доступ</p>
+  <div id="authBlock">
+    <!-- Форма входа -->
+    <input id="loginInput" placeholder="Логин" autocomplete="off">
+    <input id="passwordInput" type="password" placeholder="Пароль">
+    <button class="btn" id="loginBtn">Войти</button>
+    <p style="margin-top:8px; color:var(--text-muted);">Нет аккаунта? <a href="#" id="showRegister" style="color:var(--text-light);">Зарегистрироваться</a></p>
+  </div>
+  <div id="registerBlock" style="display:none;">
+    <input id="regLoginInput" placeholder="Придумайте логин" autocomplete="off">
+    <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)">
+    <button class="btn" id="registerBtn">Создать аккаунт</button>
+    <p style="margin-top:8px; color:var(--text-muted);">Уже есть аккаунт? <a href="#" id="showLogin" style="color:var(--text-light);">Войти</a></p>
+  </div>
+  <p class="error-msg" id="errorMsg"></p>
+  <p class="success-msg" id="successMsg"></p>
+</div>
 
+<script>
+  const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get('redirect');
+  const app = params.get('app') || 'сервис Diamond';
+  document.getElementById('appName').innerText = `«${app}» запрашивает доступ`;
+
+  // Проверяем, залогинен ли уже пользователь в DiamKey
+  const saved = localStorage.getItem('diamkey_current');
+  if (saved) {
+    try {
+      const currentUser = JSON.parse(saved);
+      // Пользователь есть – сразу создаём тикет и редиректим
+      createTicketAndRedirect(currentUser);
+    } catch (e) {
+      console.error('Ошибка парсинга сессии', e);
+    }
+  }
+
+  // Переключение между входом и регистрацией
+  document.getElementById('showRegister').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('authBlock').style.display = 'none';
+    document.getElementById('registerBlock').style.display = 'block';
+  });
+  document.getElementById('showLogin').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('registerBlock').style.display = 'none';
+    document.getElementById('authBlock').style.display = 'block';
+  });
+
+  // Вход
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const login = document.getElementById('loginInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    const errorMsg = document.getElementById('errorMsg');
+    const successMsg = document.getElementById('successMsg');
+
+    if (!login || !password) {
+      errorMsg.style.display = 'block';
+      errorMsg.innerText = 'Введите логин и пароль';
+      return;
+    }
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('login', login)
+      .eq('password', password)
+      .maybeSingle();
+
+    if (error || !user) {
+      errorMsg.style.display = 'block';
+      errorMsg.innerText = 'Неверный логин или пароль';
+      return;
+    }
+
+    // Успех – сохраняем сессию
+    const sessionUser = {
+      login: user.login,
+      email: user.email,
+      secretWord: user.secret_word,
+      name: user.name || '',
+      avatar: user.avatar || '',
+      description: user.description || '',
+      fa_icon: user.fa_icon || '',
+      isAdmin: user.is_admin || false
+    };
+    localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
+
+    successMsg.style.display = 'block';
+    successMsg.innerText = 'Вход выполнен!';
+
+    createTicketAndRedirect(sessionUser);
+  });
+
+  // Регистрация
+  document.getElementById('registerBtn').addEventListener('click', async () => {
+    const login = document.getElementById('regLoginInput').value.trim();
+    const password = document.getElementById('regPasswordInput').value;
+    const errorMsg = document.getElementById('errorMsg');
+    const successMsg = document.getElementById('successMsg');
+
+    if (!login || password.length < 6) {
+      errorMsg.style.display = 'block';
+      errorMsg.innerText = 'Придумайте логин и пароль (мин. 6 символов)';
+      return;
+    }
+
+    // Проверка уникальности логина
+    const { data: exist } = await supabase
+      .from('users')
+      .select('login')
+      .eq('login', login)
+      .maybeSingle();
+    if (exist) {
+      errorMsg.style.display = 'block';
+      errorMsg.innerText = 'Логин уже занят';
+      return;
+    }
+
+    // Генерация секретного слова
+    const secretWord = await generateSecret(login);
+    const { error } = await supabase.from('users').insert([{
+      login,
+      email: login + '@diamkey.local',
+      password,
+      secret_word: secretWord,
+      name: '',
+      avatar: '',
+      description: '',
+      fa_icon: '',
+      is_admin: false
+    }]);
+
+    if (error) {
+      errorMsg.style.display = 'block';
+      errorMsg.innerText = 'Ошибка регистрации: ' + error.message;
+      return;
+    }
+
+    const sessionUser = {
+      login,
+      email: login + '@diamkey.local',
+      secretWord,
+      name: '',
+      avatar: '',
+      description: '',
+      fa_icon: '',
+      isAdmin: false
+    };
+    localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
+
+    successMsg.style.display = 'block';
+    successMsg.innerText = 'Аккаунт создан!';
+
+    createTicketAndRedirect(sessionUser);
+  });
+
+  async function generateSecret(login) {
+    const msg = login + Date.now() + Math.random();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 24).toUpperCase();
+  }
+
+  async function createTicketAndRedirect(user) {
+    if (!redirect) {
+      document.getElementById('successMsg').innerText = 'Готово! Можете закрыть вкладку.';
+      return;
+    }
+    const ticket = 'diam_ticket_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
+    await supabase.from('oauth_tickets').insert([{ ticket, email: user.email }]);
+    setTimeout(() => {
+      window.location.href = redirect + (redirect.includes('?') ? '&' : '?') + 'ticket=' + ticket;
+    }, 1000);
+  }
+
+  // Скрываем лишнее, если сессия уже активна
+  if (saved) {
+    document.getElementById('authBlock').style.display = 'none';
+    document.getElementById('registerBlock').style.display = 'none';
+  }
+</script>
+</body>
+</html>
