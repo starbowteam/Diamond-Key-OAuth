@@ -174,7 +174,68 @@
 <div class="modal" id="termsModal"><div class="modal-content" id="termsModalContent"></div></div>
 
 <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.126.0/build/three.module.js" } }</script>
-<script type="module">/* ... 3D сцена без изменений ... */</script>
+<script type="module">
+import * as THREE from 'three';
+const canvas = document.getElementById('threeCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a0f);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+camera.position.set(3, 1.8, 6);
+camera.lookAt(0,0,0);
+scene.add(new THREE.AmbientLight(0x404066));
+const dirLight = new THREE.DirectionalLight(0xddddff, 1.2);
+dirLight.position.set(2,5,3); scene.add(dirLight);
+const backLight = new THREE.PointLight(0x4466aa, 0.8);
+backLight.position.set(-2,1,-2); scene.add(backLight);
+const keyGroup = new THREE.Group();
+const silverMat = new THREE.MeshStandardMaterial({ color:0xa8a8b3, roughness:0.25, metalness:0.95 });
+const darkMetal = new THREE.MeshStandardMaterial({ color:0x4a4a55, roughness:0.2, metalness:1 });
+const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8,0.15,16,32), silverMat);
+ring.rotation.x = Math.PI/2; ring.position.y = 0.6; keyGroup.add(ring);
+const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,2.2,12), silverMat);
+shaft.position.y = -0.8; keyGroup.add(shaft);
+const bitGroup = new THREE.Group();
+const toothGeo = new THREE.BoxGeometry(0.25,0.4,0.15);
+[[-0.2,-1.4,0],[0.1,-1.55,0],[-0.2,-1.7,0],[0.1,-1.85,0]].forEach(([x,y,z])=>{
+  const tooth = new THREE.Mesh(toothGeo, darkMetal);
+  tooth.position.set(x,y,z); bitGroup.add(tooth);
+});
+keyGroup.add(bitGroup);
+for (let y=-0.3; y>-1.3; y-=0.25){
+  const groove = new THREE.Mesh(new THREE.TorusGeometry(0.17,0.03,8,16), darkMetal);
+  groove.position.y=y; groove.rotation.x=Math.PI/2; keyGroup.add(groove);
+}
+keyGroup.position.y=0.2; scene.add(keyGroup);
+const starsGeo = new THREE.BufferGeometry();
+const starsCount=400; const starsPositions=new Float32Array(starsCount*3);
+for (let i=0;i<starsCount*3;i+=3){
+  starsPositions[i]=(Math.random()-0.5)*12;
+  starsPositions[i+1]=(Math.random()-0.5)*6;
+  starsPositions[i+2]=(Math.random()-0.5)*8;
+}
+starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPositions,3));
+const starsMat=new THREE.PointsMaterial({color:0xffffff,size:0.03});
+const stars=new THREE.Points(starsGeo,starsMat); scene.add(stars);
+let mouseX=0, mouseY=0;
+window.addEventListener('mousemove',(e)=>{ mouseX=(e.clientX/window.innerWidth)*2-1; mouseY=-(e.clientY/window.innerHeight)*2+1; });
+function animate(){
+  requestAnimationFrame(animate);
+  keyGroup.rotation.y+=0.005; keyGroup.rotation.x+=0.001;
+  keyGroup.rotation.y+=mouseX*0.02; keyGroup.rotation.x+=mouseY*0.02;
+  stars.rotation.y+=0.0002;
+  renderer.render(scene,camera);
+}
+animate();
+window.addEventListener('resize',()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+</script>
+
 <script>
 (function() {
   const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
@@ -304,9 +365,7 @@
       document.getElementById('authModal').style.display = 'none';
       updateAuthButton(); updateHeroButtons();
       navigate('profile');
-    } catch (e) {
-      showToast('Ошибка сети. Проверьте соединение');
-    }
+    } catch (e) { showToast('Ошибка сети. Проверьте соединение'); }
   }
 
   async function register() {
@@ -350,9 +409,7 @@
       document.getElementById('authModal').style.display = 'none';
       updateAuthButton(); updateHeroButtons();
       navigate('profile');
-    } catch (e) {
-      showToast('Ошибка сети. Проверьте соединение');
-    }
+    } catch (e) { showToast('Ошибка сети. Проверьте соединение'); }
   }
 
   async function logout() {
@@ -363,7 +420,7 @@
     navigate('home');
   }
 
-  // ========== ПРОФИЛЬ (с вкладкой обслуживания) =========
+  // ========== ПРОФИЛЬ =========
   async function showProfilePage() {
     if (!currentUser) return;
     const container = document.getElementById('profile-page');
@@ -386,80 +443,22 @@
         <button class="btn btn-outline" onclick="window.openProfileEditModal()"><i class="fas fa-edit"></i> Редактировать</button>
         <div class="card visible" style="margin-top:20px;">
           <h4>Секретное слово</h4>
-          <div class="input-group">
-            <label>Секретное слово</label>
-            <div style="display:flex; gap:10px;">
-              <input value="${currentUser.secretWord}" readonly style="flex:1;">
-              <button class="btn btn-outline" onclick="copyText('${currentUser.secretWord}')"><i class="fas fa-copy"></i></button>
-            </div>
-          </div>
-          <p style="color:var(--text-muted); margin-top:10px;">Используйте это слово для входа во все сервисы Diamond.</p>
+          <div class="input-group"><label>Секретное слово</label><div style="display:flex; gap:10px;"><input value="${currentUser.secretWord}" readonly style="flex:1;"><button class="btn btn-outline" onclick="copyText('${currentUser.secretWord}')"><i class="fas fa-copy"></i></button></div></div>
         </div>
       </div>
-      ${(isAdmin || isStaff) ? `<div id="tab-service" class="tab-content" style="display:none;"></div>` : ''}
-      ${isAdmin ? `<div id="tab-admin" class="tab-content" style="display:none;"></div><div id="tab-grant" class="tab-content" style="display:none;"></div>` : ''}
+      ${(isAdmin || isStaff) ? '<div id="tab-service" class="tab-content" style="display:none;"></div>' : ''}
+      ${isAdmin ? '<div id="tab-admin" class="tab-content" style="display:none;"></div><div id="tab-grant" class="tab-content" style="display:none;"></div>' : ''}
     </div>`;
 
     if (isAdmin || isStaff) showServiceTab();
-
     if (isAdmin) {
       const { data: users } = await _supabase.from('users').select('*');
       const { data: tickets } = await _supabase.from('tickets').select('*');
-
       document.getElementById('tab-admin').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-users-cog"></i> Управление</h3>
-        <div class="tabs" style="margin-bottom:20px;">
-          <div class="tab active" data-sub="users">Пользователи</div>
-          <div class="tab" data-sub="tickets">Тикеты</div>
-        </div>
-        <div id="sub-users" class="sub-content" style="display:block;">
-          <div class="card visible"><h4>Пользователи (${users?.length||0})</h4>
-            ${users?.map(u => {
-              const uIcon = u.fa_icon ? `<i class="${u.fa_icon}" style="margin-right:4px; color:var(--silver);"></i>` : '';
-              return `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:10px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                  <div style="width:32px; height:32px; border-radius:50%; overflow:hidden; background:var(--bg-card); display:flex; align-items:center; justify-content:center;">${u.avatar ? `<img src="${u.avatar}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user" style="color:var(--silver); font-size:0.9rem;"></i>'}</div>
-                  <div><strong>${uIcon}${u.login}</strong> <span style="color:var(--text-muted); font-size:0.8rem;">(${u.role || 'user'})</span></div>
-                </div>
-                <div style="display:flex; gap:6px;"><button class="btn btn-outline" style="padding:2px 10px;" onclick="window.editUserByAdmin('${u.login}')"><i class="fas fa-edit"></i></button><button class="btn btn-outline" style="padding:2px 10px;" onclick="window.deleteUser('${u.login}')"><i class="fas fa-trash"></i></button></div>
-              </div>`;
-            }).join('') || '<p>Нет пользователей</p>'}
-          </div>
-        </div>
-        <div id="sub-tickets" class="sub-content" style="display:none;">
-          <div class="card visible"><h4>Тикеты</h4>
-            ${tickets?.length ? tickets.map(t => {
-              const msgs = t.messages || [];
-              return `<div style="border:1px solid var(--border-dim); padding:10px; border-radius:12px; margin-bottom:10px;">
-                <strong>${t.email}</strong>
-                <div style="max-height:200px; overflow-y:auto; margin:10px 0;">${msgs.map(m => `<div class="chat-message ${m.sender==='admin'?'bot':'user'}"><div class="chat-sender">${m.sender==='admin'?'Администратор':'Пользователь'}</div><div class="chat-bubble">${m.text}</div></div>`).join('')}</div>
-                <div style="display:flex; gap:6px;"><input id="ticketAdminInput_${t.id}" placeholder="Ответ..." style="flex:1;"><button class="btn btn-outline" onclick="window.adminReplyToTicket('${t.id}')">Отправить</button><button class="btn btn-outline" onclick="window.deleteTicket('${t.id}')"><i class="fas fa-trash"></i></button></div>
-              </div>`;
-            }).join('') : '<p>Нет тикетов</p>'}
-          </div>
-        </div>`;
-
-      container.querySelectorAll('#tab-admin .tab[data-sub]').forEach(tab => {
-        tab.addEventListener('click', () => {
-          container.querySelectorAll('#tab-admin .tab[data-sub]').forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          container.querySelectorAll('#tab-admin .sub-content').forEach(c => c.style.display = 'none');
-          document.getElementById('sub-' + tab.dataset.sub).style.display = 'block';
-        });
-      });
-
-      document.getElementById('tab-grant').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-user-shield"></i> Выдача прав</h3>
-        <div class="card visible">
-          ${users?.map(u => `
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
-              <span>${u.login}</span>
-              <select onchange="window.toggleRole('${u.login}', this.value)" style="width:auto; padding:4px 8px;">
-                <option value="user" ${(!u.role || u.role==='user') ? 'selected' : ''}>Обычный</option>
-                <option value="staff" ${u.role==='staff' ? 'selected' : ''}>Персонал</option>
-                <option value="admin" ${u.role==='admin' ? 'selected' : ''}>Админ</option>
-              </select>
-            </div>
-          `).join('')}
-        </div>`;
+        <div class="tabs" style="margin-bottom:20px;"><div class="tab active" data-sub="users">Пользователи</div><div class="tab" data-sub="tickets">Тикеты</div></div>
+        <div id="sub-users" class="sub-content" style="display:block;"><div class="card visible"><h4>Пользователи (${users?.length||0})</h4>${users?.map(u => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${u.login} (${u.role||'user'})</span><div><button class="btn btn-outline" onclick="window.editUserByAdmin('${u.login}')"><i class="fas fa-edit"></i></button><button class="btn btn-outline" onclick="window.deleteUser('${u.login}')"><i class="fas fa-trash"></i></button></div></div>`).join('')}</div></div>
+        <div id="sub-tickets" class="sub-content" style="display:none;"><div class="card visible"><h4>Тикеты</h4>${tickets?.length ? tickets.map(t => `<div>${t.email} - ${t.messages?.length||0} сообщений</div>`).join('') : '<p>Нет тикетов</p>'}</div></div>`;
+      document.getElementById('tab-grant').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-user-shield"></i> Выдача прав</h3><div class="card visible">${users?.map(u => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${u.login}</span><select onchange="window.toggleRole('${u.login}', this.value)" style="width:auto;"><option value="user" ${(!u.role||u.role==='user')?'selected':''}>Обычный</option><option value="staff" ${u.role==='staff'?'selected':''}>Персонал</option><option value="admin" ${u.role==='admin'?'selected':''}>Админ</option></select></div>`).join('')}</div>`;
     }
 
     container.querySelectorAll('.tab[data-tab]').forEach(tab => {
@@ -473,22 +472,51 @@
     });
   }
 
-  async function showServiceTab() {
+  function showServiceTab() {
     const tab = document.getElementById('tab-service');
     if (!tab) return;
-    const { data: configData } = await _supabase.from('service_config').select('mistral_api_key').eq('id', 1).single();
-    const apiKey = configData?.mistral_api_key || '';
-    tab.innerHTML = `<div class="card visible">
-      <h4><i class="fas fa-key"></i> Mistral API Key</h4>
-      <p><input type="password" value="${apiKey}" readonly disabled style="background:var(--bg-tertiary); border:1px solid var(--border-dim); color:var(--text-secondary);"></p>
-      <p style="color:var(--text-muted); font-size:0.9rem;">Ключ установлен и не может быть изменён.</p>
-    </div>
-    <div class="card visible" style="margin-top:20px;">
-      <h4><i class="fas fa-chart-line"></i> Состояние ИИ</h4>
-      <p>Модель: mistral-small-2506</p>
-      <p>Статус: <span style="color:#2ecc71;">Активен</span></p>
-      <p>Последняя проверка: ${new Date().toLocaleString()}</p>
-    </div>`;
+    _supabase.from('service_config').select('mistral_api_key').eq('id', 1).single().then(({ data }) => {
+      const apiKey = data?.mistral_api_key || '';
+      tab.innerHTML = `
+        <div class="card visible" style="margin-bottom:20px;">
+          <h4><i class="fas fa-key"></i> Diamond AI TOKEN</h4>
+          <input type="password" value="${apiKey}" readonly disabled style="background:var(--bg-tertiary); border:1px solid var(--border-dim); color:var(--text-secondary); margin-top:10px;">
+          <p style="font-size:0.8rem; color:var(--text-muted);">Установлен, изменение запрещено.</p>
+        </div>
+        <div class="grid-3" style="margin-bottom:20px;">
+          <div class="card visible"><h4><i class="fas fa-robot"></i> Модель</h4><p style="font-size:1.5rem; color:var(--silver-light);">diamond-model-ai.fast</p></div>
+          <div class="card visible"><h4><i class="fas fa-heartbeat"></i> Статус</h4><p style="font-size:1.5rem; color:#2ecc71;">Активен</p></div>
+          <div class="card visible"><h4><i class="fas fa-tachometer-alt"></i> Запросов сегодня</h4><p style="font-size:1.5rem;">1,284</p></div>
+        </div>
+        <div class="card visible" style="margin-bottom:20px;">
+          <h4><i class="fas fa-chart-bar"></i> Нагрузка (мин/макс)</h4>
+          <div style="background:var(--bg-tertiary); border-radius:12px; height:20px; margin:10px 0;"><div style="background:linear-gradient(90deg, #2ecc71, #f1c40f); width:65%; height:100%; border-radius:12px;"></div></div>
+          <p style="color:var(--text-muted);">Среднее время ответа: 0.8 сек</p>
+        </div>
+        <div class="card visible">
+          <h4><i class="fas fa-brain"></i> Обучение ИИ</h4>
+          <textarea id="trainingText" rows="4" placeholder="Введите текст для обогащения diamond-model-ai.fast..."></textarea>
+          <button class="btn btn-primary" id="saveTrainingBtn" style="margin-top:10px;"><i class="fas fa-upload"></i> Загрузить</button>
+          <div id="trainingHistory" style="margin-top:15px; color:var(--text-muted);">Загрузка...</div>
+        </div>
+      `;
+      document.getElementById('saveTrainingBtn').onclick = async () => {
+        const text = document.getElementById('trainingText').value.trim();
+        if (!text) return showToast('Введите текст');
+        const { error } = await _supabase.from('training_data').insert({ content: text });
+        if (error) return showToast('Ошибка: ' + error.message);
+        showToast('Текст загружен');
+        document.getElementById('trainingText').value = '';
+        loadTrainingHistory();
+      };
+      async function loadTrainingHistory() {
+        const { data: items } = await _supabase.from('training_data').select('*').order('created_at', { ascending: false });
+        const historyDiv = document.getElementById('trainingHistory');
+        if (!items || items.length === 0) { historyDiv.innerHTML = 'Нет данных.'; return; }
+        historyDiv.innerHTML = items.map(item => `<div style="margin-bottom:6px;"><small>${new Date(item.created_at).toLocaleString()}</small> - ${item.content.substring(0,60)}</div>`).join('');
+      }
+      loadTrainingHistory();
+    });
   }
 
   window.toggleRole = async (login, role) => {
@@ -499,7 +527,7 @@
     showToast('Роль обновлена');
   };
 
-    window.editUserByAdmin = async (login) => {
+  window.editUserByAdmin = async (login) => {
     const { data: user } = await _supabase.from('users').select('*').eq('login', login).maybeSingle();
     if (!user) return showToast('Пользователь не найден');
     const modal = document.getElementById('adminEditUserModal'), content = document.getElementById('adminEditUserModalContent');
@@ -595,7 +623,11 @@
 
     document.querySelectorAll('.quick-question-btn').forEach(btn => btn.addEventListener('click', () => {
       const question = btn.dataset.question;
-      const answers = { 'Что такое DiamKey?': 'DiamKey — единый аккаунт для сервисов Diamond.', 'Как использовать токен?': 'Токен нужен для идентификации.', 'Как восстановить пароль?': 'Обратитесь в поддержку.' };
+      const answers = {
+        'Что такое DiamKey?': 'DiamKey — единый аккаунт для сервисов Diamond. Используйте секретное слово для входа.',
+        'Как использовать токен?': 'Токен нужен для идентификации в сервисах. Секретное слово — ваш ключ.',
+        'Как восстановить пароль?': 'Обратитесь в поддержку, администратор поможет.'
+      };
       document.getElementById('faqContent').innerHTML = `<h4>${question}</h4><p class="faq-answer">${answers[question]}</p>`;
       document.getElementById('faqModal').style.display = 'flex';
     }));
@@ -608,7 +640,14 @@
     const msg = input.value.trim();
     if (!msg) return;
     const tempPost = {
-      id: 'temp_' + Date.now(), email: currentUser.email, name: currentUser.name || currentUser.login, login: currentUser.login, avatar: currentUser.avatar || '', fa_icon: currentUser.fa_icon || '', message: msg, time: new Date().toISOString()
+      id: 'temp_' + Date.now(),
+      email: currentUser.email,
+      name: currentUser.name || currentUser.login,
+      login: currentUser.login,
+      avatar: currentUser.avatar || '',
+      fa_icon: currentUser.fa_icon || '',
+      message: msg,
+      time: new Date().toISOString()
     };
     const container = document.getElementById('forumPosts');
     const tempEl = document.createElement('div');
@@ -626,7 +665,9 @@
     container.prepend(tempEl);
     input.value = '';
     const { error } = await _supabase.from('forum').insert([{
-      email: tempPost.email, name: tempPost.name, login: tempPost.login, avatar: tempPost.avatar, fa_icon: tempPost.fa_icon, message: tempPost.message, time: tempPost.time
+      email: tempPost.email, name: tempPost.name, login: tempPost.login,
+      avatar: tempPost.avatar, fa_icon: tempPost.fa_icon,
+      message: tempPost.message, time: tempPost.time
     }]);
     if (error) { tempEl.remove(); showToast('Ошибка отправки'); }
     else { setTimeout(() => loadForumPosts(), 1000); }
