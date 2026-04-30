@@ -121,11 +121,9 @@
 </div>
 
 <script>
-  // переименовываем переменную, чтобы не конфликтовать с глобальной supabase
-  const _supabase = window.supabase.createClient(
-    'https://pqgwrokpizeelfrjmgoc.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk'
-  );
+  const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
+  const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const params = new URLSearchParams(window.location.search);
   const redirect = params.get('redirect');
@@ -145,9 +143,7 @@
   const saved = localStorage.getItem('diamkey_current');
   let currentUser = null;
   if (saved) {
-    try {
-      currentUser = JSON.parse(saved);
-    } catch (e) {}
+    try { currentUser = JSON.parse(saved); } catch (e) {}
   }
 
   if (currentUser && currentUser.login) {
@@ -180,38 +176,42 @@
       errorMsg.innerText = 'Введите логин и пароль';
       return;
     }
+    try {
+      const { data: user, error } = await _supabase
+        .from('users')
+        .select('*')
+        .eq('login', login)
+        .eq('password', password)
+        .maybeSingle();
 
-    const { data: user, error } = await _supabase
-      .from('users')
-      .select('*')
-      .eq('login', login)
-      .eq('password', password)
-      .maybeSingle();
+      if (error || !user) {
+        errorMsg.style.display = 'block';
+        errorMsg.innerText = 'Неверный логин или пароль';
+        return;
+      }
 
-    if (error || !user) {
+      const sessionUser = {
+        login: user.login,
+        email: user.email || (user.login + '@diamkey.local'),
+        secretWord: user.secret_word,
+        name: user.name || '',
+        avatar: user.avatar || '',
+        description: user.description || '',
+        fa_icon: user.fa_icon || ''
+      };
+      localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
+
+      authBlock.style.display = 'none';
+      registerBlock.style.display = 'none';
+      autoBlock.style.display = 'block';
+      statusTitle.innerText = 'Вход выполнен';
+      statusText.innerText = '';
+
+      await createTicketAndRedirect(sessionUser);
+    } catch (e) {
       errorMsg.style.display = 'block';
-      errorMsg.innerText = 'Неверный логин или пароль';
-      return;
+      errorMsg.innerText = 'Ошибка сети. Проверьте соединение';
     }
-
-    const sessionUser = {
-      login: user.login,
-      email: user.email || (user.login + '@diamkey.local'),
-      secretWord: user.secret_word,
-      name: user.name || '',
-      avatar: user.avatar || '',
-      description: user.description || '',
-      fa_icon: user.fa_icon || ''
-    };
-    localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
-
-    authBlock.style.display = 'none';
-    registerBlock.style.display = 'none';
-    autoBlock.style.display = 'block';
-    statusTitle.innerText = 'Вход выполнен';
-    statusText.innerText = '';
-
-    await createTicketAndRedirect(sessionUser);
   });
 
   // Регистрация
@@ -223,69 +223,73 @@
       errorMsg.innerText = 'Придумайте логин и пароль (мин. 6 символов)';
       return;
     }
+    try {
+      const { data: exist } = await _supabase
+        .from('users')
+        .select('login')
+        .eq('login', login)
+        .maybeSingle();
+      if (exist) {
+        errorMsg.style.display = 'block';
+        errorMsg.innerText = 'Логин уже занят';
+        return;
+      }
 
-    const { data: exist } = await _supabase
-      .from('users')
-      .select('login')
-      .eq('login', login)
-      .maybeSingle();
-    if (exist) {
+      const secretWord = await generateSecret(login);
+      const email = login + '@diamkey.local';
+      const token = generateToken();
+
+      const { error } = await _supabase.from('users').insert([{
+        login,
+        email,
+        password,
+        token,
+        secret_word: secretWord,
+        name: '',
+        avatar: '',
+        description: '',
+        fa_icon: '',
+        role: 'user',
+        is_admin: false
+      }]);
+
+      if (error) {
+        errorMsg.style.display = 'block';
+        errorMsg.innerText = 'Ошибка регистрации: ' + error.message;
+        return;
+      }
+
+      const sessionUser = {
+        login,
+        email,
+        secretWord,
+        name: '',
+        avatar: '',
+        description: '',
+        fa_icon: ''
+      };
+      localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
+
+      registerBlock.style.display = 'none';
+      authBlock.style.display = 'none';
+      autoBlock.style.display = 'block';
+      statusTitle.innerText = 'Аккаунт создан';
+      statusText.innerText = '';
+
+      await createTicketAndRedirect(sessionUser);
+    } catch (e) {
       errorMsg.style.display = 'block';
-      errorMsg.innerText = 'Логин уже занят';
-      return;
+      errorMsg.innerText = 'Ошибка сети. Проверьте соединение';
     }
-
-    // Генерируем токен, секретное слово и email
-    const token = generateToken();   // <-- теперь создаём токен
-    const secretWord = await generateSecret(login);
-    const email = login + '@diamkey.local';
-
-    const { error } = await _supabase.from('users').insert([{
-      login,
-      email,
-      password,
-      token,                    // <-- обязательно передаём
-      secret_word: secretWord,
-      name: '',
-      avatar: '',
-      description: '',
-      fa_icon: ''
-    }]);
-
-    if (error) {
-      errorMsg.style.display = 'block';
-      errorMsg.innerText = 'Ошибка регистрации: ' + error.message;
-      return;
-    }
-
-    const sessionUser = {
-      login,
-      email,
-      secretWord,
-      name: '',
-      avatar: '',
-      description: '',
-      fa_icon: ''
-    };
-    localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
-
-    registerBlock.style.display = 'none';
-    authBlock.style.display = 'none';
-    autoBlock.style.display = 'block';
-    statusTitle.innerText = 'Аккаунт создан';
-    statusText.innerText = '';
-
-    await createTicketAndRedirect(sessionUser);
   });
 
-  // Генераторы (как в основном DiamKey)
   function generateToken() {
     const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost'];
     const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key'];
-    const a = adj[Math.floor(Math.random() * adj.length)];
-    const b = nouns[Math.floor(Math.random() * nouns.length)];
-    const c = nouns[Math.floor(Math.random() * nouns.length)];
-    const num = Math.floor(1000 + Math.random() * 9000);
+    const a = adj[Math.floor(Math.random()*adj.length)];
+    const b = nouns[Math.floor(Math.random()*nouns.length)];
+    const c = nouns[Math.floor(Math.random()*nouns.length)];
+    const num = Math.floor(1000+Math.random()*9000);
     return `diamkey_${a}_${b}_${c}_${num}`;
   }
 
@@ -304,19 +308,24 @@
       return;
     }
     const ticket = 'diam_ticket_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
-    const { error } = await _supabase.from('oauth_tickets').insert([{
-      ticket,
-      login: user.login
-    }]);
-    if (error) {
-      console.error('Ошибка создания тикета:', error);
+    try {
+      const { error } = await _supabase.from('oauth_tickets').insert([{
+        ticket,
+        login: user.login
+      }]);
+      if (error) {
+        console.error('Ошибка создания тикета:', error);
+        errorMsg.style.display = 'block';
+        errorMsg.innerText = 'Не удалось создать тикет. Попробуйте позже.';
+        return;
+      }
+      setTimeout(() => {
+        window.location.href = redirect + (redirect.includes('?') ? '&' : '?') + 'ticket=' + ticket;
+      }, 1000);
+    } catch (e) {
       errorMsg.style.display = 'block';
-      errorMsg.innerText = 'Не удалось создать тикет. Попробуйте позже.';
-      return;
+      errorMsg.innerText = 'Ошибка сети. Проверьте соединение';
     }
-    setTimeout(() => {
-      window.location.href = redirect + (redirect.includes('?') ? '&' : '?') + 'ticket=' + ticket;
-    }, 1000);
   }
 </script>
 </body>
