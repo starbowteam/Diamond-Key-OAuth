@@ -118,6 +118,8 @@
       .chat-container { max-height: 300px; }
       .service-item { flex-direction: column; align-items: flex-start; }
       .progress-ring { width: 40px; height: 40px; font-size: 0.7rem; }
+      /* Делаем статус-дропдаун кликабельным */
+      .status-dropdown { pointer-events: auto; z-index: 3000; }
     }
     @media (max-width: 480px) { .hero h1 { font-size: 28px; } .page { padding: 0 12px 20px; } .btn { width: 100%; margin: 6px 0; } .hero-buttons { flex-direction: column; align-items: center; } }
   </style>
@@ -375,36 +377,15 @@ window.addEventListener('resize',()=>{
     try {
       const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
       if (exist) return showToast('Логин уже занят');
-
       const token = generateToken();
       const secretWord = await generateSecret(login);
       const email = login + '@diamkey.local';
-
       const { error } = await _supabase.from('users').insert([{
-        login,
-        email,
-        password,
-        token,
-        secret_word: secretWord,
-        name: '',
-        avatar: '',
-        description: '',
-        fa_icon: '',
-        role: 'user',
-        is_admin: false
+        login, email, password, token, secret_word: secretWord,
+        name: '', avatar: '', description: '', fa_icon: '', role: 'user', is_admin: false
       }]);
       if (error) return showToast('Ошибка регистрации: ' + error.message);
-
-      currentUser = {
-        login,
-        email,
-        secretWord,
-        name: '',
-        avatar: '',
-        description: '',
-        fa_icon: '',
-        role: 'user'
-      };
+      currentUser = { login, email, secretWord, name: '', avatar: '', description: '', fa_icon: '', role: 'user' };
       localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
       document.getElementById('authModal').style.display = 'none';
       updateAuthButton(); updateHeroButtons();
@@ -435,21 +416,11 @@ window.addEventListener('resize',()=>{
         ${isAdmin ? '<div class="tab" data-tab="admin">Управление</div>' : ''}
         ${isAdmin ? '<div class="tab" data-tab="grant">Выдача прав</div>' : ''}
       </div>
-      <div id="tab-account" class="tab-content" style="display:block;">
-        <div style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
-          <div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:var(--bg-card); border:2px solid var(--silver-dark);">${avatarSrc ? `<img src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:80px; color:var(--silver);"></i>'}</div>
-          <div><h2 style="color:var(--silver-light); margin-bottom:5px;">${faIcon}${currentUser.login} ${isAdmin ? '<i class="fas fa-crown" style="color:var(--silver);" title="Администратор"></i>' : (isStaff ? '<i class="fas fa-user-cog" style="color:var(--silver);" title="Персонал"></i>' : '')}</h2><p style="color:var(--text-muted);">${currentUser.description || 'Нет описания'}</p></div>
-        </div>
-        <button class="btn btn-outline" onclick="window.openProfileEditModal()"><i class="fas fa-edit"></i> Редактировать</button>
-        <div class="card visible" style="margin-top:20px;">
-          <h4>Секретное слово</h4>
-          <div class="input-group"><label>Секретное слово</label><div style="display:flex; gap:10px;"><input value="${currentUser.secretWord}" readonly style="flex:1;"><button class="btn btn-outline" onclick="copyText('${currentUser.secretWord}')"><i class="fas fa-copy"></i></button></div></div>
-        </div>
-      </div>
+      <div id="tab-account" class="tab-content" style="display:block;"></div>
       ${(isAdmin || isStaff) ? '<div id="tab-service" class="tab-content" style="display:none;"></div>' : ''}
       ${isAdmin ? '<div id="tab-admin" class="tab-content" style="display:none;"></div><div id="tab-grant" class="tab-content" style="display:none;"></div>' : ''}
     </div>`;
-
+    showAccountTab();
     if (isAdmin || isStaff) showServiceTab();
     if (isAdmin) {
       const { data: users } = await _supabase.from('users').select('*');
@@ -457,20 +428,118 @@ window.addEventListener('resize',()=>{
       document.getElementById('tab-admin').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-users-cog"></i> Управление</h3>
         <div class="tabs" style="margin-bottom:20px;"><div class="tab active" data-sub="users">Пользователи</div><div class="tab" data-sub="tickets">Тикеты</div></div>
         <div id="sub-users" class="sub-content" style="display:block;"><div class="card visible"><h4>Пользователи (${users?.length||0})</h4>${users?.map(u => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${u.login} (${u.role||'user'})</span><div><button class="btn btn-outline" onclick="window.editUserByAdmin('${u.login}')"><i class="fas fa-edit"></i></button><button class="btn btn-outline" onclick="window.deleteUser('${u.login}')"><i class="fas fa-trash"></i></button></div></div>`).join('')}</div></div>
-        <div id="sub-tickets" class="sub-content" style="display:none;"><div class="card visible"><h4>Тикеты</h4>${tickets?.length ? tickets.map(t => `<div>${t.email} - ${t.messages?.length||0} сообщений</div>`).join('') : '<p>Нет тикетов</p>'}</div></div>`;
+        <div id="sub-tickets" class="sub-content" style="display:none;"><div class="card visible"><h4>Тикеты</h4>${tickets?.length ? tickets.map(t => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${t.email}</span><div><button class="btn btn-outline" onclick="window.adminReplyToTicket('${t.id}')">Ответить</button><button class="btn btn-outline" onclick="window.deleteTicket('${t.id}')"><i class="fas fa-trash"></i></button></div></div>`) : '<p>Нет тикетов</p>'}</div></div>`;
       document.getElementById('tab-grant').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-user-shield"></i> Выдача прав</h3><div class="card visible">${users?.map(u => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${u.login}</span><select onchange="window.toggleRole('${u.login}', this.value)" style="width:auto;"><option value="user" ${(!u.role||u.role==='user')?'selected':''}>Обычный</option><option value="staff" ${u.role==='staff'?'selected':''}>Персонал</option><option value="admin" ${u.role==='admin'?'selected':''}>Админ</option></select></div>`).join('')}</div>`;
+      // обработчики под-табов
+      container.querySelectorAll('#tab-admin .tab[data-sub]').forEach(tab => {
+        tab.addEventListener('click', () => {
+          container.querySelectorAll('#tab-admin .tab[data-sub]').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          container.querySelectorAll('#tab-admin .sub-content').forEach(c => c.style.display = 'none');
+          document.getElementById('sub-' + tab.dataset.sub).style.display = 'block';
+        });
+      });
     }
-
     container.querySelectorAll('.tab[data-tab]').forEach(tab => {
       tab.addEventListener('click', () => {
         container.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         container.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
         document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
+        if (tab.dataset.tab === 'account') showAccountTab();
         if (tab.dataset.tab === 'service') showServiceTab();
       });
     });
   }
+
+  function showAccountTab() {
+    const tab = document.getElementById('tab-account');
+    if (!tab) return;
+    const avatarSrc = currentUser.avatar || '';
+    const faIcon = currentUser.fa_icon ? `<i class="${currentUser.fa_icon}" style="color:var(--silver); margin-right:6px;"></i>` : '';
+    tab.innerHTML = `
+      <div class="card visible" style="margin-bottom:20px;">
+        <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+          <div style="width:100px; height:100px; border-radius:50%; overflow:hidden; background:var(--bg-card); border:2px solid var(--silver-dark); flex-shrink:0;">
+            ${avatarSrc ? `<img src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:100px; color:var(--silver); display:flex; align-items:center; justify-content:center; height:100%;"></i>'}
+          </div>
+          <div style="flex:1;">
+            <h2 style="color:var(--silver-light);">${faIcon}${currentUser.login}</h2>
+            <p style="color:var(--text-muted);">${currentUser.description || 'Добавьте описание профиля'}</p>
+            <div style="display:flex; gap:8px; margin-top:12px;">
+              <button class="btn btn-outline" onclick="window.editProfileField('name')"><i class="fas fa-pencil-alt"></i> Изменить имя</button>
+              <button class="btn btn-outline" onclick="window.editProfileField('description')"><i class="fas fa-pencil-alt"></i> Изменить описание</button>
+              <button class="btn btn-outline" onclick="window.changeAvatar()"><i class="fas fa-camera"></i> Сменить аватар</button>
+              <button class="btn btn-outline" onclick="window.changePassword()"><i class="fas fa-lock"></i> Сменить пароль</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  window.editProfileField = (field) => {
+    const modal = document.getElementById('profileEditModal');
+    const content = document.getElementById('profileEditModalContent');
+    const label = field === 'name' ? 'Имя' : 'Описание';
+    const value = field === 'name' ? (currentUser.name || '') : (currentUser.description || '');
+    content.innerHTML = `<h3>Редактировать ${label}</h3>
+      <div class="input-group"><label>${label}</label>
+        <input id="editProfileField" value="${value}" placeholder="${label}">
+      </div>
+      <button class="btn btn-primary" id="saveProfileField">Сохранить</button>
+      <button class="btn btn-outline" onclick="document.getElementById('profileEditModal').style.display='none'">Отмена</button>`;
+    modal.style.display = 'flex';
+    document.getElementById('saveProfileField').onclick = async () => {
+      const newVal = document.getElementById('editProfileField').value.trim();
+      const updates = field === 'name' ? { name: newVal } : { description: newVal };
+      const { error } = await _supabase.from('users').update(updates).eq('login', currentUser.login);
+      if (error) return showToast('Ошибка сохранения');
+      if (field === 'name') currentUser.name = newVal; else currentUser.description = newVal;
+      localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
+      modal.style.display = 'none';
+      showAccountTab();
+    };
+  };
+
+  window.changeAvatar = () => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const dataUrl = ev.target.result;
+        const { error } = await _supabase.from('users').update({ avatar: dataUrl }).eq('login', currentUser.login);
+        if (error) return showToast('Ошибка загрузки аватара');
+        currentUser.avatar = dataUrl;
+        localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
+        showAccountTab();
+      };
+      reader.readAsDataURL(file);
+    };
+    inp.click();
+  };
+
+  window.changePassword = () => {
+    const modal = document.getElementById('profileEditModal');
+    const content = document.getElementById('profileEditModalContent');
+    content.innerHTML = `<h3>Сменить пароль</h3>
+      <div class="input-group"><label>Текущий пароль</label><input id="oldPassword" type="password"></div>
+      <div class="input-group"><label>Новый пароль</label><input id="newPassword" type="password"></div>
+      <button class="btn btn-primary" id="saveNewPassword">Сохранить</button>
+      <button class="btn btn-outline" onclick="document.getElementById('profileEditModal').style.display='none'">Отмена</button>`;
+    modal.style.display = 'flex';
+    document.getElementById('saveNewPassword').onclick = async () => {
+      const oldPass = document.getElementById('oldPassword').value;
+      const newPass = document.getElementById('newPassword').value;
+      if (!oldPass || !newPass) return showToast('Заполните все поля');
+      const { data: user, error } = await _supabase.from('users').select('password').eq('login', currentUser.login).maybeSingle();
+      if (error || user.password !== oldPass) return showToast('Неверный текущий пароль');
+      await _supabase.from('users').update({ password: newPass }).eq('login', currentUser.login);
+      modal.style.display = 'none';
+      showToast('Пароль обновлён');
+    };
+  };
 
   function showServiceTab() {
     const tab = document.getElementById('tab-service');
@@ -539,7 +608,6 @@ window.addEventListener('resize',()=>{
       <div class="input-group"><label>Пароль</label><input id="editAdminPassword" type="password" placeholder="Новый пароль"></div>
       <div class="input-group"><label>Аватар (загрузите файл)</label><input type="file" id="editAdminAvatar" accept="image/*"></div>
       <div class="input-group"><label>Иконка</label><select id="editAdminFaIcon">${optionsHtml}</select></div>
-      <div class="input-group"><label>Секретное слово</label><input value="${user.secret_word}" readonly></div>
       <button class="btn btn-primary" id="saveAdminEditBtn">Сохранить</button>
       <button class="btn btn-outline" id="closeAdminEditModal">Закрыть</button>`;
     modal.style.display = 'flex';
@@ -624,9 +692,9 @@ window.addEventListener('resize',()=>{
     document.querySelectorAll('.quick-question-btn').forEach(btn => btn.addEventListener('click', () => {
       const question = btn.dataset.question;
       const answers = {
-        'Что такое DiamKey?': 'DiamKey — единый аккаунт для сервисов Diamond. Используйте секретное слово для входа.',
-        'Как использовать токен?': 'Токен нужен для идентификации в сервисах. Секретное слово — ваш ключ.',
-        'Как восстановить пароль?': 'Обратитесь в поддержку, администратор поможет.'
+        'Что такое DiamKey?': 'DiamKey — единый аккаунт для сервисов Diamond.',
+        'Как использовать токен?': 'Токен нужен для идентификации.',
+        'Как восстановить пароль?': 'Обратитесь в поддержку.'
       };
       document.getElementById('faqContent').innerHTML = `<h4>${question}</h4><p class="faq-answer">${answers[question]}</p>`;
       document.getElementById('faqModal').style.display = 'flex';
@@ -640,14 +708,7 @@ window.addEventListener('resize',()=>{
     const msg = input.value.trim();
     if (!msg) return;
     const tempPost = {
-      id: 'temp_' + Date.now(),
-      email: currentUser.email,
-      name: currentUser.name || currentUser.login,
-      login: currentUser.login,
-      avatar: currentUser.avatar || '',
-      fa_icon: currentUser.fa_icon || '',
-      message: msg,
-      time: new Date().toISOString()
+      id: 'temp_' + Date.now(), email: currentUser.email, name: currentUser.name || currentUser.login, login: currentUser.login, avatar: currentUser.avatar || '', fa_icon: currentUser.fa_icon || '', message: msg, time: new Date().toISOString()
     };
     const container = document.getElementById('forumPosts');
     const tempEl = document.createElement('div');
@@ -665,9 +726,7 @@ window.addEventListener('resize',()=>{
     container.prepend(tempEl);
     input.value = '';
     const { error } = await _supabase.from('forum').insert([{
-      email: tempPost.email, name: tempPost.name, login: tempPost.login,
-      avatar: tempPost.avatar, fa_icon: tempPost.fa_icon,
-      message: tempPost.message, time: tempPost.time
+      email: tempPost.email, name: tempPost.name, login: tempPost.login, avatar: tempPost.avatar, fa_icon: tempPost.fa_icon, message: tempPost.message, time: tempPost.time
     }]);
     if (error) { tempEl.remove(); showToast('Ошибка отправки'); }
     else { setTimeout(() => loadForumPosts(), 1000); }
@@ -696,45 +755,6 @@ window.addEventListener('resize',()=>{
   }
 
   window.deleteForumPost = async (id) => { await _supabase.from('forum').delete().eq('id', id); loadForumPosts(); };
-
-  window.openProfileEditModal = async () => {
-    if (!currentUser) return;
-    const modal = document.getElementById('profileEditModal');
-    modal.style.display = 'flex';
-    document.getElementById('profileEditModalContent').innerHTML = `<h3>Редактирование профиля</h3>
-      <div class="input-group"><label>Имя</label><input id="editName" value="${currentUser.name||''}"></div>
-      <div class="input-group"><label>Описание</label><textarea id="editDescription">${currentUser.description||''}</textarea></div>
-      <div class="input-group"><label>Аватар (загрузите файл)</label><input type="file" id="editAvatarFile" accept="image/*"></div>
-      <button class="btn btn-primary" id="saveProfileBtn">Сохранить</button>
-      <button class="btn btn-outline" id="closeProfileEditModal">Закрыть</button>`;
-    document.getElementById('saveProfileBtn').onclick = async () => {
-      const name = document.getElementById('editName').value.trim();
-      const desc = document.getElementById('editDescription').value.trim();
-      const avatarFile = document.getElementById('editAvatarFile').files[0];
-      const updates = { name, description: desc };
-      if (avatarFile) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          updates.avatar = e.target.result;
-          currentUser.name = name; currentUser.description = desc; currentUser.avatar = updates.avatar;
-          localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
-          modal.style.display = 'none';
-          showProfilePage();
-          const { error } = await _supabase.from('users').update(updates).eq('login', currentUser.login);
-          if (error) showToast('Ошибка сохранения аватара');
-        };
-        reader.readAsDataURL(avatarFile);
-      } else {
-        currentUser.name = name; currentUser.description = desc;
-        localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
-        modal.style.display = 'none';
-        showProfilePage();
-        const { error } = await _supabase.from('users').update(updates).eq('login', currentUser.login);
-        if (error) showToast('Ошибка сохранения');
-      }
-    };
-    document.getElementById('closeProfileEditModal').onclick = () => modal.style.display = 'none';
-  };
 
   window.copyText = (t) => { navigator.clipboard.writeText(t); showToast('Скопировано!'); };
 
