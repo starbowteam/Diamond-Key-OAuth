@@ -47,7 +47,7 @@
     .page { display: none; max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; }
     .page.active { display: block; }
     .hero { padding: 100px 0 80px; text-align: center; }
-    .hero h1 { font-size: clamp(44px, 8vw, 72px); font-weight: 800; background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 24px; letter-spacing: -1px; }
+    .hero h1 { font-size: clamp(44px, 8vw, 72px); font-weight: 800; background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 24px; letter-spacing: -1px; min-height: 1.2em; }
     .hero p { font-size: 1.25rem; color: var(--text-muted); max-width: 700px; margin: 0 auto 40px; }
     .btn { display: inline-block; padding: 14px 36px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.3s; text-decoration: none; border: 1px solid var(--border-dim); background: transparent; color: var(--text-light); margin: 6px; font-size: 1rem; }
     .btn-primary { background: var(--grad-silver); border-color: #3a3a44; }
@@ -58,7 +58,8 @@
     .section-title { font-size: 2.5rem; font-weight: 700; text-align: center; margin-bottom: 56px; }
     .section-title span { background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; }
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; }
-    .card { background: var(--bg-card); border-radius: 32px; padding: 32px 24px; border: 1px solid var(--border-dim); transition: all 0.3s; }
+    .card { background: var(--bg-card); border-radius: 32px; padding: 32px 24px; border: 1px solid var(--border-dim); transition: all 0.3s; opacity: 0; transform: translateY(20px); }
+    .card.visible { opacity: 1; transform: translateY(0); transition: all 0.6s ease; }
     .card:hover { transform: translateY(-8px); border-color: #3a3a44; box-shadow: 0 20px 30px -12px rgba(0,0,0,0.5); }
     .card-icon { font-size: 40px; margin-bottom: 20px; color: var(--silver); }
     .card h3 { font-size: 1.5rem; margin-bottom: 12px; }
@@ -506,6 +507,7 @@ window.addEventListener('resize',()=>{
     }
 
     if (isAdmin) {
+      const { data: users } = await _supabase.from('users').select('*');
       document.getElementById('tab-grant').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-user-shield"></i> Выдача прав</h3>
         <div class="card visible">
           ${users?.map(u => `
@@ -545,25 +547,61 @@ window.addEventListener('resize',()=>{
     showToast('Роль обновлена');
   };
 
-  // ========== СЕРВИС (ОБСЛУЖИВАНИЕ) ==========
-  async function showServicePage() {
-    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'staff')) return;
-    const container = document.getElementById('service-page');
-    container.innerHTML = `<div style="padding:60px 0; max-width:1200px; margin:0 auto;">
-      <h2 style="color:var(--silver-light); margin-bottom:30px;"><i class="fas fa-tools"></i> Обслуживание</h2>
-      <div class="tabs">
-        <div class="tab active" data-tab="api">API-ключ</div>
-        <div class="tab" data-tab="training">Обучение ИИ</div>
-      </div>
-      <div id="tab-api" class="tab-content" style="display:block;">
-        <div class="card visible">
-          <h4>Mistral API Key</h4>
-          <div class="input-group">
-            <label>API-ключ</label>
-            <input type="password" id="mistralApiKeyInput" value="" placeholder="Загрузка...">
-          </div>
-          <button class="btn btn-primary" id="saveApiKeyBtn"><i class="fas fa-save"></i> Сохранить</button>
-        </div>
+  window.editUserByAdmin = async (login) => {
+    const { data: user } = await _supabase.from('users').select('*').eq('login', login).maybeSingle();
+    if (!user) return showToast('Пользователь не найден');
+    const modal = document.getElementById('adminEditUserModal'), content = document.getElementById('adminEditUserModalContent');
+    const faOptions = [ { value:'', label:'Без иконки' }, { value:'fa-solid fa-star', label:'⭐ Звезда' }, { value:'fa-solid fa-crown', label:'👑 Корона' }, { value:'fa-solid fa-heart', label:'❤️ Сердце' }, { value:'fa-solid fa-fire', label:'🔥 Огонь' }, { value:'fa-solid fa-check', label:'✅ Галочка' } ];
+    const optionsHtml = faOptions.map(o => `<option value="${o.value}" ${user.fa_icon===o.value?'selected':''}>${o.label}</option>`).join('');
+    content.innerHTML = `<h3>Редактирование пользователя</h3>
+      <div class="input-group"><label>Логин</label><input id="editAdminLogin" value="${user.login||''}"></div>
+      <div class="input-group"><label>Имя</label><input id="editAdminName" value="${user.name||''}"></div>
+      <div class="input-group"><label>Пароль</label><input id="editAdminPassword" type="password" placeholder="Новый пароль"></div>
+      <div class="input-group"><label>Аватар (загрузите файл)</label><input type="file" id="editAdminAvatar" accept="image/*"></div>
+      <div class="input-group"><label>Иконка</label><select id="editAdminFaIcon">${optionsHtml}</select></div>
+      <div class="input-group"><label>Секретное слово</label><input value="${user.secret_word}" readonly></div>
+      <button class="btn btn-primary" id="saveAdminEditBtn">Сохранить</button>
+      <button class="btn btn-outline" id="closeAdminEditModal">Закрыть</button>`;
+    modal.style.display = 'flex';
+    document.getElementById('saveAdminEditBtn').onclick = async () => {
+      const name = document.getElementById('editAdminName').value.trim();
+      const loginNew = document.getElementById('editAdminLogin').value.trim();
+      const password = document.getElementById('editAdminPassword').value.trim();
+      const fa_icon = document.getElementById('editAdminFaIcon').value;
+      const avatarFile = document.getElementById('editAdminAvatar').files[0];
+      const updates = { name, login: loginNew, fa_icon };
+      if (password) updates.password = password;
+      if (avatarFile) {
+        const reader = new FileReader();
+        reader.onload = async (e) => { updates.avatar = e.target.result; await _supabase.from('users').update(updates).eq('login', login); modal.style.display='none'; showProfilePage(); };
+        reader.readAsDataURL(avatarFile);
+      } else { await _supabase.from('users').update(updates).eq('login', login); modal.style.display='none'; showProfilePage(); }
+    };
+    document.getElementById('closeAdminEditModal').onclick = () => modal.style.display = 'none';
+  };
+
+  window.deleteTicket = async (ticketId) => {
+    if (!confirm('Удалить тикет?')) return;
+    await _supabase.from('tickets').delete().eq('id', ticketId);
+    showProfilePage();
+  };
+  window.adminReplyToTicket = async (ticketId) => {
+    const input = document.getElementById('ticketAdminInput_' + ticketId);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    const { data: ticket } = await _supabase.from('tickets').select('messages').eq('id', ticketId).single();
+    if (!ticket) return;
+    const messages = [...(ticket.messages || []), { sender: 'admin', text, time: new Date().toISOString() }];
+    await _supabase.from('tickets').update({ messages }).eq('id', ticketId);
+    input.value = '';
+    showProfilePage();
+  };
+  window.deleteUser = async (login) => {
+    if (!confirm('Удалить пользователя?')) return;
+    await _supabase.from('users').delete().eq('login', login);
+    showProfilePage();
+  };
       </div>
       <div id="tab-training" class="tab-content" style="display:none;">
         <div class="card visible">
@@ -578,13 +616,11 @@ window.addEventListener('resize',()=>{
       </div>
     </div>`;
 
-    // Загружаем текущий API-ключ
     const { data: configData } = await _supabase.from('service_config').select('mistral_api_key').eq('id', 1).single();
     if (configData) {
       document.getElementById('mistralApiKeyInput').value = configData.mistral_api_key;
     }
 
-    // Обработчики
     document.getElementById('saveApiKeyBtn').onclick = async () => {
       const newKey = document.getElementById('mistralApiKeyInput').value.trim();
       if (!newKey) return showToast('Введите ключ');
@@ -614,7 +650,6 @@ window.addEventListener('resize',()=>{
     }
     loadTrainingHistory();
 
-    // Переключение вкладок
     container.querySelectorAll('.tab[data-tab]').forEach(tab => {
       tab.addEventListener('click', () => {
         container.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
@@ -624,9 +659,6 @@ window.addEventListener('resize',()=>{
       });
     });
   }
-
-  window.openProfileEditModal = async () => { /* ... (как раньше) ... */ };
-  window.copyText = (t) => { navigator.clipboard.writeText(t); showToast('Скопировано!'); };
 
   function startCipherEffect(el, text) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
