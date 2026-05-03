@@ -158,11 +158,20 @@
     const btn = document.getElementById('loginBtn');
     const login = document.getElementById('loginInput').value.trim();
     const password = document.getElementById('passwordInput').value;
-    if (!login || !password) { errorMsg.innerText = 'Введите логин и пароль'; errorMsg.style.display='block'; return; }
-    btn.disabled = true; errorMsg.style.display='none';
+    errorMsg.style.display = 'none';
+    if (!login || !password) {
+      errorMsg.innerText = 'Введите логин и пароль';
+      errorMsg.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
     try {
       const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
-      if (error || !user) { errorMsg.innerText = 'Неверный логин или пароль'; errorMsg.style.display='block'; btn.disabled=false; return; }
+      if (error || !user) {
+        errorMsg.innerText = 'Неверный логин или пароль';
+        errorMsg.style.display = 'block';
+        return;
+      }
       if (!user.secret_word) {
         const secret = generateFastSecret();
         await _supabase.from('users').update({ secret_word: secret }).eq('login', user.login);
@@ -176,22 +185,41 @@
       statusTitle.innerText = 'Вход выполнен';
       statusText.innerText = '';
       await createTicketAndRedirect(sessionUser);
-    } catch(e) { errorMsg.innerText = 'Ошибка сети. Попробуйте ещё раз.'; errorMsg.style.display='block'; btn.disabled=false; }
+    } catch (e) {
+      console.error(e);
+      errorMsg.innerText = 'Ошибка сети. Попробуйте ещё раз.';
+      errorMsg.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
   });
   document.getElementById('registerBtn').addEventListener('click', async () => {
     const btn = document.getElementById('registerBtn');
     const login = document.getElementById('regLoginInput').value.trim();
     const password = document.getElementById('regPasswordInput').value;
-    if (!login || password.length < 6) { errorMsg.innerText = 'Логин и пароль (мин. 6 символов)'; errorMsg.style.display='block'; return; }
-    btn.disabled = true; errorMsg.style.display='none';
+    errorMsg.style.display = 'none';
+    if (!login || password.length < 6) {
+      errorMsg.innerText = 'Логин и пароль (мин. 6 символов)';
+      errorMsg.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
     try {
       const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
-      if (exist) { errorMsg.innerText = 'Логин уже занят'; errorMsg.style.display='block'; btn.disabled=false; return; }
+      if (exist) {
+        errorMsg.innerText = 'Логин уже занят';
+        errorMsg.style.display = 'block';
+        return;
+      }
       const secretWord = generateFastSecret();
       const email = login + '@diamkey.local';
       const token = generateToken();
       const { error } = await _supabase.from('users').insert([{ login, email, password, token, secret_word: secretWord, name:'', avatar:'', description:'', fa_icon:'', role:'user', is_admin:false }]);
-      if (error) { errorMsg.innerText = 'Ошибка: ' + error.message; errorMsg.style.display='block'; btn.disabled=false; return; }
+      if (error) {
+        errorMsg.innerText = 'Ошибка: ' + error.message;
+        errorMsg.style.display = 'block';
+        return;
+      }
       const sessionUser = { login, email, secretWord, name:'', avatar:'', description:'', fa_icon:'' };
       localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
       registerBlock.style.display = 'none';
@@ -200,16 +228,35 @@
       statusTitle.innerText = 'Аккаунт создан';
       statusText.innerText = '';
       await createTicketAndRedirect(sessionUser);
-    } catch(e) { errorMsg.innerText = 'Ошибка сети. Попробуйте ещё раз.'; errorMsg.style.display='block'; btn.disabled=false; }
+    } catch (e) {
+      console.error(e);
+      errorMsg.innerText = 'Ошибка сети. Попробуйте ещё раз.';
+      errorMsg.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
   });
   async function createTicketAndRedirect(user) {
-    if (!redirect) { statusTitle.innerText = 'Готово!'; autoBlock.innerHTML = '<i class="fas fa-check-circle" style="font-size:3rem; color:#5d9b7a;"></i>'; return; }
+    if (!redirect) {
+      statusTitle.innerText = 'Готово!';
+      autoBlock.innerHTML = '<i class="fas fa-check-circle" style="font-size:3rem; color:#5d9b7a;"></i>';
+      return;
+    }
     const ticket = 'diam_ticket_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
     try {
       const { error } = await _supabase.from('oauth_tickets').insert([{ ticket, login: user.login }]);
-      if (error) { errorMsg.innerText = 'Не удалось создать тикет. Попробуйте позже.'; errorMsg.style.display='block'; return; }
-      setTimeout(() => { window.location.href = redirect + (redirect.includes('?') ? '&' : '?') + 'ticket=' + ticket; }, 800);
-    } catch(e) { errorMsg.innerText = 'Ошибка сети. Проверьте соединение'; errorMsg.style.display='block'; }
+      if (error) {
+        errorMsg.innerText = 'Не удалось создать тикет. Попробуйте позже.';
+        errorMsg.style.display = 'block';
+        return;
+      }
+      setTimeout(() => {
+        window.location.href = redirect + (redirect.includes('?') ? '&' : '?') + 'ticket=' + ticket;
+      }, 800);
+    } catch (e) {
+      errorMsg.innerText = 'Ошибка сети. Проверьте соединение';
+      errorMsg.style.display = 'block';
+    }
   }
 </script>
 </body>
