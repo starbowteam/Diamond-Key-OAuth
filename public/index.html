@@ -29,6 +29,8 @@
     .content { position: relative; z-index:1; min-height: 100vh; }
     .navbar { display: flex; justify-content: space-between; align-items: center; padding: 24px; flex-wrap: wrap; gap:20px; animation: fadeUp 0.6s ease; }
     .logo a { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800; color: var(--silver-light); text-decoration: none; }
+    .logo a img { height: 40px; width: auto; transition: transform 0.2s; }
+    .logo a img:hover { transform: scale(1.02); }
     .nav-links { display: flex; gap: 32px; align-items: center; position: relative; }
     .nav-links a, .nav-links .status-btn, .nav-links #authBtn { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.2s; background: none; border: none; font-size: 1rem; font-family: inherit; cursor: pointer; }
     .nav-links a:hover, .nav-links .status-btn:hover, .nav-links #authBtn:hover { color: var(--text-light); }
@@ -113,8 +115,68 @@
       box-shadow: 0 8px 20px rgba(0,0,0,0.4);
     }
     .cta-button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,0.5); }
-    @media (max-width: 1024px) { .nav-links { gap: 20px; } .hero h1 { font-size: 48px; } .section { padding: 60px 0; } .section-title { font-size: 2rem; margin-bottom: 40px; } }
+    /* Стили для карточек сервисов в профиле */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 40px;
+      margin-bottom: 30px;
+    }
+    .service-card {
+      background: rgba(20, 22, 28, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(180, 190, 220, 0.2);
+      border-radius: 28px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: 0.3s;
+    }
+    .service-card:hover {
+      transform: translateY(-5px);
+      border-color: #b0b8d0;
+      box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.5);
+    }
+    .service-img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      margin-bottom: 16px;
+    }
+    .service-card h3 {
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+    .service-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .service-btn {
+      background: transparent;
+      border: 1px solid var(--border-dim);
+      border-radius: 40px;
+      padding: 8px 20px;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+    .service-btn:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--silver-dark);
+    }
     @media (max-width: 768px) {
+      .services-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
       .navbar { position: relative; }
       .nav-links { display: none; flex-direction: column; width: 100%; background: var(--bg-card); padding: 20px; border-radius: 20px; margin-top: 10px; }
       .nav-links.active { display: flex; }
@@ -141,7 +203,7 @@
 <canvas id="threeCanvas"></canvas>
 <div class="content">
   <div class="navbar">
-    <div class="logo"><a href="#home"><i class="fas fa-key" style="color:var(--silver);"></i> DIAMKEY</a></div>
+    <div class="logo"><a href="#home"><img src="KeyHold.png" alt="DiamKey"> DIAMKEY</a></div>
     <button class="burger-menu" id="burgerMenu"><i class="fas fa-bars"></i></button>
     <div class="nav-links" id="navLinks">
       <a href="#home" id="navHome">Главная</a>
@@ -187,6 +249,17 @@
 <div class="modal" id="faqModal"><div class="modal-content"><div id="faqContent"></div><button class="btn btn-outline" onclick="document.getElementById('faqModal').style.display='none'">Закрыть</button></div></div>
 <div class="modal" id="privacyModal"><div class="modal-content" id="privacyModalContent"></div></div>
 <div class="modal" id="termsModal"><div class="modal-content" id="termsModalContent"></div></div>
+<!-- Модалка "Скоро будет" для Unlock -->
+<div class="modal" id="soonModal">
+  <div class="modal-content">
+    <button class="modal-close" id="closeSoonModal" style="position: absolute; top: 16px; right: 20px; background: none; border: none; font-size: 1.5rem; color:#ccc; cursor:pointer;"><i class="fas fa-times"></i></button>
+    <i class="fas fa-hourglass-half" style="font-size: 3rem; color: #c0c0c0; margin-bottom: 16px;"></i>
+    <h2>Скоро будет!</h2>
+    <p style="margin: 20px 0;">Unlock — сервис обхода блокировок, сейчас в активной разработке.</p>
+    <p>Следите за новостями в нашем <a href="https://discord.gg/diamondshop" target="_blank" style="color:#c0c8e0;">Discord-сервере</a>.</p>
+    <button class="btn btn-primary" id="closeSoonModalBtn" style="margin-top: 24px;">Закрыть</button>
+  </div>
+</div>
 
 <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.126.0/build/three.module.js" } }</script>
 <script type="module">
@@ -361,17 +434,11 @@ window.addEventListener('resize',()=>{
     const identity = document.getElementById('loginIdentity')?.value.trim();
     const password = document.getElementById('loginPassword')?.value;
     const btn = document.getElementById('doLoginBtn');
-    if (!identity || !password) {
-      showToast('Введите логин и пароль');
-      return;
-    }
+    if (!identity || !password) return showToast('Введите логин и пароль');
     btn.disabled = true;
     try {
       const { data: user, error } = await _supabase.from('users').select('*').eq('login', identity).eq('password', password).maybeSingle();
-      if (error || !user) {
-        showToast('Неверный логин или пароль');
-        return;
-      }
+      if (error || !user) { showToast('Неверный логин или пароль'); return; }
       if (!user.secret_word) {
         const secretWord = generateFastSecret();
         await _supabase.from('users').update({ secret_word: secretWord }).eq('login', user.login);
@@ -393,29 +460,19 @@ window.addEventListener('resize',()=>{
       document.getElementById('authModal').style.display = 'none';
       updateAuthButton(); updateHeroButtons();
       navigate('profile');
-    } catch (e) {
-      console.error(e);
-      showToast('Ошибка сети. Проверьте соединение');
-    } finally {
-      btn.disabled = false;
-    }
+    } catch (e) { console.error(e); showToast('Ошибка сети. Проверьте соединение'); } 
+    finally { btn.disabled = false; }
   }
 
   async function register() {
     const login = document.getElementById('regLogin')?.value.trim();
     const password = document.getElementById('regPassword')?.value;
     const btn = document.getElementById('doRegisterBtn');
-    if (!login || password.length < 6) {
-      showToast('Введите логин и пароль (мин. 6 символов)');
-      return;
-    }
+    if (!login || password.length < 6) return showToast('Введите логин и пароль (мин. 6 символов)');
     btn.disabled = true;
     try {
       const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
-      if (exist) {
-        showToast('Логин уже занят');
-        return;
-      }
+      if (exist) { showToast('Логин уже занят'); return; }
       const token = generateToken();
       const secretWord = generateFastSecret();
       const email = login + '@diamkey.local';
@@ -423,21 +480,14 @@ window.addEventListener('resize',()=>{
         login, email, password, token, secret_word: secretWord,
         name: '', avatar: '', description: '', fa_icon: '', role: 'user', is_admin: false
       }]);
-      if (error) {
-        showToast('Ошибка регистрации: ' + error.message);
-        return;
-      }
+      if (error) { showToast('Ошибка регистрации: ' + error.message); return; }
       currentUser = { login, email, secretWord, name: '', avatar: '', description: '', fa_icon: '', role: 'user' };
       addAccountToSessions(currentUser);
       document.getElementById('authModal').style.display = 'none';
       updateAuthButton(); updateHeroButtons();
       navigate('profile');
-    } catch (e) {
-      console.error(e);
-      showToast('Ошибка сети. Проверьте соединение');
-    } finally {
-      btn.disabled = false;
-    }
+    } catch (e) { console.error(e); showToast('Ошибка сети. Проверьте соединение'); }
+    finally { btn.disabled = false; }
   }
 
   function addAccountToSessions(user) {
@@ -456,7 +506,7 @@ window.addEventListener('resize',()=>{
     navigate('home');
   }
 
-  // ========== ПРОФИЛЬ (полная реализация) ==========
+  // ========== ПРОФИЛЬ (с добавлением трёх карточек) ==========
   async function showProfilePage() {
     if (!currentUser) return;
     const container = document.getElementById('profile-page');
@@ -506,6 +556,27 @@ window.addEventListener('resize',()=>{
             <p style="color:var(--silver-dark);">— ${randomQuote.author}</p>
           </div>
         </div>
+        <!-- Три карточки сервисов -->
+        <div class="services-grid">
+          <div class="service-card">
+            <img src="1.png" alt="Diamond AI" class="service-img">
+            <h3>Diamond AI</h3>
+            <p>Интеллектуальный помощник нового поколения. Работает с передовыми LLM, поддерживает папки, формулы, код и синхронизацию через DiamKey.</p>
+            <button class="service-btn" onclick="window.open('https://diamond-ai.ru', '_blank')"><i class="fas fa-external-link-alt"></i> Перейти</button>
+          </div>
+          <div class="service-card">
+            <img src="2.png" alt="Unlock" class="service-img">
+            <h3>Unlock</h3>
+            <p>Сервис обхода блокировок. Даёт свободный доступ к интернету. Скоро будет доступен!</p>
+            <button class="service-btn" id="openUnlockSoonBtn"><i class="fas fa-hourglass-half"></i> Скоро будет</button>
+          </div>
+          <div class="service-card">
+            <img src="3.png" alt="Dirmess" class="service-img">
+            <h3>Dirmess</h3>
+            <p>Защищённый мессенджер с E2E-шифрованием. Общайтесь безопасно и без слежки.</p>
+            <button class="service-btn" onclick="window.open('https://dirmess.ru', '_blank')"><i class="fas fa-external-link-alt"></i> Перейти</button>
+          </div>
+        </div>
       </div>
       ${(isAdmin || isStaff) ? '<div id="tab-service" class="tab-content" style="display:none;"></div>' : ''}
       ${isAdmin ? '<div id="tab-admin" class="tab-content" style="display:none;"></div><div id="tab-grant" class="tab-content" style="display:none;"></div>' : ''}
@@ -546,7 +617,6 @@ window.addEventListener('resize',()=>{
             </div>` : '<p>Тикетов нет</p>'}
           </div>
         </div>`;
-
       document.querySelectorAll('.delete-ticket-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -557,7 +627,6 @@ window.addEventListener('resize',()=>{
           }
         });
       });
-
       container.querySelectorAll('#tab-admin .tab[data-sub]').forEach(tab => {
         tab.addEventListener('click', () => {
           container.querySelectorAll('#tab-admin .tab[data-sub]').forEach(t => t.classList.remove('active'));
@@ -566,7 +635,6 @@ window.addEventListener('resize',()=>{
           document.getElementById('sub-' + tab.dataset.sub).style.display = 'block';
         });
       });
-
       if (tickets?.length) {
         let activeTicketId = null;
         document.querySelectorAll('.ticket-user-item').forEach(item => {
@@ -589,11 +657,9 @@ window.addEventListener('resize',()=>{
           });
         });
       }
-
       document.getElementById('tab-grant').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-user-shield"></i> Выдача прав</h3>
         <div class="card visible">${users?.map(u => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${u.login}</span><select onchange="window.toggleRole('${u.login}', this.value)" style="width:auto;"><option value="user" ${(!u.role||u.role=='user')?'selected':''}>Обычный</option><option value="staff" ${u.role=='staff'?'selected':''}>Персонал</option><option value="admin" ${u.role=='admin'?'selected':''}>Админ</option></select></div>`).join('')}</div>`;
     }
-
     container.querySelectorAll('.tab[data-tab]').forEach(tab => {
       tab.addEventListener('click', () => {
         container.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
@@ -603,6 +669,16 @@ window.addEventListener('resize',()=>{
         if (tab.dataset.tab === 'service') showServiceTab();
       });
     });
+    // Обработчик кнопки "Скоро будет" для Unlock
+    const openUnlockBtn = document.getElementById('openUnlockSoonBtn');
+    const soonModal = document.getElementById('soonModal');
+    const closeSoonModal = document.getElementById('closeSoonModal');
+    const closeSoonModalBtn = document.getElementById('closeSoonModalBtn');
+    if (openUnlockBtn && soonModal) {
+      openUnlockBtn.addEventListener('click', () => soonModal.style.display = 'flex');
+      if (closeSoonModal) closeSoonModal.addEventListener('click', () => soonModal.style.display = 'none');
+      if (closeSoonModalBtn) closeSoonModalBtn.addEventListener('click', () => soonModal.style.display = 'none');
+    }
   }
 
   window.openAvatarModal = () => {
