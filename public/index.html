@@ -31,12 +31,9 @@
       line-height: 1.5;
       overflow-x: hidden;
       touch-action: pan-y;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
     }
-    canvas { display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; }
-    .content { position: relative; z-index:1; flex:1; }
+    canvas { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; }
+    .content { position: relative; z-index:1; min-height: 100vh; }
     .navbar { display: flex; justify-content: space-between; align-items: center; padding: 24px; flex-wrap: wrap; gap:20px; animation: fadeUp 0.3s ease; }
     .logo a { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800; color: var(--silver-light); text-decoration: none; }
     .logo a img { height: 40px; width: auto; }
@@ -58,7 +55,7 @@
     .page { display: none; max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; }
     .page.active { display: block; }
     .hero { padding: 100px 0 80px; text-align: center; }
-    .hero h1 { font-size: clamp(44px, 8vw, 72px); font-weight: 800; background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 24px; letter-spacing: -1px; min-height: 1.2em; }
+    .hero h1 { font-size: clamp(44px, 8vw, 72px); font-weight: 800; background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 24px; letter-spacing: -1px; }
     .hero p { font-size: 1.25rem; color: var(--text-muted); max-width: 700px; margin: 0 auto 40px; }
     .btn { display: inline-block; padding: 14px 36px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.3s; text-decoration: none; border: 1px solid var(--border-dim); background: transparent; color: var(--text-light); margin: 6px; font-size: 1rem; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -70,17 +67,20 @@
     .section-title { font-size: 2.5rem; font-weight: 700; text-align: center; margin-bottom: 56px; }
     .section-title span { background: linear-gradient(135deg, #e0e0e0, #8a8a9a); -webkit-background-clip: text; background-clip: text; color: transparent; }
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px; }
-    .card { background: var(--bg-card); border-radius: 32px; padding: 32px 24px; border: 1px solid var(--border-dim); transition: all 0.3s; opacity: 0; transform: translateY(20px); }
-    .card.visible { opacity: 1; transform: translateY(0); transition: all 0.6s ease; }
+    .card { background: var(--bg-card); border-radius: 32px; padding: 32px 24px; border: 1px solid var(--border-dim); transition: all 0.3s; }
     .card:hover { transform: translateY(-8px); border-color: #3a3a44; box-shadow: 0 20px 30px -12px rgba(0,0,0,0.5); }
     .card-icon { font-size: 40px; margin-bottom: 20px; color: var(--silver); }
     .card h3 { font-size: 1.5rem; margin-bottom: 12px; }
     .card p { color: var(--text-muted); }
-    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); align-items: center; justify-content: center; z-index:1000; animation: fadeIn 0.2s; }
+    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); align-items: center; justify-content: center; z-index:1000; }
     .modal-content { background: var(--bg-card); border-radius: 32px; padding: 32px; max-width: 480px; width: 90%; text-align: center; border: 1px solid var(--border-dim); }
     .input-group { margin: 1rem 0; text-align: left; }
     .input-group label { font-weight: 600; font-size: 0.9rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; }
-    input, textarea, select { width: 100%; background: #1e1e2a; border: 1px solid var(--border-dim); color: var(--text-light); padding: 12px 16px; border-radius: 12px; font-size: 1rem; outline: none; margin-top: 6px; }
+    input, textarea, select {
+      width: 100%; background: #1e1e2a; border: 1px solid var(--border-dim);
+      color: var(--text-light); padding: 12px 16px; border-radius: 12px; font-size: 1rem;
+      outline: none; margin-top: 6px;
+    }
     select option { background: #111116; }
     input:focus, textarea:focus, select:focus { border-color: var(--silver-dark); }
     .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border-left: 4px solid var(--silver); padding: 12px 20px; border-radius: 12px; font-size: 0.9rem; z-index: 1100; animation: fadeUp 0.3s; }
@@ -91,117 +91,21 @@
     .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 1.4rem; }
     .footer-links a:hover { color: var(--text-light); }
     .copyright { font-size: 0.85rem; color: #6b7280; }
-    .tabs { display: flex; gap: 20px; margin-bottom: 30px; }
+    .tabs { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
     .tab { padding: 10px 24px; border-radius: 40px; border: 1px solid var(--border-dim); font-weight: 500; cursor: pointer; transition: 0.2s; color: var(--text-muted); }
     .tab.active { background: var(--grad-silver); color: #fff; border-color: #3a3a44; }
-    .chat-container { max-height: 400px; overflow-y: auto; margin-bottom: 20px; }
-    .chat-message { margin-bottom: 16px; display: flex; flex-direction: column; }
-    .chat-message.bot .chat-bubble { background: #1a1a22; align-self: flex-start; }
-    .chat-message.user .chat-bubble { background: var(--grad-silver); align-self: flex-end; }
-    .chat-bubble { padding: 12px 20px; border-radius: 28px; max-width: 80%; }
-    .chat-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
-    .chat-sender { font-size: 0.7rem; font-weight: 600; margin-bottom: 2px; opacity: 0.7; }
-    .admin-layout { display: flex; gap: 24px; }
-    .admin-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border-dim); padding-right: 16px; max-height: 75vh; overflow-y: auto; }
-    .admin-main { flex: 1; }
-    .ticket-chat { display: flex; flex-direction: column; height: 65vh; }
-    .ticket-messages { flex: 1; overflow-y: auto; padding: 12px; border: 1px solid var(--border-dim); border-radius: 16px; background: #0a0a0f; margin-bottom: 12px; }
-    .cta-button {
-      width: 100%;
-      padding: 18px 24px;
-      border-radius: 60px;
-      font-size: 1.1rem;
-      background: linear-gradient(135deg, #4a4a5a, #2a2a33);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-    }
-    .cta-button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,0.5); }
-    .services-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      margin-top: 40px;
-      margin-bottom: 30px;
-    }
-    .service-card {
-      background: rgba(20, 22, 28, 0.6);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(180, 190, 220, 0.2);
-      border-radius: 28px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      transition: 0.3s;
-    }
-    .service-card:hover {
-      transform: translateY(-5px);
-      border-color: #b0b8d0;
-      box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.5);
-    }
-    .service-img {
-      width: 80px;
-      height: 80px;
-      object-fit: contain;
-      margin-bottom: 16px;
-    }
-    .service-card h3 {
-      font-size: 1.4rem;
-      margin-bottom: 8px;
-    }
-    .service-card p {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 16px;
-    }
-    .service-btn {
-      background: transparent;
-      border: 1px solid var(--border-dim);
-      border-radius: 40px;
-      padding: 8px 20px;
-      color: var(--text-light);
-      cursor: pointer;
-      transition: 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
-    }
-    .service-btn:hover {
-      background: rgba(255,255,255,0.05);
-      border-color: var(--silver-dark);
-    }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .stat-box { background: var(--bg-card); border: 1px solid var(--border-dim); border-radius: 24px; padding: 24px; text-align: center; }
+    .stat-number { font-size: 2.5rem; font-weight: 800; color: var(--silver-light); }
+    .stat-label { font-size: 0.9rem; color: var(--text-muted); margin-top: 8px; }
+
     @media (max-width: 768px) {
-      .services-grid { grid-template-columns: 1fr; gap: 20px; }
       .navbar { position: relative; }
       .nav-links { display: none; flex-direction: column; width: 100%; background: var(--bg-card); padding: 20px; border-radius: 20px; margin-top: 10px; }
       .nav-links.active { display: flex; }
       .burger-menu { display: block; }
       .status-dropdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 90vw; }
-      .hero { padding: 40px 0 40px; }
-      .hero h1 { font-size: 32px; }
-      .hero p { font-size: 1rem; }
-      .btn { padding: 12px 28px; font-size: 0.9rem; }
-      .grid-3 { grid-template-columns: 1fr; gap: 20px; }
-      .card { padding: 24px 20px; }
-      .section-title { font-size: 1.8rem; margin-bottom: 30px; }
-      .modal-content { padding: 24px; }
-      .tabs { flex-wrap: wrap; gap: 10px; }
-      .tab { padding: 8px 18px; font-size: 0.9rem; }
-      .chat-container { max-height: 300px; }
-      .service-item { flex-direction: column; align-items: flex-start; }
-      .progress-ring { width: 40px; height: 40px; font-size: 0.7rem; }
     }
-    @media (max-width: 480px) { .hero h1 { font-size: 28px; } .page { padding: 0 12px 20px; } .btn { width: 100%; margin: 6px 0; } .hero-buttons { flex-direction: column; align-items: center; } }
   </style>
 </head>
 <body>
@@ -214,24 +118,27 @@
       <a href="#home" id="navHome">Главная</a>
       <a href="#forum" id="navForum">Форум</a>
       <a href="#profile" id="navProfile" style="display:none;">Профиль</a>
+      <a href="#stats" id="navStats" style="display:none;">Статистика</a>
       <a href="#support" id="navSupport" style="display:none;">Поддержка</a>
       <button class="status-btn" id="statusBtn">Статус <i class="fas fa-chevron-down"></i></button>
       <div class="status-dropdown" id="statusDropdown">
-        <a href="https://diamond-ai.ru" target="_blank" class="service-item"><i class="fas fa-robot" style="font-size:1.5rem; color:var(--silver);"></i><div class="service-info"><strong>Diamond AI</strong><span>Искусственный интеллект</span></div><div class="progress-ring" style="--progress:92; --progress-color:#3CB371;">92%</div></a>
-        <a href="#" class="service-item" id="unlockSoon"><i class="fas fa-ticket" style="font-size:1.5rem; color:var(--silver);"></i><div class="service-info"><strong>Unlock</strong><span>Обход блокировок</span></div><div class="progress-ring" style="--progress:19; --progress-color:#D4AF37;">19%</div></a>
-        <a href="https://dirmess.ru" target="_blank" class="service-item"><span style="font-weight:800; color:var(--silver-light);">.drm</span><div class="service-info"><strong>Dirmess</strong><span>Мессенджер Diamond</span></div><div class="progress-ring" style="--progress:7; --progress-color:#9B59B6;">7%</div></a>
+        <a href="https://diamond-ai.ru" target="_blank" class="service-item"><i class="fas fa-robot" style="font-size:1.5rem;"></i><div class="service-info"><strong>Diamond AI</strong><span>Искусственный интеллект</span></div><div class="progress-ring" style="--progress:92; --progress-color:#3CB371;">92%</div></a>
+        <a href="#" class="service-item" id="unlockSoon"><i class="fas fa-ticket" style="font-size:1.5rem;"></i><div class="service-info"><strong>Unlock</strong><span>Обход блокировок</span></div><div class="progress-ring" style="--progress:19; --progress-color:#D4AF37;">19%</div></a>
+        <a href="https://dirmess.ru" target="_blank" class="service-item"><span style="font-weight:800;">.drm</span><div class="service-info"><strong>Dirmess</strong><span>Мессенджер Diamond</span></div><div class="progress-ring" style="--progress:7; --progress-color:#9B59B6;">7%</div></a>
         <div class="dropdown-footer">Мы ждём вашей помощи, сотрудников, инвесторов<br><a href="https://discord.gg/diamondshop" target="_blank"><i class="fab fa-discord"></i> Присоединиться</a></div>
       </div>
       <a href="#" id="authBtn">Войти</a>
     </div>
   </div>
 
+  <!-- Главная -->
   <div id="home-page" class="page active">
     <div class="hero"><h1 id="cipherTitle"></h1><p>Единный сервис для проектов от Diamond. Зарегестрируйся и вливайся в путь экосистемы.</p><div id="heroActions"><button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button><a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a></div></div>
     <div class="section" id="features"><div class="section-title">Возможности <span>DiamKey</span></div><div class="grid-3"><div class="card"><div class="card-icon"><i class="fas fa-fingerprint"></i></div><h3>Один аккаунт</h3><p>Регистрируйся один раз и входи во все сервисы Diamond.</p></div><div class="card"><div class="card-icon"><i class="fas fa-lock"></i></div><h3>Секретное слово</h3><p>Криптостойкий ключ, созданный на основе SHA-256.</p></div><div class="card"><div class="card-icon"><i class="fas fa-shield-alt"></i></div><h3>Облачная база</h3><p>Все данные хранятся в Supabase — доступно отовсюду.</p></div></div></div>
     <div class="footer"><div class="footer-links"><a href="#" id="privacyLink" title="Политика конфиденциальности"><i class="fas fa-lock"></i></a><a href="#" id="termsLink" title="Условия использования"><i class="fas fa-file-contract"></i></a><a href="https://discord.gg/diamondshop" target="_blank" title="Discord"><i class="fab fa-discord"></i></a></div><div class="copyright">© 2026 Diamond. Все права защищены.</div></div>
   </div>
 
+  <!-- Форум -->
   <div id="forum-page" class="page">
     <div style="padding-top:60px;">
       <h2 style="font-size:2rem; margin-bottom:30px; color:var(--silver-light);"><i class="fas fa-comments"></i> Форум</h2>
@@ -244,7 +151,13 @@
     </div>
   </div>
 
+  <!-- Профиль -->
   <div id="profile-page" class="page"></div>
+
+  <!-- Статистика -->
+  <div id="stats-page" class="page"></div>
+
+  <!-- Поддержка -->
   <div id="support-page" class="page"></div>
 </div>
 
@@ -293,19 +206,19 @@
     shaft.position.y = -0.8; keyGroup.add(shaft);
     const bitGroup = new THREE.Group();
     const toothGeo = new THREE.BoxGeometry(0.25,0.4,0.15);
-    [[-0.2,-1.4,0],[0.1,-1.55,0],[-0.2,-1.7,0],[0.1,-1.85,0]].forEach(([x,y,z]) => {
+    [[-0.2,-1.4,0],[0.1,-1.55,0],[-0.2,-1.7,0],[0.1,-1.85,0]].forEach(([x,y,z])=>{
       const tooth = new THREE.Mesh(toothGeo, darkMetal);
       tooth.position.set(x,y,z); bitGroup.add(tooth);
     });
     keyGroup.add(bitGroup);
-    for (let y=-0.3; y>-1.3; y-=0.25) {
+    for (let y=-0.3; y>-1.3; y-=0.25){
       const groove = new THREE.Mesh(new THREE.TorusGeometry(0.17,0.03,8,16), darkMetal);
       groove.position.y=y; groove.rotation.x=Math.PI/2; keyGroup.add(groove);
     }
     keyGroup.position.y=0.2; scene.add(keyGroup);
     const starsGeo = new THREE.BufferGeometry();
     const starsCount=400; const starsPositions=new Float32Array(starsCount*3);
-    for (let i=0;i<starsCount*3;i+=3) {
+    for (let i=0;i<starsCount*3;i+=3){
       starsPositions[i]=(Math.random()-0.5)*12;
       starsPositions[i+1]=(Math.random()-0.5)*6;
       starsPositions[i+2]=(Math.random()-0.5)*8;
@@ -315,7 +228,7 @@
     const stars=new THREE.Points(starsGeo,starsMat); scene.add(stars);
     let mouseX=0, mouseY=0;
     window.addEventListener('mousemove',(e)=>{ mouseX=(e.clientX/window.innerWidth)*2-1; mouseY=-(e.clientY/window.innerHeight)*2+1; });
-    function animate() {
+    function animate(){
       requestAnimationFrame(animate);
       keyGroup.rotation.y+=0.005; keyGroup.rotation.x+=0.001;
       keyGroup.rotation.y+=mouseX*0.02; keyGroup.rotation.x+=mouseY*0.02;
@@ -323,7 +236,7 @@
       renderer.render(scene,camera);
     }
     animate();
-    window.addEventListener('resize',() => {
+    window.addEventListener('resize',()=>{
       camera.aspect = window.innerWidth/window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth,window.innerHeight);
@@ -337,14 +250,7 @@
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null;
 
-    function showToast(msg) { 
-      const t = document.createElement('div'); 
-      t.className = 'toast'; 
-      t.textContent = msg; 
-      document.body.appendChild(t); 
-      setTimeout(() => t.remove(), 3000); 
-    }
-
+    function showToast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }
     function generateToken() {
       const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost'];
       const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key'];
@@ -354,18 +260,17 @@
       const num = Math.floor(1000+Math.random()*9000);
       return `diamkey_${a}_${b}_${c}_${num}`;
     }
-
-    function generateFastSecret() {
-      return Math.random().toString(36).substring(2,15) + Math.random().toString(36).substring(2,15);
-    }
+    function generateFastSecret() { return Math.random().toString(36).substring(2,15) + Math.random().toString(36).substring(2,15); }
 
     function navigate(page) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       const el = document.getElementById(page + '-page');
       if (el) el.classList.add('active');
       document.getElementById('navProfile').style.display = currentUser ? 'inline' : 'none';
+      document.getElementById('navStats').style.display = currentUser ? 'inline' : 'none';
       document.getElementById('navSupport').style.display = currentUser ? 'inline' : 'none';
       if (page === 'profile' && currentUser) showProfilePage();
+      if (page === 'stats' && currentUser) showStatsPage();
       if (page === 'support' && currentUser) showSupportPage();
       if (page === 'forum') { updateForumAccess(); loadForumPosts(); }
       if (page === 'home') { updateHeroButtons(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -374,20 +279,15 @@
 
     function updateAuthButton() {
       const btn = document.getElementById('authBtn');
-      if (currentUser) {
-        btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Выйти';
-        btn.onclick = (e) => { e.preventDefault(); logout(); };
-      } else {
-        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
-        btn.onclick = (e) => { e.preventDefault(); openAuthModal('login'); };
-      }
+      if (currentUser) { btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Выйти'; btn.onclick = (e) => { e.preventDefault(); logout(); }; }
+      else { btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти'; btn.onclick = (e) => { e.preventDefault(); openAuthModal('login'); }; }
     }
 
     function updateHeroButtons() {
       const heroActions = document.getElementById('heroActions');
       if (!heroActions) return;
       heroActions.innerHTML = currentUser
-        ? `<button class="btn btn-primary" onclick="navigate('profile')"><i class="fas fa-user"></i> Мой DiamKey</button><button class="btn btn-outline" onclick="navigate('support')"><i class="fas fa-headset"></i> Поддержка</button>`
+        ? `<button class="btn btn-primary" onclick="navigate('profile')"><i class="fas fa-user"></i> Мой DiamKey</button><button class="btn btn-outline" onclick="navigate('stats')"><i class="fas fa-chart-bar"></i> Статистика</button>`
         : `<button class="btn btn-primary" id="getStartedBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button><a href="#features" class="btn btn-outline" id="learnMoreBtn"><i class="fas fa-arrow-down"></i> Узнать больше</a>`;
       if (!currentUser) document.getElementById('getStartedBtn').addEventListener('click', () => openAuthModal('register'));
     }
@@ -463,7 +363,7 @@
         document.getElementById('authModal').style.display = 'none';
         updateAuthButton(); updateHeroButtons();
         navigate('profile');
-      } catch (e) { console.error(e); showToast('Ошибка сети. Проверьте соединение'); } 
+      } catch (e) { console.error(e); showToast('Ошибка сети. Проверьте соединение'); }
       finally { btn.disabled = false; }
     }
 
@@ -517,7 +417,6 @@
       const isStaff = currentUser.role === 'staff';
       const avatarSrc = currentUser.avatar || '';
       const faIcon = currentUser.fa_icon ? `<i class="${currentUser.fa_icon}" style="color:var(--silver); margin-right:6px;"></i>` : '';
-
       const quotes = [
         { text: "Diamond AI — интеллект, который сияет ярче бриллианта.", author: "Команда Diamond" },
         { text: "Unlock разблокирует все, что было недоступно", author: "Команда Diamond" },
@@ -536,7 +435,7 @@
           ${isAdmin ? '<div class="tab" data-tab="grant">Выдача прав</div>' : ''}
         </div>
         <div id="tab-account" class="tab-content" style="display:block;">
-          <div class="card visible" style="margin-bottom:30px;">
+          <div class="card" style="margin-bottom:30px;">
             <div style="display:flex; gap:30px; align-items:center; flex-wrap:wrap;">
               <div style="width:120px; height:120px; border-radius:50%; overflow:hidden; background:var(--bg-card); border:3px solid var(--silver-dark); flex-shrink:0;">
                 ${avatarSrc ? `<img src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:120px; color:var(--silver);"></i>'}
@@ -553,31 +452,11 @@
               </div>
             </div>
           </div>
-          <div class="card visible" style="margin-bottom:30px; min-height:200px; display:flex; align-items:center; justify-content:center; text-align:center;">
+          <div class="card" style="margin-bottom:30px; min-height:200px; display:flex; align-items:center; justify-content:center; text-align:center;">
             <div>
               <i class="fas fa-quote-right" style="font-size:3rem; color:var(--silver); margin-bottom:20px;"></i>
               <p style="font-size:1.4rem; font-style:italic; color:var(--text-light); margin-bottom:15px;">«${randomQuote.text}»</p>
               <p style="color:var(--silver-dark);">— ${randomQuote.author}</p>
-            </div>
-          </div>
-          <div class="services-grid">
-            <div class="service-card">
-              <img src="1.png" alt="Diamond AI" class="service-img">
-              <h3>Diamond AI</h3>
-              <p>ИИ. Помощь в домашних делах и работе. Использование скоро будет доступно</p>
-              <button class="service-btn" onclick="window.open('https://diamond-ai.ru', '_blank')"><i class="fas fa-external-link-alt"></i> Перейти</button>
-            </div>
-            <div class="service-card">
-              <img src="2.png" alt="Unlock" class="service-img">
-              <h3>Unlock</h3>
-              <p>Сервис обхода блокировок. Даёт свободный доступ к интернету. Скоро будет доступен!</p>
-              <button class="service-btn" id="openUnlockSoonBtn"><i class="fas fa-hourglass-half"></i> Скоро будет</button>
-            </div>
-            <div class="service-card">
-              <img src="3.png" alt="Dirmess" class="service-img">
-              <h3>Dirmess</h3>
-              <p>Защищённый мессенджер с E2E-шифрованием. Общайтесь безопасно и без слежки.</p>
-              <button class="service-btn" onclick="window.open('https://dirmess.ru', '_blank')"><i class="fas fa-external-link-alt"></i> Перейти</button>
             </div>
           </div>
         </div>
@@ -590,44 +469,11 @@
         const { data: users } = await _supabase.from('users').select('*');
         const { data: tickets } = await _supabase.from('tickets').select('*');
         document.getElementById('tab-admin').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-users-cog"></i> Управление</h3>
-          <div class="tabs" style="margin-bottom:20px;">
-            <div class="tab active" data-sub="users">Пользователи</div>
-            <div class="tab" data-sub="tickets">Тикеты</div>
-          </div>
-          <div id="sub-users" class="sub-content" style="display:block;">
-            <div class="card visible"><h4>Пользователи (${users?.length||0})</h4>
-              ${users?.map(u => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${u.login} (${u.role||'user'})</span><div><button class="btn btn-outline" onclick="window.editUserByAdmin('${u.login}')"><i class="fas fa-edit"></i></button><button class="btn btn-outline" onclick="window.deleteUser('${u.login}')"><i class="fas fa-trash"></i></button></div></div>`).join('')}
-            </div>
-          </div>
-          <div id="sub-tickets" class="sub-content" style="display:none;">
-            <div class="card visible"><h4>Тикеты</h4>
-              ${tickets?.length ? `<div class="admin-layout">
-                <div class="admin-sidebar" style="max-height:60vh; overflow-y:auto;">
-                  ${tickets.map(t => `<div class="ticket-user-item" data-ticket-id="${t.id}" style="padding:10px; cursor:pointer; border-bottom:1px solid var(--border-dim); display:flex; justify-content:space-between; align-items:center;">
-                    <span>${t.email}</span>
-                    <button class="btn btn-outline delete-ticket-btn" data-ticket-id="${t.id}" style="padding:2px 8px; color:var(--danger);"><i class="fas fa-trash"></i></button>
-                  </div>`).join('')}
-                </div>
-                <div class="admin-main" id="ticketChatView" style="flex:1;">
-                  <div class="ticket-chat" style="height:60vh;">
-                    <div class="ticket-messages" id="ticketMessages"></div>
-                    <div style="display:flex; gap:6px;">
-                      <input id="ticketAdminInput" placeholder="Ответ..." style="flex:1;">
-                      <button class="btn btn-outline" id="sendTicketReply">Отправить</button>
-                    </div>
-                  </div>
-                </div>
-              </div>` : '<p>Тикетов нет</p>'}
-            </div>
-          </div>`;
+          <div class="tabs" style="margin-bottom:20px;"><div class="tab active" data-sub="users">Пользователи</div><div class="tab" data-sub="tickets">Тикеты</div></div>
+          <div id="sub-users" class="sub-content" style="display:block;"><div class="card"><h4>Пользователи (${users?.length||0})</h4>${users?.map(u => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${u.login} (${u.role||'user'})</span><div><button class="btn btn-outline" onclick="window.editUserByAdmin('${u.login}')"><i class="fas fa-edit"></i></button><button class="btn btn-outline" onclick="window.deleteUser('${u.login}')"><i class="fas fa-trash"></i></button></div></div>`).join('')}</div></div>
+          <div id="sub-tickets" class="sub-content" style="display:none;"><div class="card"><h4>Тикеты</h4>${tickets?.length ? `<div class="admin-layout"><div class="admin-sidebar" style="max-height:60vh; overflow-y:auto;">${tickets.map(t => `<div class="ticket-user-item" data-ticket-id="${t.id}" style="padding:10px; cursor:pointer; border-bottom:1px solid var(--border-dim); display:flex; justify-content:space-between; align-items:center;"><span>${t.email}</span><button class="btn btn-outline delete-ticket-btn" data-ticket-id="${t.id}" style="padding:2px 8px;"><i class="fas fa-trash"></i></button></div>`).join('')}</div><div class="admin-main" id="ticketChatView"><div class="ticket-chat" style="height:60vh;"><div class="ticket-messages" id="ticketMessages"></div><div style="display:flex; gap:6px;"><input id="ticketAdminInput" placeholder="Ответ..." style="flex:1;"><button class="btn btn-outline" id="sendTicketReply">Отправить</button></div></div></div></div>` : '<p>Тикетов нет</p>'}</div></div>`;
         document.querySelectorAll('.delete-ticket-btn').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            if (confirm('Удалить тикет и всю переписку?')) {
-              await _supabase.from('tickets').delete().eq('id', btn.dataset.ticketId);
-              showProfilePage();
-            }
-          });
+          btn.addEventListener('click', async (e) => { e.stopPropagation(); if (confirm('Удалить тикет и всю переписку?')) { await _supabase.from('tickets').delete().eq('id', btn.dataset.ticketId); showProfilePage(); } });
         });
         container.querySelectorAll('#tab-admin .tab[data-sub]').forEach(tab => {
           tab.addEventListener('click', () => {
@@ -647,9 +493,7 @@
               if (!ticket) return;
               document.getElementById('ticketMessages').innerHTML = (ticket.messages || []).map(m => `<div class="chat-message ${m.sender==='admin'?'bot':'user'}"><div class="chat-sender">${m.sender==='admin'?'Администратор':'Пользователь'}</div><div class="chat-bubble">${m.text}</div></div>`).join('');
               document.getElementById('sendTicketReply').onclick = async () => {
-                const input = document.getElementById('ticketAdminInput');
-                const text = input.value.trim();
-                if (!text) return;
+                const input = document.getElementById('ticketAdminInput'); const text = input.value.trim(); if (!text) return;
                 const { data: currentTicket } = await _supabase.from('tickets').select('messages').eq('id', activeTicketId).single();
                 const messages = [...(currentTicket.messages || []), { sender: 'admin', text, time: new Date().toISOString() }];
                 await _supabase.from('tickets').update({ messages }).eq('id', activeTicketId);
@@ -659,8 +503,7 @@
             });
           });
         }
-        document.getElementById('tab-grant').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-user-shield"></i> Выдача прав</h3>
-          <div class="card visible">${users?.map(u => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${u.login}</span><select onchange="window.toggleRole('${u.login}', this.value)" style="width:auto;"><option value="user" ${(!u.role||u.role=='user')?'selected':''}>Обычный</option><option value="staff" ${u.role=='staff'?'selected':''}>Персонал</option><option value="admin" ${u.role=='admin'?'selected':''}>Админ</option></select></div>`).join('')}</div>`;
+        document.getElementById('tab-grant').innerHTML = `<h3 style="color:var(--silver-light); margin-bottom:20px;"><i class="fas fa-user-shield"></i> Выдача прав</h3><div class="card">${users?.map(u => `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span>${u.login}</span><select onchange="window.toggleRole('${u.login}', this.value)" style="width:auto;"><option value="user" ${(!u.role||u.role=='user')?'selected':''}>Обычный</option><option value="staff" ${u.role=='staff'?'selected':''}>Персонал</option><option value="admin" ${u.role=='admin'?'selected':''}>Админ</option></select></div>`).join('')}</div>`;
       }
       container.querySelectorAll('.tab[data-tab]').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -671,13 +514,6 @@
           if (tab.dataset.tab === 'service') showServiceTab();
         });
       });
-      const openUnlockBtn = document.getElementById('openUnlockSoonBtn');
-      const soonModal = document.getElementById('soonModal');
-      if (openUnlockBtn && soonModal) {
-        openUnlockBtn.addEventListener('click', () => soonModal.style.display = 'flex');
-        document.getElementById('closeSoonModal').addEventListener('click', () => soonModal.style.display = 'none');
-        document.getElementById('closeSoonModalBtn').addEventListener('click', () => soonModal.style.display = 'none');
-      }
     }
 
     window.openAvatarModal = () => {
@@ -740,91 +576,35 @@
       };
     };
 
-    // ========== ОБСЛУЖИВАНИЕ ==========
     function showServiceTab() {
       const tab = document.getElementById('tab-service');
       if (!tab) return;
       _supabase.from('service_config').select('mistral_api_key').eq('id', 1).single().then(({ data }) => {
         const apiKey = data?.mistral_api_key || '';
-        tab.innerHTML = `
-          <div class="card visible" style="margin-bottom:20px;">
-            <h4><i class="fas fa-key"></i> Diamond AI TOKEN</h4>
-            <input type="password" value="${apiKey}" readonly disabled style="background:var(--bg-tertiary); border:1px solid var(--border-dim); color:var(--text-secondary); margin-top:10px;">
-            <p style="font-size:0.8rem; color:var(--text-muted);">Установлен, изменение запрещено.</p>
-          </div>
-          <div class="grid-3" style="margin-bottom:20px;">
-            <div class="card visible"><h4><i class="fas fa-robot"></i> Модель</h4><p style="font-size:1.5rem; color:var(--silver-light);">diamond-model-ai.fast</p></div>
-            <div class="card visible"><h4><i class="fas fa-heartbeat"></i> Статус</h4><p style="font-size:1.5rem; color:#2ecc71;">Активен</p></div>
-            <div class="card visible"><h4><i class="fas fa-tachometer-alt"></i> Запросов сегодня</h4><p style="font-size:1.5rem;">Идет расчет...</p></div>
-          </div>
-          <div class="card visible" style="margin-bottom:20px;">
-            <h4><i class="fas fa-chart-bar"></i> Нагрузка (мин/макс)</h4>
-            <div style="background:var(--bg-tertiary); border-radius:12px; height:20px; margin:10px 0;"><div style="background:linear-gradient(90deg, #2ecc71, #f1c40f); width:65%; height:100%; border-radius:12px;"></div></div>
-            <p style="color:var(--text-muted);">Среднее время ответа: 0.8 сек</p>
-          </div>
-          <div class="card visible">
-            <h4><i class="fas fa-brain"></i> Обучение ИИ</h4>
-            <textarea id="trainingText" rows="4" placeholder="Введите текст для обогащения diamond-model-ai.fast..."></textarea>
-            <button class="btn btn-primary" id="saveTrainingBtn" style="margin-top:10px;"><i class="fas fa-upload"></i> Загрузить</button>
-            <div id="trainingHistory" style="margin-top:15px; color:var(--text-muted);">Загрузка...</div>
-          </div>
-        `;
-        document.getElementById('saveTrainingBtn').onclick = async () => {
-          const text = document.getElementById('trainingText').value.trim();
-          if (!text) return showToast('Введите текст');
-          const { error } = await _supabase.from('training_data').insert({ content: text });
-          if (error) return showToast('Ошибка: ' + error.message);
-          showToast('Текст загружен');
-          document.getElementById('trainingText').value = '';
-          loadTrainingHistory();
-        };
-        async function loadTrainingHistory() {
-          const { data: items } = await _supabase.from('training_data').select('*').order('created_at', { ascending: false });
-          const historyDiv = document.getElementById('trainingHistory');
-          if (!items || items.length === 0) { historyDiv.innerHTML = 'Нет данных.'; return; }
-          historyDiv.innerHTML = items.map(item => `<div style="margin-bottom:6px;"><small>${new Date(item.created_at).toLocaleString()}</small> - ${item.content.substring(0,60)}</div>`).join('');
-        }
-        loadTrainingHistory();
+        tab.innerHTML = `<div class="card" style="margin-bottom:20px;"><h4><i class="fas fa-key"></i> Diamond AI TOKEN</h4><input type="password" value="${apiKey}" readonly disabled style="background:var(--bg-tertiary); border:1px solid var(--border-dim); color:var(--text-secondary); margin-top:10px;"><p style="font-size:0.8rem; color:var(--text-muted);">Установлен, изменение запрещено.</p></div>`;
       });
     }
 
     window.toggleRole = async (login, role) => {
       if (currentUser.role !== 'admin') return showToast('Недостаточно прав');
-      const { error } = await _supabase.from('users').update({ role }).eq('login', login);
-      if (error) { console.error(error); showToast('Ошибка обновления'); return; }
-      if (currentUser.login === login) { currentUser.role = role; localStorage.setItem('diamkey_current', JSON.stringify(currentUser)); }
+      await _supabase.from('users').update({ role }).eq('login', login);
       showToast('Роль обновлена');
     };
 
     window.editUserByAdmin = async (login) => {
       const { data: user } = await _supabase.from('users').select('*').eq('login', login).maybeSingle();
-      if (!user) return showToast('Пользователь не найден');
-      const modal = document.getElementById('adminEditUserModal'), content = document.getElementById('adminEditUserModalContent');
-      const faOptions = [ { value:'', label:'Без иконки' }, { value:'fa-solid fa-star', label:'⭐ Звезда' }, { value:'fa-solid fa-crown', label:'👑 Корона' }, { value:'fa-solid fa-heart', label:'❤️ Сердце' }, { value:'fa-solid fa-fire', label:'🔥 Огонь' }, { value:'fa-solid fa-check', label:'✅ Галочка' } ];
-      const optionsHtml = faOptions.map(o => `<option value="${o.value}" ${user.fa_icon===o.value?'selected':''}>${o.label}</option>`).join('');
-      content.innerHTML = `<h3>Редактирование пользователя</h3>
+      if (!user) return;
+      const modal = document.getElementById('adminEditUserModal');
+      modal.style.display = 'flex';
+      document.getElementById('adminEditUserModalContent').innerHTML = `<h3>Редактирование пользователя</h3>
         <div class="input-group"><label>Логин</label><input id="editAdminLogin" value="${user.login||''}"></div>
-        <div class="input-group"><label>Имя</label><input id="editAdminName" value="${user.name||''}"></div>
-        <div class="input-group"><label>Пароль</label><input id="editAdminPassword" type="password" placeholder="Новый пароль"></div>
-        <div class="input-group"><label>Аватар (загрузите файл)</label><input type="file" id="editAdminAvatar" accept="image/*"></div>
-        <div class="input-group"><label>Иконка</label><select id="editAdminFaIcon">${optionsHtml}</select></div>
-        <div class="input-group"><label>Секретное слово</label><input value="${user.secret_word}" readonly></div>
         <button class="btn btn-primary" id="saveAdminEditBtn">Сохранить</button>
         <button class="btn btn-outline" id="closeAdminEditModal">Закрыть</button>`;
-      modal.style.display = 'flex';
       document.getElementById('saveAdminEditBtn').onclick = async () => {
-        const name = document.getElementById('editAdminName').value.trim();
-        const loginNew = document.getElementById('editAdminLogin').value.trim();
-        const password = document.getElementById('editAdminPassword').value.trim();
-        const fa_icon = document.getElementById('editAdminFaIcon').value;
-        const avatarFile = document.getElementById('editAdminAvatar').files[0];
-        const updates = { name, login: loginNew, fa_icon };
-        if (password) updates.password = password;
-        if (avatarFile) {
-          const reader = new FileReader();
-          reader.onload = async (e) => { updates.avatar = e.target.result; await _supabase.from('users').update(updates).eq('login', login); modal.style.display='none'; showProfilePage(); };
-          reader.readAsDataURL(avatarFile);
-        } else { await _supabase.from('users').update(updates).eq('login', login); modal.style.display='none'; showProfilePage(); }
+        const newLogin = document.getElementById('editAdminLogin').value.trim();
+        await _supabase.from('users').update({ login: newLogin }).eq('login', login);
+        modal.style.display = 'none';
+        showProfilePage();
       };
       document.getElementById('closeAdminEditModal').onclick = () => modal.style.display = 'none';
     };
@@ -835,7 +615,7 @@
       showProfilePage();
     };
 
-    // ================== ПОДДЕРЖКА ==================
+    // ========== ПОДДЕРЖКА ==========
     async function showSupportPage() {
       if (!currentUser) return;
       const { data: tickets } = await _supabase.from('tickets').select('*').eq('email', currentUser.email);
@@ -846,7 +626,6 @@
         <div style="margin-bottom:16px;" id="ticketActionArea"></div>
         <div id="ticketChatArea"></div>
       </div>`;
-
       const actionArea = document.getElementById('ticketActionArea');
       const chatArea = document.getElementById('ticketChatArea');
       if (existingTicket) {
@@ -860,9 +639,7 @@
           <button class="btn btn-outline" style="width:100%;" id="deleteMyTicket"><i class="fas fa-trash"></i> Удалить тикет</button>
         </div>`;
         document.getElementById('sendUserTicketReply').onclick = async () => {
-          const input = document.getElementById('userTicketInput');
-          const text = input.value.trim();
-          if (!text) return;
+          const input = document.getElementById('userTicketInput'); const text = input.value.trim(); if (!text) return;
           const { data: ticket } = await _supabase.from('tickets').select('messages').eq('id', existingTicket.id).single();
           if (!ticket) return;
           const messages = [...(ticket.messages || []), { sender: 'user', text, time: new Date().toISOString() }];
@@ -885,7 +662,7 @@
       }
     }
 
-    // ================== ФОРУМ ==================
+    // ========== ФОРУМ ==========
     async function sendForumMessage() {
       if (!currentUser) return showToast('Войдите');
       const input = document.getElementById('forumMessage');
@@ -903,7 +680,7 @@
       };
       const container = document.getElementById('forumPosts');
       const tempEl = document.createElement('div');
-      tempEl.className = 'card visible';
+      tempEl.className = 'card';
       tempEl.style.marginBottom = '20px';
       tempEl.innerHTML = `<div style="display:flex; gap:10px; align-items:center;">
         <div style="width:40px; height:40px; border-radius:50%; overflow:hidden; background:var(--bg-card); display:flex; align-items:center; justify-content:center;">${tempPost.avatar ? `<img src="${tempPost.avatar}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user" style="color:var(--silver); font-size:1rem;"></i>'}</div>
@@ -931,7 +708,7 @@
       const container = document.getElementById('forumPosts');
       if (!container) return;
       container.innerHTML = posts?.length ? posts.map(p => `
-        <div class="card visible" style="margin-bottom:20px;">
+        <div class="card" style="margin-bottom:20px;">
           <div style="display:flex; gap:10px; align-items:center;">
             <div style="width:40px; height:40px; border-radius:50%; overflow:hidden; background:var(--bg-card); display:flex; align-items:center; justify-content:center;">${p.avatar ? `<img src="${p.avatar}" style="width:100%; height:100%; object-fit:cover;">` : '<i class="fas fa-user" style="color:var(--silver); font-size:1rem;"></i>'}</div>
             <div style="display:flex; flex-wrap:wrap; align-items:baseline; gap:4px;">
@@ -949,12 +726,100 @@
 
     window.deleteForumPost = async (id) => { await _supabase.from('forum').delete().eq('id', id); loadForumPosts(); };
 
-    function startCipherEffect(el, text) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
-      let display = text.split('');
-      setInterval(() => { for (let i=0; i<display.length; i++) { if (Math.random()<0.05) display[i] = chars[Math.floor(Math.random()*chars.length)]; else display[i] = text[i]; } el.textContent = display.join(''); }, 150);
+    // ========== СТАТИСТИКА ==========
+    async function showStatsPage() {
+      if (!currentUser) return;
+      const container = document.getElementById('stats-page');
+      container.innerHTML = `<div style="padding:60px 0; max-width:1200px; margin:0 auto;">
+        <div class="tabs">
+          <div class="tab active" data-tab="overview">Общая</div>
+          <div class="tab" data-tab="ai">Diamond AI</div>
+          <div class="tab" data-tab="dirmess">Dirmess</div>
+          <div class="tab" data-tab="unlock">Unlock</div>
+        </div>
+        <div id="tab-overview" class="tab-content" style="display:block;"></div>
+        <div id="tab-ai" class="tab-content" style="display:none;"></div>
+        <div id="tab-dirmess" class="tab-content" style="display:none;"></div>
+        <div id="tab-unlock" class="tab-content" style="display:none;"></div>
+      </div>`;
+
+      container.querySelectorAll('.tab[data-tab]').forEach(tab => {
+        tab.addEventListener('click', () => {
+          container.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          container.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+          document.getElementById('tab-' + tab.dataset.tab).style.display = 'block';
+        });
+      });
+
+      await loadOverviewStats();
+      await loadAIStats();
+      document.getElementById('tab-dirmess').innerHTML = '<div class="stat-box"><i class="fas fa-comment-dots" style="font-size:3rem; color:var(--silver);"></i><h3>Dirmess</h3><p style="color:var(--text-muted);">Статистика появится позже</p></div>';
+      document.getElementById('tab-unlock').innerHTML = '<div class="stat-box"><i class="fas fa-unlock-alt" style="font-size:3rem; color:var(--silver);"></i><h3>Unlock</h3><p style="color:var(--text-muted);">Статистика появится позже</p></div>';
     }
 
+    async function loadOverviewStats() {
+      const container = document.getElementById('tab-overview');
+      try {
+        const { data: chatsData } = await _supabase.from('diamond_chats').select('id, messages').eq('user_login', currentUser.login);
+        const totalChats = chatsData ? chatsData.length : 0;
+        const totalMessages = chatsData ? chatsData.reduce((sum, c) => sum + (c.messages ? c.messages.length : 0), 0) : 0;
+        container.innerHTML = `
+          <div class="stats-grid">
+            <div class="stat-box"><div class="stat-number">${totalChats}</div><div class="stat-label">Чатов в Diamond AI</div></div>
+            <div class="stat-box"><div class="stat-number">${totalMessages}</div><div class="stat-label">Сообщений в Diamond AI</div></div>
+            <div class="stat-box"><div class="stat-number">${currentUser.login}</div><div class="stat-label">Аккаунт DiamKey</div></div>
+            <div class="stat-box"><div class="stat-number">${new Date().toLocaleDateString('ru-RU')}</div><div class="stat-label">Сегодня</div></div>
+          </div>
+          <p style="text-align:center; color:var(--text-muted);">Подробная статистика по сервисам доступна на вкладках выше.</p>
+        `;
+      } catch(e) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Не удалось загрузить общую статистику.</p>';
+      }
+    }
+
+    async function loadAIStats() {
+      const container = document.getElementById('tab-ai');
+      try {
+        const { data: chatsData, error } = await _supabase.from('diamond_chats').select('*').eq('user_login', currentUser.login).order('last_activity', { ascending: false });
+        if (error) throw error;
+        const chats = chatsData || [];
+        const totalChats = chats.length;
+        const totalMessages = chats.reduce((sum, c) => sum + (c.messages ? c.messages.length : 0), 0);
+        const totalFolders = (await _supabase.from('diamond_folders').select('id').eq('user_login', currentUser.login)).data?.length || 0;
+        const avgMessagesPerChat = totalChats > 0 ? (totalMessages / totalChats).toFixed(1) : 0;
+        const lastChat = chats.length > 0 ? chats[0] : null;
+
+        let html = `
+          <div class="stats-grid">
+            <div class="stat-box"><div class="stat-number">${totalChats}</div><div class="stat-label">Всего чатов</div></div>
+            <div class="stat-box"><div class="stat-number">${totalMessages}</div><div class="stat-label">Всего сообщений</div></div>
+            <div class="stat-box"><div class="stat-number">${totalFolders}</div><div class="stat-label">Папок</div></div>
+            <div class="stat-box"><div class="stat-number">${avgMessagesPerChat}</div><div class="stat-label">Среднее сообщений на чат</div></div>
+          </div>
+          <h3 style="color:var(--silver-light); margin-bottom:16px;">Последние чаты</h3>
+          <div style="display:flex; flex-direction: column; gap:12px;">
+            ${chats.slice(0, 5).map(c => `
+              <div style="background:var(--bg-card); border:1px solid var(--border-dim); border-radius:16px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+                <span>${escapeHtml(c.title || 'Без названия')}</span>
+                <span style="color:var(--text-muted); font-size:0.8rem;">${new Date(c.last_activity || c.created_at).toLocaleDateString('ru-RU')}</span>
+              </div>
+            `).join('')}
+            ${chats.length === 0 ? '<p style="color:var(--text-muted); text-align:center;">Нет чатов</p>' : ''}
+          </div>
+        `;
+        container.innerHTML = html;
+      } catch(e) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Не удалось загрузить статистику Diamond AI.</p>';
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m);
+    }
+
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
     document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('privacyModalContent').innerHTML = '<h3>Политика конфиденциальности</h3><p>Данные хранятся в облачной базе Supabase.</p><button class="btn btn-outline" onclick="document.getElementById(\'privacyModal\').style.display=\'none\'">Закрыть</button>';
       document.getElementById('termsModalContent').innerHTML = '<h3>Условия использования</h3><p>Запрещены взлом, спам и нарушение работы сервиса.</p><button class="btn btn-outline" onclick="document.getElementById(\'termsModal\').style.display=\'none\'">Закрыть</button>';
@@ -963,6 +828,7 @@
       document.getElementById('navHome').addEventListener('click', e => { e.preventDefault(); navigate('home'); });
       document.getElementById('navForum').addEventListener('click', e => { e.preventDefault(); navigate('forum'); });
       document.getElementById('navProfile').addEventListener('click', e => { e.preventDefault(); navigate('profile'); });
+      document.getElementById('navStats').addEventListener('click', e => { e.preventDefault(); navigate('stats'); });
       document.getElementById('navSupport').addEventListener('click', e => { e.preventDefault(); navigate('support'); });
       document.getElementById('sendForumBtn').addEventListener('click', sendForumMessage);
       window.addEventListener('click', e => { if (e.target.classList.contains('modal')) e.target.style.display='none'; });
@@ -977,9 +843,13 @@
       }
       updateAuthButton(); updateHeroButtons(); navigate('home');
       startCipherEffect(document.getElementById('cipherTitle'), 'DIAMKEY');
-      const observer = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.1 });
-      document.querySelectorAll('.card').forEach(c => observer.observe(c));
     });
+
+    function startCipherEffect(el, text) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+      let display = text.split('');
+      setInterval(() => { for (let i=0; i<display.length; i++) { if (Math.random()<0.05) display[i] = chars[Math.floor(Math.random()*chars.length)]; else display[i] = text[i]; } el.textContent = display.join(''); }, 150);
+    }
 
     window.logout = logout;
   })();
