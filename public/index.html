@@ -675,16 +675,110 @@
       }
     }
 
-    // ========== ОБСЛУЖИВАНИЕ, УПРАВЛЕНИЕ, ВЫДАЧА ПРАВ ==========
+    // ========== ОБСЛУЖИВАНИЕ (с базой знаний) ==========
     function showServiceTabContent() {
       const tab = document.getElementById('tab-service');
       if (!tab) return;
+
       _supabase.from('service_config').select('mistral_api_key').eq('id', 1).single().then(({ data }) => {
         const apiKey = data?.mistral_api_key || '';
-        tab.innerHTML = `<div class="card"><h4><i class="fas fa-key"></i> Diamond AI TOKEN</h4><input type="password" value="${apiKey}" readonly disabled style="background:var(--bg-tertiary); border:1px solid var(--border-dim); color:var(--text-secondary); margin-top:10px;"><p style="font-size:0.8rem;">Установлен, изменение запрещено.</p></div>`;
+        tab.innerHTML = `
+          <div style="display:flex; gap:20px; flex-wrap:wrap;">
+            <!-- Левая колонка: API ключ -->
+            <div class="card" style="flex:1; min-width:300px;">
+              <h4><i class="fas fa-key"></i> Diamond AI TOKEN</h4>
+              <input type="password" value="${apiKey}" readonly disabled style="background:var(--bg-tertiary); border:1px solid var(--border-dim); color:var(--text-secondary); margin-top:10px; width:100%;">
+              <p style="font-size:0.8rem;">Установлен, изменение запрещено.</p>
+            </div>
+
+            <!-- Правая колонка: Обучение ИИ (База знаний) -->
+            <div class="card" style="flex:1; min-width:300px;">
+              <h4><i class="fas fa-brain"></i> Обучение ИИ (База знаний)</h4>
+              <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:16px;">
+                Добавьте документы, правила, FAQ для обучения Diamond AI.
+              </p>
+
+              <!-- Форма добавления -->
+              <div class="input-group">
+                <label>Заголовок</label>
+                <input type="text" id="kb-title" placeholder="Например: Правила сервера">
+              </div>
+              <div class="input-group">
+                <label>Содержимое</label>
+                <textarea id="kb-content" rows="6" placeholder="Текст документа..."></textarea>
+              </div>
+              <div class="input-group">
+                <label>Источник</label>
+                <select id="kb-source">
+                  <option value="manual">Ручной ввод</option>
+                  <option value="wikipedia">Wikipedia</option>
+                  <option value="news">Новости</option>
+                  <option value="other">Другое</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" id="saveKbBtn" style="width:100%;">
+                <i class="fas fa-save"></i> Сохранить в базу знаний
+              </button>
+
+              <!-- Список существующих записей -->
+              <div id="kb-list" style="margin-top:20px; max-height:300px; overflow-y:auto;"></div>
+            </div>
+          </div>
+        `;
+
+        // Сохранение новой записи
+        document.getElementById('saveKbBtn').addEventListener('click', async () => {
+          const title = document.getElementById('kb-title').value.trim();
+          const content = document.getElementById('kb-content').value.trim();
+          const source = document.getElementById('kb-source').value;
+          if (!title || !content) return showToast('Введите заголовок и содержимое');
+          const { error } = await _supabase.from('knowledge_base').insert([{
+            user_login: currentUser.login,
+            title,
+            content,
+            source
+          }]);
+          if (error) { showToast('Ошибка сохранения'); return; }
+          showToast('Запись добавлена');
+          document.getElementById('kb-title').value = '';
+          document.getElementById('kb-content').value = '';
+          loadKbList();
+        });
+
+        // Загрузка существующих записей
+        loadKbList();
       });
     }
 
+    async function loadKbList() {
+      const container = document.getElementById('kb-list');
+      if (!container) return;
+      const { data, error } = await _supabase.from('knowledge_base')
+        .select('*')
+        .eq('user_login', currentUser.login)
+        .order('created_at', { ascending: false });
+      if (error) return;
+      container.innerHTML = data?.length
+        ? data.map(item => `
+            <div class="card" style="margin-bottom:8px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+              <div style="flex:1;">
+                <strong>${escapeHtml(item.title)}</strong>
+                <small style="color:var(--text-muted); display:block;">Источник: ${item.source}</small>
+              </div>
+              <button class="btn btn-outline" onclick="window.deleteKbItem(${item.id})" style="padding:2px 10px;">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          `).join('')
+        : '<p style="color:var(--text-muted);">Нет записей</p>';
+    }
+
+    window.deleteKbItem = async (id) => {
+      const { error } = await _supabase.from('knowledge_base').delete().eq('id', id);
+      if (!error) loadKbList();
+    };
+
+    // ========== УПРАВЛЕНИЕ И ВЫДАЧА ПРАВ ==========
     async function showAdminTabContent() {
       const tab = document.getElementById('tab-admin');
       if (!tab) return;
@@ -902,6 +996,9 @@
     }
 
     window.logout = logout;
+    window.showServiceTabContent = showServiceTabContent;
+    window.loadKbList = loadKbList;
+    window.deleteKbItem = deleteKbItem;
   })();
 </script>
 </body>
