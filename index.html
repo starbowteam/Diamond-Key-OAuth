@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="description" content="DiamKey — единый аккаунт для сервисов Diamond">
-  <meta name="theme-color" content="#0a0a0f">
   <title>DiamKey | Единый ключ</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -25,267 +23,99 @@
       --accent-gold: #f0c060;
       --accent-blue: #3498db;
       --accent-purple: #9b59b6;
-      --accent-diamond: linear-gradient(135deg, #e0e0e0, #ffffff, #b0b0b0);
       --radius-lg: 20px;
       --radius-xl: 32px;
-      --transition: 0.25s ease;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; }
     body {
       background: var(--bg-deep);
       font-family: 'Inter', sans-serif;
       color: var(--text-light);
-      line-height: 1.5;
-      overflow-x: hidden;
-      touch-action: pan-y;
+      line-height:1.5;
+      overflow-x:hidden;
     }
-    canvas { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; }
-    #app {
-      position: relative;
-      z-index: 1;
-      min-height: 100vh;
-    }
-    /* НАВБАР */
+    canvas { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; }
+    #app { position:relative; z-index:1; min-height:100vh; }
     .navbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 24px;
-      backdrop-filter: blur(16px);
-      background: rgba(10,10,15,0.7);
-      border-bottom: 1px solid var(--border-dim);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      display:flex; justify-content:space-between; align-items:center; padding:16px 24px;
+      backdrop-filter:blur(16px); background:rgba(10,10,15,0.7); border-bottom:1px solid var(--border-dim);
+      position:sticky; top:0; z-index:100;
     }
-    .logo a {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 28px;
-      font-weight: 800;
-      color: var(--silver-light);
-      text-decoration: none;
-    }
-    .logo img { height: 36px; width: auto; }
-    .nav-links {
-      display: flex;
-      gap: 24px;
-      align-items: center;
-    }
+    .logo a { display:flex; align-items:center; gap:12px; font-size:28px; font-weight:800; color:var(--silver-light); text-decoration:none; }
+    .logo img { height:36px; }
+    .nav-links { display:flex; gap:24px; align-items:center; }
     .nav-links a, .nav-links button {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-weight: 500;
-      background: none;
-      border: none;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: color 0.2s;
+      color:var(--text-muted); text-decoration:none; font-weight:500; background:none; border:none;
+      font-size:1rem; cursor:pointer; transition:color 0.2s;
     }
-    .nav-links a:hover, .nav-links button:hover { color: var(--text-light); }
-    .burger-menu {
-      display: none;
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-size: 1.6rem;
-      cursor: pointer;
-    }
-    /* КАРТОЧКИ, КНОПКИ */
+    .nav-links a:hover, .nav-links button:hover { color:var(--text-light); }
+    .burger-menu { display:none; background:none; border:none; color:var(--text-muted); font-size:1.6rem; cursor:pointer; }
     .card {
-      background: var(--bg-card);
-      border-radius: var(--radius-xl);
-      padding: 28px;
-      border: 1px solid var(--border-dim);
-      backdrop-filter: blur(12px);
-      transition: all var(--transition);
+      background:var(--bg-card); border-radius:var(--radius-xl); padding:28px;
+      border:1px solid var(--border-dim); backdrop-filter:blur(12px); transition:all 0.25s;
     }
-    .card:hover {
-      transform: translateY(-4px);
-      border-color: #3a3a44;
-      box-shadow: 0 16px 32px rgba(0,0,0,0.5);
-    }
+    .card:hover { transform:translateY(-4px); border-color:#3a3a44; box-shadow:0 16px 32px rgba(0,0,0,0.5); }
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 28px;
-      border-radius: 40px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all var(--transition);
-      border: 1px solid var(--border-dim);
-      background: transparent;
-      color: var(--text-light);
-      font-size: 1rem;
-      text-decoration: none;
+      display:inline-flex; align-items:center; gap:8px; padding:12px 28px; border-radius:40px;
+      font-weight:600; cursor:pointer; transition:all 0.25s; border:1px solid var(--border-dim);
+      background:transparent; color:var(--text-light); font-size:1rem; text-decoration:none;
     }
-    .btn-primary {
-      background: var(--grad-silver);
-      border-color: #3a3a44;
-    }
-    .btn-primary:hover { background: #2a2a33; border-color: var(--silver-dark); }
-    .btn-outline:hover { background: rgba(255,255,255,0.03); border-color: var(--silver-dark); }
+    .btn-primary { background:var(--grad-silver); border-color:#3a3a44; }
+    .btn-primary:hover { background:#2a2a33; border-color:var(--silver-dark); }
+    .btn-outline:hover { background:rgba(255,255,255,0.03); border-color:var(--silver-dark); }
     .hero {
-      padding: 120px 20px 100px;
-      text-align: center;
-      position: relative;
-      z-index: 2;
+      padding:120px 20px 100px; text-align:center; position:relative; z-index:2;
     }
     .hero h1 {
-      font-size: clamp(44px, 8vw, 72px);
-      font-weight: 800;
-      background: linear-gradient(135deg, #e0e0e0, #8a8a9a);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      margin-bottom: 24px;
+      font-size:clamp(44px,8vw,72px); font-weight:800;
+      background:linear-gradient(135deg,#e0e0e0,#8a8a9a);
+      -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:24px;
     }
-    .hero p {
-      font-size: 1.25rem;
-      color: var(--text-muted);
-      max-width: 700px;
-      margin: 0 auto 40px;
-    }
-    .input-group {
-      margin-bottom: 16px;
-    }
-    .input-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 600;
-      opacity: 0.8;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+    .hero p { font-size:1.25rem; color:var(--text-muted); max-width:700px; margin:0 auto 40px; }
+    .input-group { margin-bottom:16px; }
+    .input-group label { display:block; margin-bottom:6px; font-weight:600; opacity:0.8; font-size:0.9rem; text-transform:uppercase; }
     input, textarea, select {
-      width: 100%;
-      background: #1e1e2a;
-      border: 1px solid var(--border-dim);
-      color: var(--text-light);
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 1rem;
-      outline: none;
-      margin-top: 6px;
+      width:100%; background:#1e1e2a; border:1px solid var(--border-dim); color:var(--text-light);
+      padding:12px 16px; border-radius:12px; font-size:1rem; outline:none; margin-top:6px;
     }
-    select option { background: #111116; }
-    input:focus, textarea:focus, select:focus { border-color: var(--silver-dark); }
+    select option { background:#111116; }
+    input:focus, textarea:focus, select:focus { border-color:var(--silver-dark); }
     .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--bg-card);
-      border-left: 4px solid var(--silver);
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      z-index: 1100;
-      animation: fadeUp 0.3s;
+      position:fixed; bottom:24px; right:24px; background:var(--bg-card); border-left:4px solid var(--silver);
+      padding:12px 20px; border-radius:12px; font-size:0.9rem; z-index:1100; animation:fadeUp 0.3s;
     }
-    @keyframes fadeUp {
-      0% { opacity: 0; transform: translateY(30px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    /* ПРОФИЛЬ */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
     .profile-cover {
-      height: 200px;
-      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-      position: relative;
-      margin-bottom: 60px;
+      height:200px; border-radius:var(--radius-xl) var(--radius-xl) 0 0; position:relative; margin-bottom:60px;
     }
     .profile-avatar-wrapper {
-      position: absolute;
-      bottom: -50px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      overflow: hidden;
-      background: var(--bg-card);
+      position:absolute; bottom:-50px; left:50%; transform:translateX(-50%); width:100px; height:100px;
+      border-radius:50%; overflow:hidden; background:var(--bg-card);
     }
-    .profile-info {
-      text-align: center;
-      padding: 0 20px;
-    }
-    .profile-badges {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin: 16px 0;
-    }
+    .profile-info { text-align:center; padding:0 20px; }
+    .profile-badges { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin:16px 0; }
     .badge {
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border-dim);
+      padding:6px 14px; border-radius:20px; font-size:0.85rem; font-weight:600;
+      background:rgba(255,255,255,0.05); border:1px solid var(--border-dim);
     }
-    .badge-diamond {
-      background: linear-gradient(135deg, #e0e0e0, #ffffff);
-      color: #0a0a0f;
-      border: none;
-    }
-    .badge-admin { border-color: var(--accent-gold); color: var(--accent-gold); }
-    .badge-staff { border-color: var(--silver); color: var(--silver); }
-    .badge-early { border-color: var(--silver-dark); color: var(--silver-dark); }
-    .trust-bar {
-      background: #1e1e2a;
-      border-radius: 10px;
-      height: 8px;
-      margin: 16px 0;
-      position: relative;
-    }
-    .trust-fill {
-      height: 100%;
-      border-radius: 10px;
-      background: var(--grad-silver);
-    }
-    .achievements-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 16px;
-      margin-top: 24px;
-    }
+    .badge-diamond { background:linear-gradient(135deg,#e0e0e0,#fff); color:#0a0a0f; border:none; }
+    .badge-admin { border-color:var(--accent-gold); color:var(--accent-gold); }
+    .badge-staff { border-color:var(--silver); color:var(--silver); }
+    .badge-early { border-color:var(--silver-dark); color:var(--silver-dark); }
+    .trust-bar { background:#1e1e2a; border-radius:10px; height:8px; margin:16px 0; }
+    .trust-fill { height:100%; border-radius:10px; background:var(--grad-silver); }
+    .achievements-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; margin-top:24px; }
     .achievement-card {
-      background: var(--bg-card);
-      border-radius: 16px;
-      padding: 16px;
-      border: 1px solid var(--border-dim);
-      text-align: center;
+      background:var(--bg-card); border-radius:16px; padding:16px; border:1px solid var(--border-dim); text-align:center;
     }
-    .achievement-card i { font-size: 2rem; color: var(--silver); margin-bottom: 8px; }
-    .progress-bar {
-      background: #1e1e2a;
-      border-radius: 8px;
-      height: 6px;
-      margin: 8px 0;
-    }
-    .progress-bar div {
-      height: 100%;
-      border-radius: 8px;
-      background: var(--grad-silver);
-    }
-    /* АДАПТИВ */
-    @media (max-width: 768px) {
-      .navbar { flex-wrap: wrap; }
-      .nav-links {
-        display: none;
-        flex-direction: column;
-        width: 100%;
-        background: var(--bg-card);
-        padding: 20px;
-        border-radius: 20px;
-        margin-top: 10px;
-      }
-      .nav-links.active { display: flex; }
-      .burger-menu { display: block; }
+    .achievement-card i { font-size:2rem; color:var(--silver); margin-bottom:8px; }
+    .progress-bar { background:#1e1e2a; border-radius:8px; height:6px; margin:8px 0; }
+    .progress-bar div { height:100%; border-radius:8px; background:var(--grad-silver); }
+    @media (max-width:768px) {
+      .navbar { flex-wrap:wrap; }
+      .nav-links { display:none; flex-direction:column; width:100%; background:var(--bg-card); padding:20px; border-radius:20px; margin-top:10px; }
+      .nav-links.active { display:flex; }
+      .burger-menu { display:block; }
     }
   </style>
 </head>
@@ -293,49 +123,42 @@
   <canvas id="threeCanvas"></canvas>
   <div id="app">
     <header class="navbar">
-      <div class="logo">
-        <a href="/">
-          <img src="assets/KeyHold.png" alt="DiamKey">
-          <span>DIAMKEY</span>
-        </a>
-      </div>
+      <div class="logo"><a href="#"><img src="assets/KeyHold.png" alt="DiamKey"><span>DIAMKEY</span></a></div>
       <button class="burger-menu" id="burgerMenu"><i class="fas fa-bars"></i></button>
       <nav class="nav-links" id="navLinks">
-        <a href="/" class="nav-link">Главная</a>
-        <a href="/profile" class="nav-link">Профиль</a>
-        <a href="/subscription" class="nav-link">Diamond Plus</a>
+        <a href="#home">Главная</a>
+        <a href="#profile">Профиль</a>
+        <a href="#subscription">Diamond Plus</a>
         <div id="toolsDropdown" style="display:none; position:relative;">
           <button class="nav-link" id="toolsBtn"><i class="fas fa-folder"></i> Инструменты</button>
           <div id="toolsMenu" style="display:none; position:absolute; top:100%; left:0; background:var(--bg-card); border:1px solid var(--border-dim); border-radius:20px; padding:12px; min-width:180px;">
-            <a href="/docs" class="nav-link" style="display:block;">Документы</a>
-            <a href="/support" class="nav-link" style="display:block;">Поддержка</a>
-            <a href="/admin" class="nav-link admin-only" style="display:none;">Админка</a>
+            <a href="#docs">Документы</a>
+            <a href="#support">Поддержка</a>
+            <a href="#admin" class="admin-only" style="display:none;">Админка</a>
           </div>
         </div>
-        <a href="/profile" class="nav-link" id="authLink">Войти</a>
+        <a href="#profile" id="authLink">Войти</a>
       </nav>
     </header>
-    <div id="pageContent" class="page"></div>
+    <div id="pageContent" style="max-width:1280px; margin:0 auto; padding:24px;"></div>
     <div id="toastContainer"></div>
   </div>
 
-  <!-- 3D-сцена (Three.js) -->
   <script defer src="https://unpkg.com/three@0.126.0/build/three.min.js"></script>
   <script>
-    // 3D-сцена из лендинга Diamond AI (ключ)
+    // 3D-ключ
     window.addEventListener('load', () => {
       if (typeof THREE === 'undefined') return;
       const canvas = document.getElementById('threeCanvas');
-      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x0a0a0f);
       const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
-      camera.position.set(3, 1.8, 6);
-      camera.lookAt(0,0,0);
+      camera.position.set(3,1.8,6); camera.lookAt(0,0,0);
       scene.add(new THREE.AmbientLight(0x404066));
-      const dirLight = new THREE.DirectionalLight(0xddddff, 1.2);
+      const dirLight = new THREE.DirectionalLight(0xddddff,1.2);
       dirLight.position.set(2,5,3); scene.add(dirLight);
       const keyGroup = new THREE.Group();
       const silverMat = new THREE.MeshStandardMaterial({ color:0xa8a8b3, roughness:0.25, metalness:0.95 });
@@ -346,19 +169,19 @@
       shaft.position.y = -0.8; keyGroup.add(shaft);
       const bitGroup = new THREE.Group();
       const toothGeo = new THREE.BoxGeometry(0.25,0.4,0.15);
-      [[-0.2,-1.4,0],[0.1,-1.55,0],[-0.2,-1.7,0],[0.1,-1.85,0]].forEach(([x,y,z])=>{
+      [[-0.2,-1.4,0],[0.1,-1.55,0],[-0.2,-1.7,0],[0.1,-1.85,0]].forEach(([x,y,z]) => {
         const tooth = new THREE.Mesh(toothGeo, darkMetal);
         tooth.position.set(x,y,z); bitGroup.add(tooth);
       });
       keyGroup.add(bitGroup);
-      for (let y=-0.3; y>-1.3; y-=0.25){
+      for (let y=-0.3; y>-1.3; y-=0.25) {
         const groove = new THREE.Mesh(new THREE.TorusGeometry(0.17,0.03,8,16), darkMetal);
         groove.position.y=y; groove.rotation.x=Math.PI/2; keyGroup.add(groove);
       }
       keyGroup.position.y=0.2; scene.add(keyGroup);
       const starsGeo = new THREE.BufferGeometry();
       const starsCount=400; const starsPositions=new Float32Array(starsCount*3);
-      for (let i=0;i<starsCount*3;i+=3){
+      for (let i=0;i<starsCount*3;i+=3) {
         starsPositions[i]=(Math.random()-0.5)*12;
         starsPositions[i+1]=(Math.random()-0.5)*6;
         starsPositions[i+2]=(Math.random()-0.5)*8;
@@ -366,14 +189,13 @@
       starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPositions,3));
       const starsMat=new THREE.PointsMaterial({color:0xffffff,size:0.03});
       const stars=new THREE.Points(starsGeo,starsMat); scene.add(stars);
-      function animate(){
+      function animate() {
         requestAnimationFrame(animate);
-        keyGroup.rotation.y+=0.005;
-        stars.rotation.y+=0.0002;
+        keyGroup.rotation.y+=0.005; stars.rotation.y+=0.0002;
         renderer.render(scene,camera);
       }
       animate();
-      window.addEventListener('resize',()=>{
+      window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth/window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth,window.innerHeight);
@@ -381,9 +203,8 @@
     });
   </script>
 
-  <!-- Основной код DiamKey -->
   <script>
-    // ==================== DIAMKEY CORE ====================
+    // ============ SUPABASE ============
     const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -393,8 +214,7 @@
       if (!str) return '';
       return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m);
     }
-
-    function showToast(message, type = 'info') {
+    function showToast(message, type='info') {
       const container = document.getElementById('toastContainer');
       if (!container) return;
       const toast = document.createElement('div');
@@ -404,79 +224,59 @@
       container.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
     }
-
-    function generateFastSecret() {
-      return Math.random().toString(36).substring(2,15) + Math.random().toString(36).substring(2,15);
-    }
-
+    function generateFastSecret() { return Math.random().toString(36).substring(2,15) + Math.random().toString(36).substring(2,15); }
     function generateToken() {
       const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost'];
       const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key'];
       return `diamkey_${adj[Math.floor(Math.random()*adj.length)]}_${nouns[Math.floor(Math.random()*nouns.length)]}_${nouns[Math.floor(Math.random()*nouns.length)]}_${Math.floor(1000+Math.random()*9000)}`;
     }
-
     function getAvatarFrame(user) {
       if (user.subscription_tier === 'diamond_plus') return 'linear-gradient(135deg, #fff, #c0c0c0)';
       if (user.role === 'admin') return '#f0c060';
       if (user.role === 'staff') return '#a8a8b3';
       return 'transparent';
     }
-
     function initSession() {
       const saved = localStorage.getItem('diamkey_current');
-      if (saved) {
-        try { currentUser = JSON.parse(saved); } catch(e) { currentUser = null; }
-      }
+      if (saved) { try { currentUser = JSON.parse(saved); } catch(e) { currentUser = null; } }
       updateAuthUI();
     }
-
     function updateAuthUI() {
       const authLink = document.getElementById('authLink');
       const toolsDropdown = document.getElementById('toolsDropdown');
       const adminLink = document.querySelector('.admin-only');
       if (currentUser) {
-        if (authLink) {
-          authLink.innerHTML = `<i class="fas fa-user-circle"></i> ${escapeHtml(currentUser.login)}`;
-          authLink.href = '/profile';
-        }
+        if (authLink) { authLink.innerHTML = `<i class="fas fa-user-circle"></i> ${escapeHtml(currentUser.login)}`; authLink.href = '#profile'; }
         if (toolsDropdown && (currentUser.role === 'admin' || currentUser.role === 'staff')) toolsDropdown.style.display = 'block';
         if (adminLink && currentUser.role === 'admin') adminLink.style.display = 'block';
       } else {
-        if (authLink) {
-          authLink.innerHTML = `<i class="fas fa-sign-in-alt"></i> Войти`;
-          authLink.href = '#';
-        }
+        if (authLink) { authLink.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти'; authLink.href = '#'; }
         if (toolsDropdown) toolsDropdown.style.display = 'none';
         if (adminLink) adminLink.style.display = 'none';
       }
     }
 
-    // ==================== AUTH ====================
+    // ============ AUTH ============
     async function login(login, password) {
       if (!login || !password) return showToast('Неверный логин или пароль', 'error');
       try {
         const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
         if (error || !user) { showToast('Неверный логин или пароль', 'error'); return; }
-        if (!user.secret_word) {
-          const secretWord = generateFastSecret();
-          await _supabase.from('users').update({ secret_word: secretWord }).eq('login', user.login);
-          user.secret_word = secretWord;
-        }
+        if (!user.secret_word) { const sw = generateFastSecret(); await _supabase.from('users').update({ secret_word: sw }).eq('login', user.login); user.secret_word = sw; }
         currentUser = {
-          login: user.login, email: user.email || (user.login + '@diamkey.local'),
-          secretWord: user.secret_word, name: user.name || '', avatar: user.avatar || '',
-          description: user.description || '', fa_icon: user.fa_icon || '', role: user.role || 'user',
-          cover_image: user.cover_image || '', status_text: user.status_text || '',
-          trust_level: user.trust_level || 0, avatar_frame: user.avatar_frame || 'default',
-          nickname_effect: user.nickname_effect || 'none', card_background: user.card_background || 'default',
-          subscription_tier: user.subscription_tier || 'free', subscription_expires: user.subscription_expires || null,
-          ip_address: user.ip_address || ''
+          login: user.login, email: user.email || (user.login+'@diamkey.local'), secretWord: user.secret_word,
+          name: user.name||'', avatar: user.avatar||'', description: user.description||'', fa_icon: user.fa_icon||'',
+          role: user.role||'user', cover_image: user.cover_image||'', status_text: user.status_text||'',
+          trust_level: user.trust_level||0, avatar_frame: user.avatar_frame||'default',
+          nickname_effect: user.nickname_effect||'none', card_background: user.card_background||'default',
+          subscription_tier: user.subscription_tier||'free', subscription_expires: user.subscription_expires||null,
+          ip_address: user.ip_address||''
         };
         localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
         updateAuthUI();
-        navigate('/profile');
-        showToast('Добро пожаловать, ' + currentUser.login, 'success');
-      } catch (e) { showToast('Ошибка сети', 'error'); }
+        showToast('Добро пожаловать, '+currentUser.login, 'success');
+        navigate('profile');
+      } catch(e) { showToast('Ошибка сети', 'error'); }
     }
 
     async function register(login, password) {
@@ -488,101 +288,170 @@
         const token = generateToken();
         const email = login + '@diamkey.local';
         const { error } = await _supabase.from('users').insert([{
-          login, email, password, token, secret_word: secretWord, name: '', avatar: '',
-          description: '', fa_icon: '', role: 'user', cover_image: '', status_text: '',
-          trust_level: 0, avatar_frame: 'default', nickname_effect: 'none',
-          card_background: 'default', subscription_tier: 'free'
+          login, email, password, token, secret_word: secretWord, name:'', avatar:'',
+          description:'', fa_icon:'', role:'user', cover_image:'', status_text:'',
+          trust_level:0, avatar_frame:'default', nickname_effect:'none',
+          card_background:'default', subscription_tier:'free'
         }]);
         if (error) { showToast('Ошибка регистрации', 'error'); return; }
         currentUser = {
-          login, email, secretWord, name: '', avatar: '', description: '', fa_icon: '',
-          role: 'user', cover_image: '', status_text: '', trust_level: 0,
-          avatar_frame: 'default', nickname_effect: 'none', card_background: 'default',
-          subscription_tier: 'free', subscription_expires: null, ip_address: ''
+          login, email, secretWord, name:'', avatar:'', description:'', fa_icon:'',
+          role:'user', cover_image:'', status_text:'', trust_level:0,
+          avatar_frame:'default', nickname_effect:'none', card_background:'default',
+          subscription_tier:'free', subscription_expires:null, ip_address:''
         };
         localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
         updateAuthUI();
-        navigate('/profile');
         showToast('Аккаунт создан!', 'success');
-      } catch (e) { showToast('Ошибка сети', 'error'); }
+        navigate('profile');
+      } catch(e) { showToast('Ошибка сети', 'error'); }
     }
 
     function logout() {
       currentUser = null;
       localStorage.removeItem('diamkey_current');
       updateAuthUI();
-      navigate('/');
+      navigate('home');
     }
 
-    // ==================== PROFILE ====================
-    async function renderProfilePage(username = null) {
-      const page = document.getElementById('pageContent');
-      if (username) return renderPublicProfile(username);
-      if (!currentUser) { page.innerHTML = '<p>Войдите, чтобы увидеть профиль</p>'; return; }
-      if (window.location.search.includes('edit')) return renderProfileEdit();
+    // ============ NAVIGATION ============
+    function navigate(page) {
+      window.location.hash = '#' + page;
+      renderPage(page);
+    }
+
+    function renderPage(page) {
+      const container = document.getElementById('pageContent');
+      if (!container) return;
+      switch(page) {
+        case 'home': renderHomePage(); break;
+        case 'profile': renderProfilePage(); break;
+        case 'profile-edit': renderProfileEdit(); break;
+        case 'subscription': renderSubscriptionPage(); break;
+        case 'docs': renderDocsPage(); break;
+        case 'support': renderSupportPage(); break;
+        case 'admin': renderAdminPage(); break;
+        default: container.innerHTML = '<h2>Страница не найдена</h2>';
+      }
+    }
+
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.substring(1) || 'home';
+      renderPage(hash);
+    });
+
+    // ============ HOME ============
+    function renderHomePage() {
+      const container = document.getElementById('pageContent');
+      if (currentUser) {
+        container.innerHTML = `
+          <div class="hero">
+            <h1>Добро пожаловать, ${escapeHtml(currentUser.name || currentUser.login)}!</h1>
+            <p>Вы вошли в DiamKey — единый ключ экосистемы Diamond.</p>
+            <a href="#profile" class="btn btn-primary"><i class="fas fa-user"></i> Мой профиль</a>
+          </div>`;
+      } else {
+        container.innerHTML = `
+          <div class="hero"><h1>DiamKey</h1><p>Единый аккаунт для всех сервисов Diamond</p></div>
+          <div class="card" style="max-width:400px; margin:0 auto;">
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+              <button class="btn" id="tabLogin">Вход</button>
+              <button class="btn" id="tabRegister">Регистрация</button>
+            </div>
+            <div id="authForms">
+              <div id="loginForm">
+                <div class="input-group"><label>Логин</label><input id="loginInput"></div>
+                <div class="input-group"><label>Пароль</label><input type="password" id="loginPassword"></div>
+                <button class="btn btn-primary" id="doLogin">Войти</button>
+              </div>
+              <div id="registerForm" style="display:none;">
+                <div class="input-group"><label>Логин</label><input id="regLogin"></div>
+                <div class="input-group"><label>Пароль</label><input type="password" id="regPassword"></div>
+                <button class="btn btn-primary" id="doRegister">Создать</button>
+              </div>
+            </div>
+          </div>`;
+        document.getElementById('tabLogin').addEventListener('click', () => {
+          document.getElementById('loginForm').style.display = 'block';
+          document.getElementById('registerForm').style.display = 'none';
+        });
+        document.getElementById('tabRegister').addEventListener('click', () => {
+          document.getElementById('registerForm').style.display = 'block';
+          document.getElementById('loginForm').style.display = 'none';
+        });
+        document.getElementById('doLogin').addEventListener('click', () => {
+          login(document.getElementById('loginInput').value.trim(), document.getElementById('loginPassword').value);
+        });
+        document.getElementById('doRegister').addEventListener('click', () => {
+          register(document.getElementById('regLogin').value.trim(), document.getElementById('regPassword').value);
+        });
+      }
+    }
+
+    // ============ PROFILE ============
+    async function renderProfilePage() {
+      const container = document.getElementById('pageContent');
+      if (!currentUser) { container.innerHTML = '<p>Войдите</p>'; return; }
       const { data: user } = await _supabase.from('users').select('*').eq('login', currentUser.login).maybeSingle();
-      if (!user) { page.innerHTML = '<p>Пользователь не найден</p>'; return; }
+      if (!user) { container.innerHTML = '<p>Ошибка</p>'; return; }
       const avatarFrame = getAvatarFrame(user);
-      const coverStyle = user.cover_image ? `background-image: url(${user.cover_image}); background-size: cover;` : 'background: linear-gradient(135deg, #1a1a2e, #16213e);';
-      const trustPercent = Math.min((user.trust_level || 0) * 10, 100);
+      const coverStyle = user.cover_image ? `background-image:url(${user.cover_image}); background-size:cover;` : 'background:linear-gradient(135deg, #1a1a2e, #16213e);';
+      const trustPercent = Math.min((user.trust_level||0)*10, 100);
       const { data: achievements } = await _supabase.from('achievements').select('*').eq('user_login', user.login);
       let badgesHtml = '';
       if (user.subscription_tier === 'diamond_plus') badgesHtml += '<span class="badge badge-diamond"><i class="fas fa-gem"></i> Diamond Plus</span>';
       if (user.role === 'admin') badgesHtml += '<span class="badge badge-admin"><i class="fas fa-shield-haltered"></i> Админ</span>';
       if (user.role === 'staff') badgesHtml += '<span class="badge badge-staff"><i class="fas fa-user-cog"></i> Персонал</span>';
       if (new Date(user.created_at) < new Date('2026-01-01')) badgesHtml += '<span class="badge badge-early"><i class="fas fa-clock"></i> Ранний пользователь</span>';
-      page.innerHTML = `
-        <div class="profile-cover" style="${coverStyle}"><div class="profile-avatar-wrapper" style="border:3px solid ${avatarFrame};">${user.avatar ? `<img src="${user.avatar}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:5rem;"></i>'}</div></div>
-        <div class="profile-info">
-          <h1 class="profile-name ${user.nickname_effect}">${escapeHtml(user.name || user.login)}</h1>
-          <p><i class="fas ${user.fa_icon || 'fa-comment'}"></i> ${escapeHtml(user.status_text || 'Привет! Я использую DiamKey')}</p>
-          <div class="profile-badges">${badgesHtml}</div>
-          <div class="trust-bar"><div class="trust-fill" style="width:${trustPercent}%;"></div></div>
-          <p>Уровень доверия: ${user.trust_level || 0}/10</p>
-          <div><a href="/profile?edit=true" class="btn btn-outline"><i class="fas fa-edit"></i> Редактировать</a> <button class="btn btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Выйти</button></div>
+      container.innerHTML = `
+        <div class="profile-cover" style="${coverStyle}">
+          <div class="profile-avatar-wrapper" style="border:3px solid ${avatarFrame};">
+            ${user.avatar ? `<img src="${user.avatar}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:5rem;"></i>'}
+          </div>
         </div>
-        <h2 style="margin-top:32px;">Достижения</h2>
-        <div class="achievements-grid">${achievements?.length ? achievements.map(a => `<div class="achievement-card"><i class="fas ${a.icon || 'fa-star'}"></i><strong>${escapeHtml(a.title)}</strong><p>${escapeHtml(a.description)}</p><div class="progress-bar"><div style="width:${(a.progress/a.max_progress)*100}%"></div></div><small>${a.progress}/${a.max_progress}</small></div>`).join('') : '<p>Пока нет достижений</p>'}</div>
-      `;
-    }
-
-    async function renderPublicProfile(username) {
-      const page = document.getElementById('pageContent');
-      const { data: user } = await _supabase.from('users').select('*').eq('login', username).maybeSingle();
-      if (!user) { page.innerHTML = '<h2>Пользователь не найден</h2>'; return; }
-      const avatarFrame = getAvatarFrame(user);
-      const coverStyle = user.cover_image ? `background-image: url(${user.cover_image}); background-size: cover;` : 'background: linear-gradient(135deg, #1a1a2e, #16213e);';
-      const trustPercent = Math.min((user.trust_level || 0) * 10, 100);
-      const { data: achievements } = await _supabase.from('achievements').select('*').eq('user_login', user.login);
-      page.innerHTML = `
-        <div class="profile-cover" style="${coverStyle}"><div class="profile-avatar-wrapper" style="border:3px solid ${avatarFrame};">${user.avatar ? `<img src="${user.avatar}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user-circle" style="font-size:5rem;"></i>'}</div></div>
         <div class="profile-info">
           <h1>${escapeHtml(user.name || user.login)}</h1>
-          <p>${escapeHtml(user.status_text || '')}</p>
+          <p><i class="fas ${user.fa_icon || 'fa-comment'}"></i> ${escapeHtml(user.status_text || 'Привет!')}</p>
+          <div class="profile-badges">${badgesHtml}</div>
           <div class="trust-bar"><div class="trust-fill" style="width:${trustPercent}%;"></div></div>
-          <p>Уровень доверия: ${user.trust_level || 0}/10</p>
+          <p>Уровень доверия: ${user.trust_level||0}/10</p>
+          <div style="display:flex; gap:10px; justify-content:center;">
+            <a href="#profile-edit" class="btn btn-outline"><i class="fas fa-edit"></i> Редактировать</a>
+            <button class="btn btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+          </div>
         </div>
-        <h2>Достижения</h2>
-        <div class="achievements-grid">${achievements?.length ? achievements.map(a => `<div class="achievement-card"><i class="fas ${a.icon || 'fa-star'}"></i><strong>${escapeHtml(a.title)}</strong><p>${escapeHtml(a.description)}</p></div>`).join('') : '<p>Пока нет достижений</p>'}</div>
-      `;
+        <h2 style="margin-top:40px;">Достижения</h2>
+        <div class="achievements-grid">
+          ${achievements?.length ? achievements.map(a => `
+            <div class="achievement-card">
+              <i class="fas ${a.icon||'fa-star'}"></i>
+              <strong>${escapeHtml(a.title)}</strong>
+              <p>${escapeHtml(a.description||'')}</p>
+              <div class="progress-bar"><div style="width:${(a.progress/a.max_progress)*100}%"></div></div>
+              <small>${a.progress}/${a.max_progress}</small>
+            </div>`).join('') : '<p>Пока нет достижений</p>'}
+        </div>`;
     }
 
     function renderProfileEdit() {
-      const page = document.getElementById('pageContent');
+      const container = document.getElementById('pageContent');
       if (!currentUser) return;
-      page.innerHTML = `
+      container.innerHTML = `
         <h2><i class="fas fa-edit"></i> Редактирование профиля</h2>
         <div class="card">
           <div class="input-group"><label>Имя</label><input id="editName" value="${escapeHtml(currentUser.name||'')}"></div>
           <div class="input-group"><label>Статус</label><input id="editStatus" value="${escapeHtml(currentUser.status_text||'')}"></div>
           <div class="input-group"><label>Иконка (FA)</label><input id="editFaIcon" value="${escapeHtml(currentUser.fa_icon||'fa-comment')}"></div>
-          <div class="input-group"><label>Рамка аватара</label><select id="editFrame"><option value="default">Обычная</option><option value="gold">Золотая</option><option value="silver">Серебряная</option><option value="neon">Неоновая</option></select></div>
-          <div class="input-group"><label>Эффект ника</label><select id="editNicknameEffect"><option value="none">Обычный</option><option value="gradient">Градиент</option><option value="shadow">Тень</option><option value="glow">Свечение</option></select></div>
+          <div class="input-group"><label>Рамка аватара</label><select id="editFrame">
+            <option value="default">Обычная</option><option value="gold">Золотая</option><option value="silver">Серебряная</option><option value="neon">Неоновая</option>
+          </select></div>
+          <div class="input-group"><label>Эффект ника</label><select id="editNicknameEffect">
+            <option value="none">Обычный</option><option value="gradient">Градиент</option><option value="shadow">Тень</option><option value="glow">Свечение</option>
+          </select></div>
           <div class="input-group"><label>Обложка (URL)</label><input id="editCover" value="${escapeHtml(currentUser.cover_image||'')}"></div>
           <button class="btn btn-primary" id="saveProfile">Сохранить</button>
-          <button class="btn btn-outline" onclick="navigate('/profile')">Отмена</button>
-        </div>
-      `;
+          <a href="#profile" class="btn btn-outline">Отмена</a>
+        </div>`;
       document.getElementById('saveProfile').addEventListener('click', async () => {
         const name = document.getElementById('editName').value.trim();
         const status = document.getElementById('editStatus').value.trim();
@@ -590,30 +459,36 @@
         const frame = document.getElementById('editFrame').value;
         const nickEffect = document.getElementById('editNicknameEffect').value;
         const cover = document.getElementById('editCover').value.trim();
-        await _supabase.from('users').update({ name, status_text: status, fa_icon: faIcon, avatar_frame: frame, nickname_effect: nickEffect, cover_image: cover }).eq('login', currentUser.login);
-        Object.assign(currentUser, { name, status_text: status, fa_icon: faIcon, avatar_frame: frame, nickname_effect: nickEffect, cover_image: cover });
+        await _supabase.from('users').update({
+          name, status_text:status, fa_icon:faIcon, avatar_frame:frame,
+          nickname_effect:nickEffect, cover_image:cover
+        }).eq('login', currentUser.login);
+        Object.assign(currentUser, { name, status_text:status, fa_icon:faIcon, avatar_frame:frame, nickname_effect:nickEffect, cover_image:cover });
         localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
         showToast('Профиль обновлён', 'success');
-        navigate('/profile');
+        navigate('profile');
       });
     }
 
-    // ==================== SUBSCRIPTION ====================
-    async function renderSubscriptionPage() {
-      const page = document.getElementById('pageContent');
-      page.innerHTML = `
-        <div class="hero"><h1><i class="fas fa-gem"></i> Diamond Plus</h1><p>Премиум-подписка для максимальных возможностей</p></div>
-        <div class="card" style="max-width:500px;margin:0 auto;">
+    // ============ SUBSCRIPTION ============
+    function renderSubscriptionPage() {
+      const container = document.getElementById('pageContent');
+      container.innerHTML = `
+        <div class="hero"><h1><i class="fas fa-gem"></i> Diamond Plus</h1><p>Премиум-подписка</p></div>
+        <div class="card" style="max-width:500px; margin:0 auto;">
           <h2>350 ₽ / месяц</h2>
           <ul style="list-style:none;padding:0;">
-            <li><i class="fas fa-check-circle"></i> Более точные ответы ИИ</li>
+            <li><i class="fas fa-check-circle"></i> Точные ответы ИИ</li>
             <li><i class="fas fa-check-circle"></i> Общение без границ</li>
-            <li><i class="fas fa-check-circle"></i> Меньше правил и запретов</li>
-            <li><i class="fas fa-check-circle"></i> Эксклюзивный бейдж и рамка</li>
+            <li><i class="fas fa-check-circle"></i> Меньше правил</li>
+            <li><i class="fas fa-check-circle"></i> Эксклюзивный бейдж</li>
           </ul>
-          ${currentUser ? '<button class="btn btn-primary" id="subscribeBtn">Оформить подписку</button><div id="subscribeForm" style="display:none;margin-top:16px;"><textarea id="subscribeMessage" placeholder="Ваши пожелания..."></textarea><button class="btn" id="submitSubscribe">Отправить заявку</button></div>' : '<p>Войдите в аккаунт</p>'}
-        </div>
-      `;
+          ${currentUser ? `<button class="btn btn-primary" id="subscribeBtn">Оформить подписку</button>
+          <div id="subscribeForm" style="display:none; margin-top:16px;">
+            <textarea id="subscribeMessage" placeholder="Ваши пожелания..."></textarea>
+            <button class="btn" id="submitSubscribe">Отправить заявку</button>
+          </div>` : '<p>Войдите в аккаунт</p>'}
+        </div>`;
       if (currentUser) {
         document.getElementById('subscribeBtn').addEventListener('click', () => {
           document.getElementById('subscribeForm').style.display = 'block';
@@ -624,40 +499,37 @@
           if (!msg) return showToast('Напишите сообщение', 'error');
           await _supabase.from('purchase_discussions').insert([{ user_login: currentUser.login, status: 'pending', admin_notes: msg }]);
           showToast('Заявка отправлена!', 'success');
+          navigate('subscription');
         });
       }
     }
 
-    // ==================== ADMIN ====================
+    // ============ ADMIN ============
     async function renderAdminPage() {
-      const page = document.getElementById('pageContent');
-      if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'staff')) { page.innerHTML = '<p>Доступ запрещён</p>'; return; }
-      page.innerHTML = '<h2>Панель управления</h2><div class="admin-tabs"><button class="btn admin-tab active" data-tab="users">Пользователи</button><button class="btn admin-tab" data-tab="audit">Аудит</button><button class="btn admin-tab" data-tab="stats">Статистика</button><button class="btn admin-tab" data-tab="tickets">Тикеты</button></div><div id="adminContent"></div>';
-      document.querySelectorAll('.admin-tab').forEach(btn => btn.addEventListener('click', () => {
-        document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        if (btn.dataset.tab === 'users') renderAdminUsers();
-        else if (btn.dataset.tab === 'audit') renderAdminAudit();
-        else if (btn.dataset.tab === 'stats') renderAdminStats();
-        else if (btn.dataset.tab === 'tickets') renderAdminTickets();
-      }));
+      const container = document.getElementById('pageContent');
+      if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'staff')) { container.innerHTML = '<p>Доступ запрещён</p>'; return; }
+      container.innerHTML = '<h2>Панель управления</h2><div style="display:flex; gap:10px; margin-bottom:20px;"><button class="btn" id="adminUsersTab">Пользователи</button><button class="btn" id="adminAuditTab">Аудит</button><button class="btn" id="adminStatsTab">Статистика</button><button class="btn" id="adminTicketsTab">Тикеты</button></div><div id="adminContent"></div>';
+      document.getElementById('adminUsersTab').addEventListener('click', renderAdminUsers);
+      document.getElementById('adminAuditTab').addEventListener('click', renderAdminAudit);
+      document.getElementById('adminStatsTab').addEventListener('click', renderAdminStats);
+      document.getElementById('adminTicketsTab').addEventListener('click', renderAdminTickets);
       renderAdminUsers();
     }
 
     async function renderAdminUsers() {
       const container = document.getElementById('adminContent');
       const { data: users } = await _supabase.from('users').select('*');
-      container.innerHTML = `<input id="userSearch" placeholder="Поиск...">${users.map(u => `<div class="user-row" data-login="${u.login}">${u.login} (${u.role}) <button onclick="editUserByAdmin('${u.login}')">Ред.</button> <button onclick="deleteUserByAdmin('${u.login}')">Уд.</button></div>`).join('')}`;
+      container.innerHTML = `<input id="userSearch" placeholder="Поиск...">` + users.map(u => `<p>${u.login} (${u.role}) <button onclick="editUserByAdmin('${u.login}')">Ред.</button> <button onclick="deleteUserByAdmin('${u.login}')">Уд.</button></p>`).join('');
       document.getElementById('userSearch').addEventListener('input', e => {
         const term = e.target.value.toLowerCase();
-        document.querySelectorAll('.user-row').forEach(r => r.style.display = r.dataset.login.includes(term) ? '' : 'none');
+        document.querySelectorAll('#adminContent p').forEach(p => p.style.display = p.textContent.toLowerCase().includes(term) ? '' : 'none');
       });
     }
 
     async function editUserByAdmin(login) {
       const { data: user } = await _supabase.from('users').select('*').eq('login', login).maybeSingle();
-      const page = document.getElementById('pageContent');
-      page.innerHTML = `<h3>Редактирование: ${login}</h3>
+      const container = document.getElementById('pageContent');
+      container.innerHTML = `<h3>Редактирование: ${login}</h3>
         <input id="editAdminLogin" value="${user.login}">
         <select id="editAdminRole"><option value="user">User</option><option value="staff">Staff</option><option value="admin">Admin</option></select>
         <button id="saveAdminEdit">Сохранить</button>`;
@@ -705,121 +577,46 @@
       renderAdminTickets();
     }
 
-    // ==================== SUPPORT ====================
+    // ============ SUPPORT ============
     async function renderSupportPage() {
-      const page = document.getElementById('pageContent');
-      if (!currentUser) { page.innerHTML = '<p>Войдите</p>'; return; }
+      const container = document.getElementById('pageContent');
+      if (!currentUser) { container.innerHTML = '<p>Войдите</p>'; return; }
       const { data: tickets } = await _supabase.from('tickets').select('*').eq('email', currentUser.email);
       const ticket = tickets?.[0];
       if (ticket) {
-        page.innerHTML = `<h2>Поддержка</h2><div class="ticket-messages">${(ticket.messages||[]).map(m => `<p><strong>${m.sender==='admin'?'Админ':'Вы'}:</strong> ${escapeHtml(m.text)}</p>`).join('')}</div>
+        container.innerHTML = `<h2>Поддержка</h2><div class="ticket-messages">${(ticket.messages||[]).map(m => `<p><strong>${m.sender==='admin'?'Админ':'Вы'}:</strong> ${escapeHtml(m.text)}</p>`).join('')}</div>
         <input id="ticketMessage"><button class="btn" id="sendTicketMsg">Отправить</button>`;
         document.getElementById('sendTicketMsg').addEventListener('click', async () => {
           const text = document.getElementById('ticketMessage').value.trim();
           if (!text) return;
           const messages = [...(ticket.messages||[]), { sender: 'user', text, time: new Date().toISOString() }];
           await _supabase.from('tickets').update({ messages }).eq('id', ticket.id);
-          navigate('/support');
+          navigate('support');
         });
       } else {
-        page.innerHTML = '<h2>Поддержка</h2><p>Нет открытых тикетов.</p><button class="btn btn-primary" id="openTicketBtn">Открыть тикет</button>';
+        container.innerHTML = '<h2>Поддержка</h2><p>Нет открытых тикетов.</p><button class="btn btn-primary" id="openTicketBtn">Открыть тикет</button>';
         document.getElementById('openTicketBtn').addEventListener('click', async () => {
           await _supabase.from('tickets').insert([{ id: Date.now().toString(), email: currentUser.email, messages: [] }]);
-          navigate('/support');
+          navigate('support');
         });
       }
     }
 
-    // ==================== DOCS ====================
+    // ============ DOCS ============
     async function renderDocsPage() {
-      const page = document.getElementById('pageContent');
-      if (!currentUser) { page.innerHTML = '<p>Войдите</p>'; return; }
+      const container = document.getElementById('pageContent');
+      if (!currentUser) { container.innerHTML = '<p>Войдите</p>'; return; }
       const { data } = await _supabase.from('knowledge_docs').select('*').eq('user_login', currentUser.login);
-      page.innerHTML = `<h2>Мои документы</h2>${data?.length ? data.map(d => `<div class="card">${escapeHtml(d.title)}</div>`).join('') : '<p>Нет документов</p>'}`;
+      container.innerHTML = `<h2>Мои документы</h2>${data?.length ? data.map(d => `<div class="card">${escapeHtml(d.title)}</div>`).join('') : '<p>Нет документов</p>'}`;
     }
 
-    // ==================== ROUTER ====================
-    const routes = {
-      '/': renderHomePage,
-      '/profile': renderProfilePage,
-      '/subscription': renderSubscriptionPage,
-      '/docs': renderDocsPage,
-      '/admin': renderAdminPage,
-      '/support': renderSupportPage,
-    };
-
-    function matchRoute(path) {
-      if (routes[path]) return routes[path];
-      if (path.startsWith('/@')) {
-        const username = path.substring(2);
-        return () => renderProfilePage(username);
-      }
-      return null;
-    }
-
-    function renderHomePage() {
-      const page = document.getElementById('pageContent');
-      if (currentUser) {
-        page.innerHTML = `<div class="hero"><h1>Добро пожаловать, ${escapeHtml(currentUser.name || currentUser.login)}!</h1><p>Вы вошли в DiamKey.</p><a href="/profile" class="btn btn-primary">Профиль</a></div>`;
-        return;
-      }
-      page.innerHTML = `
-        <div class="hero"><h1>DiamKey</h1><p>Единый аккаунт для всех сервисов Diamond</p></div>
-        <div class="card" style="max-width:400px;margin:0 auto;">
-          <div class="auth-tabs"><button class="btn auth-tab active" id="tabLogin">Вход</button><button class="btn auth-tab" id="tabRegister">Регистрация</button></div>
-          <div id="authForms">
-            <div id="loginForm"><div class="input-group"><label>Логин</label><input id="loginInput"></div><div class="input-group"><label>Пароль</label><input type="password" id="loginPassword"></div><button class="btn btn-primary" id="doLogin">Войти</button></div>
-            <div id="registerForm" style="display:none;"><div class="input-group"><label>Логин</label><input id="regLogin"></div><div class="input-group"><label>Пароль</label><input type="password" id="regPassword"></div><button class="btn btn-primary" id="doRegister">Создать</button></div>
-          </div>
-        </div>
-      `;
-      document.getElementById('tabLogin').addEventListener('click', () => {
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('registerForm').style.display = 'none';
-      });
-      document.getElementById('tabRegister').addEventListener('click', () => {
-        document.getElementById('registerForm').style.display = 'block';
-        document.getElementById('loginForm').style.display = 'none';
-      });
-      document.getElementById('doLogin').addEventListener('click', () => {
-        login(document.getElementById('loginInput').value.trim(), document.getElementById('loginPassword').value);
-      });
-      document.getElementById('doRegister').addEventListener('click', () => {
-        register(document.getElementById('regLogin').value.trim(), document.getElementById('regPassword').value);
-      });
-    }
-
-    function navigate(path) {
-      history.pushState(null, '', path);
-      handleRoute();
-    }
-
-    function handleRoute() {
-      const path = window.location.pathname;
-      const route = matchRoute(path);
-      if (route) route();
-      else document.getElementById('pageContent').innerHTML = '<h2>404 — Страница не найдена</h2>';
-    }
-
+    // ============ ИНИЦИАЛИЗАЦИЯ ============
     document.getElementById('burgerMenu').addEventListener('click', () => {
       document.getElementById('navLinks').classList.toggle('active');
     });
-
-    document.addEventListener('click', (e) => {
-      if (e.target.id === 'toolsBtn') {
-        const menu = document.getElementById('toolsMenu');
-        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-      } else if (!e.target.closest('#toolsDropdown')) {
-        const menu = document.getElementById('toolsMenu');
-        if (menu) menu.style.display = 'none';
-      }
-    });
-
-    (async function() {
-      initSession();
-      window.addEventListener('popstate', handleRoute);
-      handleRoute();
-    })();
+    initSession();
+    const initialHash = window.location.hash.substring(1) || 'home';
+    renderPage(initialHash);
   </script>
 </body>
 </html>
