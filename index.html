@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* ========== ОСНОВНЫЕ ПЕРЕМЕННЫЕ ========== */
     :root {
       --bg-deep: #0a0a0f;
       --bg-card: #111116;
@@ -39,18 +40,20 @@
       overflow-x: hidden;
       touch-action: pan-y;
     }
+    canvas { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none; }
     #app {
       position: relative;
       z-index: 1;
       min-height: 100vh;
     }
+    /* ========== НАВБАР ========== */
     .navbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 24px;
-      backdrop-filter: blur(12px);
-      background: rgba(10,10,15,0.75);
+      padding: 16px 24px;
+      backdrop-filter: blur(16px);
+      background: rgba(10,10,15,0.7);
       border-bottom: 1px solid var(--border-dim);
       position: sticky;
       top: 0;
@@ -90,13 +93,7 @@
       font-size: 1.6rem;
       cursor: pointer;
     }
-    .page {
-      display: none;
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 24px 24px 60px;
-    }
-    .page.active { display: block; }
+    /* ========== КАРТОЧКИ, КНОПКИ ========== */
     .card {
       background: var(--bg-card);
       border-radius: var(--radius-xl);
@@ -132,51 +129,88 @@
     }
     .btn-primary:hover { background: #2a2a33; border-color: var(--silver-dark); }
     .btn-outline:hover { background: rgba(255,255,255,0.03); border-color: var(--silver-dark); }
-    .input-group {
-      margin-bottom: 16px;
-    }
-    .input-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 600;
-      opacity: 0.8;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    input, textarea, select {
-      width: 100%;
-      background: #1e1e2a;
-      border: 1px solid var(--border-dim);
-      color: var(--text-light);
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 1rem;
-      outline: none;
-      margin-top: 6px;
-    }
-    select option { background: #111116; }
-    input:focus, textarea:focus, select:focus { border-color: var(--silver-dark); }
-    .toast {
+    /* ========== ГЕРОЙ (3D-сцена) ========== */
+    #threeCanvas {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--bg-card);
-      border-left: 4px solid var(--silver);
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      z-index: 1100;
-      animation: fadeUp 0.3s;
+      top:0;
+      left:0;
+      width:100vw;
+      height:100vh;
+      z-index:0;
+      pointer-events:none;
     }
-    @keyframes fadeUp {
-      0% { opacity: 0; transform: translateY(30px); }
-      100% { opacity: 1; transform: translateY(0); }
+    .hero {
+      padding: 120px 20px 100px;
+      text-align: center;
+      position: relative;
+      z-index: 2;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    .hero h1 {
+      font-size: clamp(44px, 8vw, 72px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #e0e0e0, #8a8a9a);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 24px;
     }
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 700px;
+      margin: 0 auto 40px;
+    }
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      flex-wrap: wrap;
+      margin: 30px 0 60px;
+    }
+    .stat-item {
+      text-align: center;
+      background: rgba(22, 24, 30, 0.5);
+      backdrop-filter: blur(8px);
+      padding: 20px 32px;
+      border-radius: 40px;
+      border: 1px solid rgba(180, 190, 220, 0.2);
+      flex: 1;
+      min-width: 180px;
+      max-width: 240px;
+    }
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    /* ========== ФУТЕР ========== */
+    .footer {
+      padding: 48px 0 32px;
+      text-align: center;
+      border-top: 1px solid var(--border-dim);
+      margin-top: 40px;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 1.4rem;
+    }
+    .footer-links a:hover { color: var(--text-light); }
+    .copyright {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+    /* ========== АДАПТИВ ========== */
     @media (max-width: 768px) {
       .navbar { flex-wrap: wrap; }
       .nav-links {
@@ -194,33 +228,105 @@
   </style>
 </head>
 <body>
-<div id="app">
-  <header class="navbar">
-    <div class="logo">
-      <a href="/">
-        <img src="assets/KeyHold.png" alt="DiamKey">
-        <span>DIAMKEY</span>
-      </a>
-    </div>
-    <button class="burger-menu" id="burgerMenu"><i class="fas fa-bars"></i></button>
-    <nav class="nav-links" id="navLinks">
-      <a href="/">Главная</a>
-      <a href="/profile">Профиль</a>
-      <a href="/subscription">Diamond Plus</a>
-      <a href="/docs">Документы</a>
-      <a href="/admin">Админка</a>
-    </nav>
-  </header>
-  <div id="pageContent" class="page active"></div>
-</div>
-<div id="toastContainer"></div>
+  <canvas id="threeCanvas"></canvas>
+  <div id="app">
+    <header class="navbar">
+      <div class="logo">
+        <a href="/">
+          <img src="assets/KeyHold.png" alt="DiamKey">
+          <span>DIAMKEY</span>
+        </a>
+      </div>
+      <button class="burger-menu" id="burgerMenu"><i class="fas fa-bars"></i></button>
+      <nav class="nav-links" id="navLinks">
+        <a href="/" class="nav-link">Главная</a>
+        <a href="/profile" class="nav-link">Профиль</a>
+        <a href="/subscription" class="nav-link">Diamond Plus</a>
+        <!-- Инструменты (только для персонала/админа) -->
+        <div id="toolsDropdown" style="display:none; position:relative;">
+          <button class="nav-link" id="toolsBtn"><i class="fas fa-folder"></i> Инструменты</button>
+          <div id="toolsMenu" style="display:none; position:absolute; top:100%; left:0; background:var(--bg-card); border:1px solid var(--border-dim); border-radius:20px; padding:12px; min-width:180px;">
+            <a href="/docs" class="nav-link" style="display:block;">Документы</a>
+            <a href="/support" class="nav-link" style="display:block;">Поддержка</a>
+            <a href="/admin" class="nav-link admin-only" style="display:none;">Админка</a>
+          </div>
+        </div>
+        <a href="/profile" class="nav-link" id="authLink">Войти</a>
+      </nav>
+    </header>
+    <div id="pageContent" class="page"></div>
+    <div id="toastContainer"></div>
+  </div>
 
-<script src="js/diamkey-core.js"></script>
-<script src="js/diamkey-auth.js"></script>
-<script src="js/diamkey-profile.js"></script>
-<script src="js/diamkey-subscription.js"></script>
-<script src="js/diamkey-admin.js"></script>
-<script src="js/diamkey-services.js"></script>
-<script src="js/diamkey-router.js"></script>
+  <!-- 3D-сцена (Three.js) -->
+  <script defer src="https://unpkg.com/three@0.126.0/build/three.min.js"></script>
+  <script>
+    // 3D-сцена из лендинга Diamond AI (ключ)
+    window.addEventListener('load', () => {
+      if (typeof THREE === 'undefined') return;
+      const canvas = document.getElementById('threeCanvas');
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a0a0f);
+      const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+      camera.position.set(3, 1.8, 6);
+      camera.lookAt(0,0,0);
+      scene.add(new THREE.AmbientLight(0x404066));
+      const dirLight = new THREE.DirectionalLight(0xddddff, 1.2);
+      dirLight.position.set(2,5,3); scene.add(dirLight);
+      const keyGroup = new THREE.Group();
+      const silverMat = new THREE.MeshStandardMaterial({ color:0xa8a8b3, roughness:0.25, metalness:0.95 });
+      const darkMetal = new THREE.MeshStandardMaterial({ color:0x4a4a55, roughness:0.2, metalness:1 });
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8,0.15,16,32), silverMat);
+      ring.rotation.x = Math.PI/2; ring.position.y = 0.6; keyGroup.add(ring);
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,2.2,12), silverMat);
+      shaft.position.y = -0.8; keyGroup.add(shaft);
+      const bitGroup = new THREE.Group();
+      const toothGeo = new THREE.BoxGeometry(0.25,0.4,0.15);
+      [[-0.2,-1.4,0],[0.1,-1.55,0],[-0.2,-1.7,0],[0.1,-1.85,0]].forEach(([x,y,z])=>{
+        const tooth = new THREE.Mesh(toothGeo, darkMetal);
+        tooth.position.set(x,y,z); bitGroup.add(tooth);
+      });
+      keyGroup.add(bitGroup);
+      for (let y=-0.3; y>-1.3; y-=0.25){
+        const groove = new THREE.Mesh(new THREE.TorusGeometry(0.17,0.03,8,16), darkMetal);
+        groove.position.y=y; groove.rotation.x=Math.PI/2; keyGroup.add(groove);
+      }
+      keyGroup.position.y=0.2; scene.add(keyGroup);
+      const starsGeo = new THREE.BufferGeometry();
+      const starsCount=400; const starsPositions=new Float32Array(starsCount*3);
+      for (let i=0;i<starsCount*3;i+=3){
+        starsPositions[i]=(Math.random()-0.5)*12;
+        starsPositions[i+1]=(Math.random()-0.5)*6;
+        starsPositions[i+2]=(Math.random()-0.5)*8;
+      }
+      starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPositions,3));
+      const starsMat=new THREE.PointsMaterial({color:0xffffff,size:0.03});
+      const stars=new THREE.Points(starsGeo,starsMat); scene.add(stars);
+      function animate(){
+        requestAnimationFrame(animate);
+        keyGroup.rotation.y+=0.005;
+        stars.rotation.y+=0.0002;
+        renderer.render(scene,camera);
+      }
+      animate();
+      window.addEventListener('resize',()=>{
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth,window.innerHeight);
+      });
+    });
+  </script>
+
+  <!-- Основные модули -->
+  <script src="diamkey-core.js"></script>
+  <script src="diamkey-auth.js"></script>
+  <script src="diamkey-profile.js"></script>
+  <script src="diamkey-subscription.js"></script>
+  <script src="diamkey-admin.js"></script>
+  <script src="diamkey-services.js"></script>
+  <script src="diamkey-router.js"></script>
 </body>
 </html>
