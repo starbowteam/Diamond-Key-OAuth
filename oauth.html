@@ -82,6 +82,13 @@
     .error-msg { color: #e05d5d; font-size: 0.9rem; margin-top: 8px; display: none; }
     .loader { font-size: 2rem; animation: spin 1s linear infinite; margin-bottom: 15px; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .success-check {
+      font-size: 4rem;
+      color: #5d9b7a;
+      animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      margin-bottom: 20px;
+    }
+    @keyframes scaleIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   </style>
 </head>
 <body>
@@ -93,6 +100,11 @@
   <div id="autoLoginBlock" style="display:none;">
     <div class="loader"><i class="fas fa-circle-notch"></i></div>
     <p>Уже входим...</p>
+  </div>
+
+  <div id="successBlock" style="display:none;">
+    <div class="success-check"><i class="fas fa-check-circle"></i></div>
+    <p>Вход выполнен! Перенаправляем...</p>
   </div>
 
   <div id="authBlock" style="display:none;">
@@ -122,6 +134,7 @@
   const statusTitle = document.getElementById('statusTitle');
   const statusText = document.getElementById('statusText');
   const autoBlock = document.getElementById('autoLoginBlock');
+  const successBlock = document.getElementById('successBlock');
   const authBlock = document.getElementById('authBlock');
   const registerBlock = document.getElementById('registerBlock');
   const errorMsg = document.getElementById('errorMsg');
@@ -190,8 +203,9 @@
       localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
       authBlock.style.display = 'none';
       registerBlock.style.display = 'none';
-      autoBlock.style.display = 'block';
-      statusTitle.innerText = 'Вход выполнен';
+      autoBlock.style.display = 'none';
+      successBlock.style.display = 'block';
+      statusTitle.innerText = 'Готово!';
       statusText.innerText = '';
       await createTicketAndRedirect(sessionUser);
     } catch (e) {
@@ -234,7 +248,8 @@
       localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
       registerBlock.style.display = 'none';
       authBlock.style.display = 'none';
-      autoBlock.style.display = 'block';
+      autoBlock.style.display = 'none';
+      successBlock.style.display = 'block';
       statusTitle.innerText = 'Аккаунт создан';
       statusText.innerText = '';
       await createTicketAndRedirect(sessionUser);
@@ -250,7 +265,7 @@
   async function createTicketAndRedirect(user) {
     if (!redirect) {
       statusTitle.innerText = 'Готово!';
-      autoBlock.innerHTML = '<i class="fas fa-check-circle" style="font-size:3rem; color:#5d9b7a;"></i>';
+      successBlock.innerHTML = '<i class="fas fa-check-circle" style="font-size:4rem; color:#5d9b7a;"></i>';
       return;
     }
     const ticket = 'diam_ticket_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
@@ -261,9 +276,11 @@
         errorMsg.style.display = 'block';
         return;
       }
+      // Показываем галочку и через 1.5 секунды редиректим
+      successBlock.style.display = 'block';
       setTimeout(() => {
         window.location.href = redirect + (redirect.includes('?') ? '&' : '?') + 'ticket=' + ticket;
-      }, 800);
+      }, 1500);
     } catch (e) {
       errorMsg.innerText = 'Ошибка сети. Проверьте соединение';
       errorMsg.style.display = 'block';
