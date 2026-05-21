@@ -80,8 +80,6 @@
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn:hover:not(:disabled) { background: #2a2a33; border-color: #4a4a55; }
     .error-msg { color: #e05d5d; font-size: 0.9rem; margin-top: 8px; display: none; }
-    .loader { font-size: 2rem; animation: spin 1s linear infinite; margin-bottom: 15px; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .success-check {
       font-size: 4rem;
       color: #5d9b7a;
@@ -97,14 +95,9 @@
   <h2 id="statusTitle">Вход через DiamKey</h2>
   <p id="statusText">Сервис Diamond запрашивает доступ</p>
 
-  <div id="autoLoginBlock" style="display:none;">
-    <div class="loader"><i class="fas fa-circle-notch"></i></div>
-    <p>Уже входим...</p>
-  </div>
-
   <div id="successBlock" style="display:none;">
     <div class="success-check"><i class="fas fa-check-circle"></i></div>
-    <p>Вход выполнен! Перенаправляем...</p>
+    <p>Вошли! Успешного пользования!</p>
   </div>
 
   <div id="authBlock" style="display:none;">
@@ -133,7 +126,6 @@
   const app = params.get('app') || 'сервис Diamond';
   const statusTitle = document.getElementById('statusTitle');
   const statusText = document.getElementById('statusText');
-  const autoBlock = document.getElementById('autoLoginBlock');
   const successBlock = document.getElementById('successBlock');
   const authBlock = document.getElementById('authBlock');
   const registerBlock = document.getElementById('registerBlock');
@@ -145,8 +137,10 @@
   if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
 
   if (currentUser && currentUser.login) {
-    statusTitle.innerText = 'Вход почти выполнен';
-    autoBlock.style.display = 'block';
+    // Сразу показываем галочку
+    statusTitle.innerText = '';
+    statusText.innerText = '';
+    successBlock.style.display = 'block';
     setTimeout(() => createTicketAndRedirect(currentUser), 500);
   } else {
     authBlock.style.display = 'block';
@@ -203,9 +197,8 @@
       localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
       authBlock.style.display = 'none';
       registerBlock.style.display = 'none';
-      autoBlock.style.display = 'none';
       successBlock.style.display = 'block';
-      statusTitle.innerText = 'Готово!';
+      statusTitle.innerText = '';
       statusText.innerText = '';
       await createTicketAndRedirect(sessionUser);
     } catch (e) {
@@ -248,9 +241,8 @@
       localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
       registerBlock.style.display = 'none';
       authBlock.style.display = 'none';
-      autoBlock.style.display = 'none';
       successBlock.style.display = 'block';
-      statusTitle.innerText = 'Аккаунт создан';
+      statusTitle.innerText = '';
       statusText.innerText = '';
       await createTicketAndRedirect(sessionUser);
     } catch (e) {
@@ -264,8 +256,7 @@
 
   async function createTicketAndRedirect(user) {
     if (!redirect) {
-      statusTitle.innerText = 'Готово!';
-      successBlock.innerHTML = '<i class="fas fa-check-circle" style="font-size:4rem; color:#5d9b7a;"></i>';
+      successBlock.innerHTML = '<i class="fas fa-check-circle" style="font-size:4rem; color:#5d9b7a;"></i><p>Вошли! Успешного пользования!</p>';
       return;
     }
     const ticket = 'diam_ticket_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
@@ -276,11 +267,10 @@
         errorMsg.style.display = 'block';
         return;
       }
-      // Показываем галочку и через 1.5 секунды редиректим
-      successBlock.style.display = 'block';
+      // Ждём 2 секунды и редиректим
       setTimeout(() => {
         window.location.href = redirect + (redirect.includes('?') ? '&' : '?') + 'ticket=' + ticket;
-      }, 1500);
+      }, 2000);
     } catch (e) {
       errorMsg.innerText = 'Ошибка сети. Проверьте соединение';
       errorMsg.style.display = 'block';
