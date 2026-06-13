@@ -146,3 +146,19 @@ async function loadProfilePage() {
         loadProfilePage();
     };
 }
+
+// ... (вся предыдущая функция loadProfilePage) ...
+
+    // GPX-файлы (карточки)
+    const { data: gpxFiles } = await _supabase.from('gpx_files').select('id,name,created_at').eq('user_login', currentUser.login).order('created_at', { ascending: false });
+    const gpxContainer = document.getElementById('profileGpxFiles');
+    if (gpxFiles && gpxFiles.length) {
+        gpxContainer.innerHTML = `<div class="gpx-cards">${gpxFiles.map(f => `
+            <div class="gpx-card glass-panel" onclick="alert('Просмотр маршрута пока не реализован')">
+                <h4><i class="fas fa-map-marker-alt"></i> ${escapeHtml(f.name)}</h4>
+                <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+            </div>
+        `).join('')}</div>`;
+    } else {
+        gpxContainer.innerHTML = '<p class="text-muted">Нет сохранённых прогулок</p>';
+    }
