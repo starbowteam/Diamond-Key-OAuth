@@ -11,10 +11,9 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
-    <!-- Точечный фон -->
     <div class="dot-bg"></div>
     <div class="app-shell" id="appShell">
         <nav class="sidebar" id="sidebar">
@@ -37,12 +36,12 @@
                         <p>DiamKey — это центр вашей цифровой жизни в экосистеме Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ треков и маршрутов) и общему форуму.</p>
                         <p>Присоединяйтесь к сообществу Diamond уже сегодня!</p>
                     </div>
-                    <!-- Объявление от создателя -->
-                    <div class="announcement-card accent-glass" id="announcementCard">
+                    <!-- Объявление -->
+                    <div class="announcement-card glass-panel accent-glass" id="announcementCard">
                         <div class="announcement-header"><i class="fas fa-bullhorn"></i> Объявление от создателя</div>
                         <div class="announcement-body" id="announcementBody">Загрузка...</div>
                     </div>
-                    <!-- Карточки возможностей -->
+                    <!-- Карточки -->
                     <div class="features-grid">
                         <div class="feature-card glass-panel"><i class="fas fa-robot"></i><h3>Diamond AI</h3><p>Интеллектуальный помощник с синхронизацией чатов и папок</p></div>
                         <div class="feature-card glass-panel"><i class="fas fa-map-marker-alt"></i><h3>Diamond GPX</h3><p>Загружайте GPS-треки и получайте статистику</p></div>
@@ -74,13 +73,13 @@
                     </div>
                     <div id="gpx-map"></div>
                     <div class="gpx-dashboard glass-panel">
+                        <div class="chart-wrap"><canvas id="elevationChart"></canvas></div>
                         <div class="gpx-stats-grid">
                             <div class="gpx-stat-card"><i class="fas fa-ruler"></i><span class="stat-label">Дистанция</span><span id="distVal" class="stat-value">—</span></div>
                             <div class="gpx-stat-card"><i class="fas fa-mountain"></i><span class="stat-label">Набор</span><span id="ascentVal" class="stat-value">—</span></div>
                             <div class="gpx-stat-card"><i class="fas fa-clock"></i><span class="stat-label">Время</span><span id="timeVal" class="stat-value">—</span></div>
                             <div class="gpx-stat-card"><i class="fas fa-tachometer-alt"></i><span class="stat-label">Скорость</span><span id="speedVal" class="stat-value">—</span></div>
                         </div>
-                        <div class="chart-wrap"><canvas id="elevationChart"></canvas></div>
                     </div>
                     <div id="aiReview" class="ai-review glass-panel" style="display:none;">
                         <div class="ai-review-header"><img src="assets/logo-ai.ico" style="width:24px;height:24px;border-radius:50%;"><span>Diamond AI</span></div>
@@ -100,31 +99,33 @@
 
             <!-- Профиль -->
             <section class="page" id="page-profile">
-                <div class="glass-panel profile-top">
-                    <div class="profile-header">
-                        <div class="avatar-wrapper" id="profileAvatarWrapper">
-                            <img id="profileAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
-                            <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
+                <div class="profile-sections">
+                    <div class="glass-panel profile-top">
+                        <div class="profile-header">
+                            <div class="avatar-wrapper" id="profileAvatarWrapper">
+                                <div id="profileAvatarContainer" style="width:80px;height:80px;border-radius:50%;overflow:hidden;"></div>
+                                <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
+                            </div>
+                            <div class="profile-info">
+                                <h2 id="profileName"></h2>
+                                <p id="profileDescription" class="editable-text">Нажмите, чтобы добавить описание</p>
+                                <span class="profile-regdate" id="profileRegDate"></span>
+                            </div>
                         </div>
-                        <div class="profile-info">
-                            <h2 id="profileName"></h2>
-                            <p id="profileDescription" class="editable-text">Нажмите, чтобы добавить описание</p>
-                            <span class="profile-regdate" id="profileRegDate"></span>
+                        <div class="profile-stats" id="profileStats"></div>
+                    </div>
+                    <div class="glass-panel profile-gpx">
+                        <h3>Поездки с Diamond GPX</h3>
+                        <div id="profileGpxFiles"></div>
+                    </div>
+                    <div class="glass-panel profile-wall">
+                        <h3>Стена</h3>
+                        <div class="wall-input">
+                            <textarea id="wallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                            <button class="btn btn-send" id="postWallBtn"><i class="fas fa-paper-plane"></i></button>
                         </div>
+                        <div id="profileWall"></div>
                     </div>
-                    <div class="profile-stats" id="profileStats"></div>
-                </div>
-                <div class="glass-panel profile-gpx">
-                    <h3>Поездки с Diamond GPX</h3>
-                    <div id="profileGpxFiles"></div>
-                </div>
-                <div class="glass-panel profile-wall">
-                    <h3>Стена</h3>
-                    <div class="wall-input">
-                        <textarea id="wallMessage" rows="1" placeholder="Написать на стене..."></textarea>
-                        <button class="btn btn-send" id="postWallBtn"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                    <div id="profileWall"></div>
                 </div>
             </section>
         </main>
@@ -139,11 +140,10 @@
             <input id="loginPassword" type="password" placeholder="Пароль">
             <button class="btn" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
             <button class="btn" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
-            <button class="btn" onclick="closeModal('loginModal')">Закрыть</button>
         </div>
     </div>
 
-    <!-- Модалка "Что такое GPX" -->
+    <!-- Модалка GPX -->
     <div class="modal" id="gpxInfoModal">
         <div class="modal-content glass-panel">
             <h3><i class="fas fa-map-marker-alt"></i> Что такое GPX?</h3>
@@ -180,11 +180,11 @@
         </div>
     </div>
 
-    <script src="js/diamkey-core.js?v=4"></script>
-    <script src="js/diamkey-ui.js?v=4"></script>
-    <script src="js/diamkey-wall.js?v=4"></script>
-    <script src="js/diamkey-gpx.js?v=4"></script>
-    <script src="js/diamkey-users.js?v=4"></script>
-    <script src="js/diamkey-settings.js?v=4"></script>
+    <script src="js/diamkey-core.js?v=5"></script>
+    <script src="js/diamkey-ui.js?v=5"></script>
+    <script src="js/diamkey-wall.js?v=5"></script>
+    <script src="js/diamkey-gpx.js?v=5"></script>
+    <script src="js/diamkey-users.js?v=5"></script>
+    <script src="js/diamkey-settings.js?v=5"></script>
 </body>
 </html>
