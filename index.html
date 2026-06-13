@@ -31,21 +31,19 @@
                 <div class="glass-panel home-hero">
                     <img src="assets/favicon.ico" class="home-logo">
                     <h1 id="cipherTitle">DIAMKEY</h1>
-                    <p class="home-subtitle">Единая учётная запись для сервисов Diamond. Общайтесь, делитесь маршрутами и оставайтесь на связи.</p>
+                    <p class="home-subtitle">Единая учётная запись для сервисов Diamond</p>
                     <div class="home-description">
-                        <p>DiamKey — это центр вашей цифровой жизни в экосистеме Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ треков и маршрутов) и общему форуму.</p>
-                        <p>Присоединяйтесь к сообществу Diamond уже сегодня!</p>
+                        <p>DiamKey — центр вашей цифровой жизни в экосистеме Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong>, <strong>Diamond GPX</strong> и общему форуму.</p>
                     </div>
-                    <!-- Объявление -->
-                    <div class="announcement-card glass-panel accent-glass" id="announcementCard">
+                    <!-- Объявление (в отдельном фрейме) -->
+                    <div class="announcement-card accent-glass glass-panel" id="announcementCard" style="margin-top: 20px; text-align: left;">
                         <div class="announcement-header"><i class="fas fa-bullhorn"></i> Объявление от создателя</div>
                         <div class="announcement-body" id="announcementBody">Загрузка...</div>
                     </div>
-                    <!-- Карточки -->
                     <div class="features-grid">
-                        <div class="feature-card glass-panel"><i class="fas fa-robot"></i><h3>Diamond AI</h3><p>Интеллектуальный помощник с синхронизацией чатов и папок</p></div>
-                        <div class="feature-card glass-panel"><i class="fas fa-map-marker-alt"></i><h3>Diamond GPX</h3><p>Загружайте GPS-треки и получайте статистику</p></div>
-                        <div class="feature-card glass-panel"><i class="fas fa-shield-alt"></i><h3>Приватность</h3><p>Все данные под вашим контролем, без утечек</p></div>
+                        <div class="feature-card glass-panel"><i class="fas fa-robot"></i><h3>Diamond AI</h3><p>Интеллектуальный помощник</p></div>
+                        <div class="feature-card glass-panel"><i class="fas fa-map-marker-alt"></i><h3>Diamond GPX</h3><p>Анализ GPS-треков</p></div>
+                        <div class="feature-card glass-panel"><i class="fas fa-shield-alt"></i><h3>Приватность</h3><p>Ваши данные под контролем</p></div>
                     </div>
                 </div>
             </section>
@@ -75,10 +73,10 @@
                     <div class="gpx-dashboard glass-panel">
                         <div class="chart-wrap"><canvas id="elevationChart"></canvas></div>
                         <div class="gpx-stats-grid">
-                            <div class="gpx-stat-card"><i class="fas fa-ruler"></i><span class="stat-label">Дистанция</span><span id="distVal" class="stat-value">—</span></div>
-                            <div class="gpx-stat-card"><i class="fas fa-mountain"></i><span class="stat-label">Набор</span><span id="ascentVal" class="stat-value">—</span></div>
-                            <div class="gpx-stat-card"><i class="fas fa-clock"></i><span class="stat-label">Время</span><span id="timeVal" class="stat-value">—</span></div>
-                            <div class="gpx-stat-card"><i class="fas fa-tachometer-alt"></i><span class="stat-label">Скорость</span><span id="speedVal" class="stat-value">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-ruler"></i><span class="stat-label">Дистанция</span><span id="distVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-mountain"></i><span class="stat-label">Набор</span><span id="ascentVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-clock"></i><span class="stat-label">Время</span><span id="timeVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-tachometer-alt"></i><span class="stat-label">Скорость</span><span id="speedVal">—</span></div>
                         </div>
                     </div>
                     <div id="aiReview" class="ai-review glass-panel" style="display:none;">
@@ -99,41 +97,39 @@
 
             <!-- Профиль -->
             <section class="page" id="page-profile">
-                <div class="profile-sections">
-                    <div class="glass-panel profile-top">
-                        <div class="profile-header">
-                            <div class="avatar-wrapper" id="profileAvatarWrapper">
-                                <div id="profileAvatarContainer" style="width:80px;height:80px;border-radius:50%;overflow:hidden;"></div>
-                                <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
-                            </div>
-                            <div class="profile-info">
-                                <h2 id="profileName"></h2>
-                                <p id="profileDescription" class="editable-text">Нажмите, чтобы добавить описание</p>
-                                <span class="profile-regdate" id="profileRegDate"></span>
-                            </div>
+                <div class="glass-panel profile-top">
+                    <div class="profile-header">
+                        <div class="avatar-wrapper" id="profileAvatarWrapper">
+                            <img id="profileAvatar" src="" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:40px; color:var(--text-muted)\\'></i>'">
+                            <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
                         </div>
-                        <div class="profile-stats" id="profileStats"></div>
-                    </div>
-                    <div class="glass-panel profile-gpx">
-                        <h3>Поездки с Diamond GPX</h3>
-                        <div id="profileGpxFiles"></div>
-                    </div>
-                    <div class="glass-panel profile-wall">
-                        <h3>Стена</h3>
-                        <div class="wall-input">
-                            <textarea id="wallMessage" rows="1" placeholder="Написать на стене..."></textarea>
-                            <button class="btn btn-send" id="postWallBtn"><i class="fas fa-paper-plane"></i></button>
+                        <div class="profile-info">
+                            <h2 id="profileName"></h2>
+                            <p id="profileDescription" class="editable-text">Нажмите, чтобы добавить описание</p>
+                            <span class="profile-regdate" id="profileRegDate"></span>
                         </div>
-                        <div id="profileWall"></div>
                     </div>
+                    <div class="profile-stats" id="profileStats"></div>
+                </div>
+                <div class="glass-panel profile-gpx" style="margin-top: 20px;">
+                    <h3>Поездки с Diamond GPX</h3>
+                    <div id="profileGpxFiles"></div>
+                </div>
+                <div class="glass-panel profile-wall" style="margin-top: 20px;">
+                    <h3>Стена</h3>
+                    <div class="wall-input">
+                        <textarea id="wallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                        <button class="btn btn-send" id="postWallBtn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                    <div id="profileWall"></div>
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- Модалка входа -->
-    <div class="modal" id="loginModal">
-        <div class="modal-content glass-panel">
+    <!-- Модалка входа (без кнопки "Закрыть") -->
+    <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <img src="assets/favicon.ico" class="modal-logo" style="width:60px;height:60px;animation:float 3s ease-in-out infinite;">
             <h3>Вход в DiamKey</h3>
             <input id="loginIdentity" placeholder="Логин">
@@ -143,9 +139,9 @@
         </div>
     </div>
 
-    <!-- Модалка GPX -->
-    <div class="modal" id="gpxInfoModal">
-        <div class="modal-content glass-panel">
+    <!-- Модалка GPX Info -->
+    <div class="modal" id="gpxInfoModal" onclick="if(event.target===this) closeModal('gpxInfoModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <h3><i class="fas fa-map-marker-alt"></i> Что такое GPX?</h3>
             <p>GPX — формат для хранения GPS-треков (велопрогулки, походы). Загрузите файл, чтобы увидеть маршрут и статистику!</p>
             <div class="gpx-links">
@@ -157,8 +153,8 @@
     </div>
 
     <!-- Модалка названия GPX -->
-    <div class="modal" id="gpxNameModal">
-        <div class="modal-content glass-panel">
+    <div class="modal" id="gpxNameModal" onclick="if(event.target===this) closeModal('gpxNameModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <h3>Название прогулки</h3>
             <input id="gpxNameInput" placeholder="Например: Утренняя поездка">
             <div style="display:flex; gap:10px; justify-content:center;">
@@ -169,8 +165,8 @@
     </div>
 
     <!-- Модалка описания -->
-    <div class="modal" id="editDescriptionModal">
-        <div class="modal-content glass-panel">
+    <div class="modal" id="editDescriptionModal" onclick="if(event.target===this) closeModal('editDescriptionModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <h3>Редактировать описание</h3>
             <textarea id="editDescriptionInput" rows="3" placeholder="Расскажите о себе..."></textarea>
             <div style="display:flex; gap:10px; justify-content:center;">
