@@ -8,7 +8,19 @@ const LOCALE = { ru: {}, en: {} };
 function t(key) { return (LOCALE[currentLang] && LOCALE[currentLang][key]) || key; }
 
 function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m); }
-function showToast(msg) { const el = document.createElement('div'); el.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#222; color:#fff; padding:12px 20px; border-radius:12px; z-index:9999;'; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 3000); }
+function showToast(msg) {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
 
 const saved = localStorage.getItem('diamkey_current');
 if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
@@ -16,7 +28,7 @@ if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
 async function login(login, password) {
     const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
     if (error || !user) return { error: 'Неверный логин или пароль' };
-    const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'', description: user.description||'' };
+    const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'', description: user.description||'', created_at: user.created_at };
     localStorage.setItem('diamkey_current', JSON.stringify(session));
     currentUser = session;
     return { success: true };
@@ -29,7 +41,7 @@ async function register(login, password) {
     const email = login + '@diamkey.local';
     const { error } = await _supabase.from('users').insert([{ login, email, password, name: '', avatar: '', description: '' }]);
     if (error) return { error: error.message };
-    const session = { login, email, name: '', avatar: '', description: '' };
+    const session = { login, email, name: '', avatar: '', description: '', created_at: new Date().toISOString() };
     localStorage.setItem('diamkey_current', JSON.stringify(session));
     currentUser = session;
     return { success: true };
@@ -37,8 +49,8 @@ async function register(login, password) {
 
 async function loadProfile() {
     if (!currentUser) return;
-    const { data } = await _supabase.from('users').select('name, avatar, description').eq('login', currentUser.login).maybeSingle();
-    if (data) { currentUser.name = data.name || currentUser.login; currentUser.avatar = data.avatar || ''; currentUser.description = data.description || ''; }
+    const { data } = await _supabase.from('users').select('name, avatar, description, created_at').eq('login', currentUser.login).maybeSingle();
+    if (data) { currentUser.name = data.name || currentUser.login; currentUser.avatar = data.avatar || ''; currentUser.description = data.description || ''; currentUser.created_at = data.created_at; }
 }
 
 async function updateProfile(updates) {
