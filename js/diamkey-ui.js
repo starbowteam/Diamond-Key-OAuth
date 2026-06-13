@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Сайдбар: переключение вкладок
     document.querySelectorAll('.sidebar-icon[data-page]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (btn.tagName === 'A') return;
@@ -11,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target) target.classList.add('active');
             if (page === 'gpx') {
                 if (!localStorage.getItem('gpx_info_seen')) document.getElementById('gpxInfoModal').style.display = 'flex';
-                setTimeout(() => gpxMap?.invalidateSize(), 100);
+                // initGPX вызовется автоматически через MutationObserver
             }
         });
     });
@@ -22,10 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('logoutSidebarBtn').addEventListener('click', () => document.getElementById('logoutModal').style.display = 'flex');
-    document.getElementById('confirmLogoutBtn').addEventListener('click', () => { localStorage.removeItem('diamkey_current'); window.location.reload(); });
+    document.getElementById('confirmLogoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('diamkey_current');
+        window.location.reload();
+    });
 
     if (!currentUser) {
-        document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => { if (b.dataset.page !== 'home') b.style.display = 'none'; });
+        document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => {
+            if (b.dataset.page !== 'home') b.style.display = 'none';
+        });
         document.getElementById('logoutSidebarBtn').style.display = 'none';
         document.getElementById('page-home').classList.add('active');
         const guestLogin = document.createElement('button');
@@ -35,7 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
         guestLogin.addEventListener('click', () => document.getElementById('loginModal').style.display = 'flex');
         document.getElementById('sidebar').appendChild(guestLogin);
     } else {
-        initApp();
+        // Загружаем профиль и форум, GPX сам себя инициализирует
+        loadProfile().then(() => {
+            loadAnnouncement();
+            loadForum();
+            loadProfilePage();
+        });
     }
 
     document.getElementById('doLoginBtn').addEventListener('click', async () => {
@@ -56,6 +67,6 @@ async function initApp() {
     await loadProfile();
     loadAnnouncement();
     loadForum();
-    initGPX();
     loadProfilePage();
+    // initGPX не вызываем, он сам следит за активацией вкладки
 }
