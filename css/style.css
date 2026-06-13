@@ -19,13 +19,98 @@ body {
     overflow: hidden;
 }
 
-.app-shell {
+/* Экран авторизации */
+.auth-screen {
     display: flex;
+    align-items: center;
+    justify-content: center;
     height: 100vh;
-    align-items: center; /* чтобы сайдбар был по центру по вертикали */
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.03) 0%, transparent 60%);
+}
+.auth-container {
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    padding: 40px 32px;
+}
+.auth-logo {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 20px;
+    object-fit: contain;
+    animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.auth-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 20px 0;
+    background: rgba(30, 30, 38, 0.5);
+    border-radius: 20px;
+    padding: 4px;
+    border: 1px solid var(--glass-border);
+}
+.auth-tab {
+    flex: 1;
+    padding: 10px;
+    border-radius: 18px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+}
+.auth-tab.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+.auth-form input {
+    width: 100%;
+    margin-bottom: 8px;
 }
 
-/* Стеклянный закруглённый сайдбар (не во весь экран) */
+/* Верхняя плашка */
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: rgba(10, 10, 15, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    z-index: 20;
+}
+.top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.top-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+.top-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.top-bar-right {
+    display: flex;
+    align-items: center;
+}
+
+.app-body {
+    display: flex;
+    height: calc(100vh - 56px);
+    align-items: center;
+}
+
+/* Сайдбар */
 .sidebar {
     width: var(--sidebar-width);
     background: rgba(10, 10, 15, 0.8);
@@ -38,10 +123,9 @@ body {
     padding: 16px 0;
     gap: 12px;
     z-index: 10;
-    height: fit-content; /* не растягивается */
+    height: fit-content;
     margin-left: 12px;
 }
-
 .sidebar-icon {
     width: 44px;
     height: 44px;
@@ -57,14 +141,12 @@ body {
     transition: all 0.25s ease;
     text-decoration: none;
 }
-
 .sidebar-icon:hover,
 .sidebar-icon.active {
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
 }
 
-/* Контент */
 .main-content {
     flex: 1;
     overflow-y: auto;
@@ -74,11 +156,9 @@ body {
     gap: 20px;
     background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.02) 0%, transparent 60%);
 }
-
 .page { display: none; }
 .page.active { display: block; }
 
-/* Стеклянная панель */
 .glass-panel {
     background: var(--glass-bg);
     backdrop-filter: blur(16px);
@@ -93,7 +173,6 @@ body {
 .text-muted { color: var(--text-muted); }
 h2 { font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
 
-/* Кнопки */
 .btn {
     padding: 8px 18px;
     border: 1px solid rgba(255,255,255,0.15);
@@ -106,7 +185,6 @@ h2 { font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; 
 }
 .btn:hover { background: rgba(60, 62, 68, 0.55); }
 
-/* Модалки */
 .modal {
     display: none;
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -118,7 +196,8 @@ h2 { font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; 
     width: 90%;
     text-align: center;
 }
-input, textarea {
+
+input, textarea, select {
     width: 100%;
     padding: 12px;
     background: #1e1e2a;
@@ -130,18 +209,8 @@ input, textarea {
 }
 input:focus, textarea:focus { border-color: var(--accent); }
 
-/* GPX Dashboard */
-.gpx-dashboard .stat-item {
+.settings-grid {
     display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.gpx-dashboard .stat-value {
-    font-weight: 600;
-    color: var(--text-light);
-}
-.gpx-dashboard .stat-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
+    flex-direction: column;
+    gap: 12px;
 }
