@@ -42,5 +42,4 @@ async function renderProfile() {
         </div>
         <p class="text-muted">${currentUser.description || 'Нет описания'}</p>
     `;
-    // Здесь можно добавить статистику Diamond AI и GPX
 }
