@@ -2,19 +2,57 @@ const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
+let currentLang = localStorage.getItem('diamkey_lang') || 'ru';
+
+// Локализация
+const L = {
+    ru: {
+        welcome: 'Добро пожаловать в DiamKey',
+        desc: 'Единая учётная запись для сервисов Diamond.',
+        login: 'Войти',
+        register: 'Зарегистрироваться',
+        logout: 'Выйти',
+        forum: 'Форум',
+        gpx: 'GPX',
+        profile: 'Профиль',
+        settings: 'Настройки',
+        send: 'Отправить',
+        save: 'Сохранить',
+        delete: 'Удалить',
+        sureLogout: 'Вы уверены, что хотите выйти?',
+        sureDelete: 'Это действие необратимо.'
+    },
+    en: {
+        welcome: 'Welcome to DiamKey',
+        desc: 'Single account for Diamond services.',
+        login: 'Login',
+        register: 'Register',
+        logout: 'Logout',
+        forum: 'Forum',
+        gpx: 'GPX',
+        profile: 'Profile',
+        settings: 'Settings',
+        send: 'Send',
+        save: 'Save',
+        delete: 'Delete',
+        sureLogout: 'Are you sure you want to logout?',
+        sureDelete: 'This action is irreversible.'
+    }
+};
+function t(key) { return (L[currentLang] && L[currentLang][key]) || key; }
 
 function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m); }
-function showToast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#222; color:#fff; padding:12px 20px; border-radius:12px; z-index:9999;'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }
+function showToast(msg) { const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; el.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#222; color:#fff; padding:12px 20px; border-radius:12px; z-index:9999;'; document.body.appendChild(el); setTimeout(() => el.remove(), 3000); }
 
 const saved = localStorage.getItem('diamkey_current');
 if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
 
 async function login(login, password) {
     const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
-    if (error || !user) return { error: 'Неверный логин или пароль' };
-    const sessionUser = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'', description: user.description||'' };
-    localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
-    currentUser = sessionUser;
+    if (error || !user) return { error: t('loginError') };
+    const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'' };
+    localStorage.setItem('diamkey_current', JSON.stringify(session));
+    currentUser = session;
     return { success: true };
 }
 
@@ -25,17 +63,16 @@ async function register(login, password) {
     const email = login + '@diamkey.local';
     const { error } = await _supabase.from('users').insert([{ login, email, password, name: '', avatar: '' }]);
     if (error) return { error: error.message };
-    const sessionUser = { login, email, name: '', avatar: '' };
-    localStorage.setItem('diamkey_current', JSON.stringify(sessionUser));
-    currentUser = sessionUser;
+    const session = { login, email, name: '', avatar: '' };
+    localStorage.setItem('diamkey_current', JSON.stringify(session));
+    currentUser = session;
     return { success: true };
 }
 
 async function loadProfile() {
-    if (!currentUser) return null;
+    if (!currentUser) return;
     const { data } = await _supabase.from('users').select('name, avatar, description').eq('login', currentUser.login).maybeSingle();
-    if (data) { currentUser.name = data.name || currentUser.login; currentUser.avatar = data.avatar || ''; currentUser.description = data.description || ''; }
-    return currentUser;
+    if (data) { currentUser.name = data.name || currentUser.login; currentUser.avatar = data.avatar || ''; }
 }
 
 async function updateProfile(updates) {
@@ -52,9 +89,4 @@ async function deleteAccount() {
     localStorage.removeItem('diamkey_current');
     currentUser = null;
     window.location.reload();
-}
-
-function redirectToOAuth() {
-    const redirect = encodeURIComponent('https://diam-ai.ru');
-    window.location.href = `https://diamkey.ru/oauth.html?redirect=${redirect}&app=Diamond+AI`;
 }
