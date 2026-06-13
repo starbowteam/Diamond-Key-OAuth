@@ -1,11 +1,13 @@
-// ==================== DIAMOND GPX – карта и парсер (стиль DiamKey) ====================
 let gpxMap, gpxLayerGroup, elevationChart, elevationData;
 
 function initGPX() {
     gpxMap = L.map('gpx-map', {
         center: [55.751244, 37.618423],
         zoom: 10,
-        layers: [L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { attribution: '© Google', maxZoom: 20 })],
+        layers: [L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        })],
         zoomControl: true
     });
     gpxLayerGroup = L.featureGroup().addTo(gpxMap);
