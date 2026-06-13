@@ -25,6 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    document.getElementById('gpxInfoOkBtn')?.addEventListener('click', () => {
+        closeModal('gpxInfoModal');
+        localStorage.setItem('gpx_info_seen', '1');
+    });
+
     document.getElementById('logoutSidebarBtn').addEventListener('click', () => {
         localStorage.removeItem('diamkey_current');
         window.location.reload();
