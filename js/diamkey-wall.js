@@ -1,3 +1,4 @@
+// Объявление
 async function loadAnnouncement() {
     const { data } = await _supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
     const body = document.getElementById('announcementBody');
@@ -13,6 +14,8 @@ async function loadAnnouncement() {
                 </div>
             </div>
         `;
+    } else {
+        body.innerHTML = `<p class="text-muted">Нет новых объявлений</p>`;
     }
 }
 
@@ -78,7 +81,6 @@ async function loadProfilePage(login = null) {
     document.getElementById('profileDescription').textContent = profile.description || 'Нет описания';
     document.getElementById('profileRegDate').textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
 
-    // Редактирование только владельцем
     if (isOwner) {
         document.getElementById('profileAvatarWrapper').style.cursor = 'pointer';
         document.getElementById('profileAvatarWrapper').onclick = () => {
@@ -127,17 +129,27 @@ async function loadProfilePage(login = null) {
 
     // Стена
     const { data: wall } = await _supabase.from('profile_wall').select('*').eq('profile_login', targetLogin).order('created_at', { ascending: false });
-    document.getElementById('profileWall').innerHTML = wall?.map(p => `
+    document.getElementById('profileWall').innerHTML = wall?.length ? wall.map(p => `
         <div class="glass-panel" style="padding:12px;margin-bottom:8px;">
-            <strong>${escapeHtml(p.user_login)}</strong>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                <img src="${p.user_avatar || ''}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">
+                <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
+                <span class="text-muted" style="margin-left:auto;font-size:0.75rem;">${new Date(p.created_at).toLocaleString()}</span>
+            </div>
             <p>${escapeHtml(p.content)}</p>
         </div>
-    `).join('') || '<p class="text-muted">Записей пока нет</p>';
+    `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
     document.getElementById('postWallBtn').onclick = async () => {
         const msg = document.getElementById('wallMessage').value.trim();
-        if (!msg) return;
-        await _supabase.from('profile_wall').insert([{ user_login: currentUser.login, profile_login: targetLogin, content: msg }]);
+        if (!msg || !currentUser) return;
+        await _supabase.from('profile_wall').insert([{
+            user_login: currentUser.login,
+            user_name: currentUser.name || currentUser.login,
+            user_avatar: currentUser.avatar || '',
+            profile_login: targetLogin,
+            content: msg
+        }]);
         document.getElementById('wallMessage').value = '';
         loadProfilePage(targetLogin);
     };
