@@ -19,6 +19,7 @@ function initGPX() {
                 displayGPX(data);
                 currentGpxContent = ev.target.result;
                 document.getElementById('saveGpxBtn').style.display = 'inline-flex';
+                generateAiReview(data);
             } catch(err) { alert('Ошибка: ' + err.message); }
         };
         reader.readAsText(file);
@@ -38,6 +39,30 @@ function initGPX() {
         document.getElementById('gpxNameModal').style.display = 'none';
         showToast('Прогулка сохранена!');
     });
+}
+
+function generateAiReview(data) {
+    const box = document.getElementById('aiReviewBox');
+    const loading = document.getElementById('aiReviewLoading');
+    const content = document.getElementById('aiReviewContent');
+    box.style.display = 'block';
+    loading.style.display = 'block';
+    content.style.display = 'none';
+
+    // Имитация запроса к ИИ
+    setTimeout(() => {
+        let totalDist = 0;
+        data.tracks.forEach(t => t.segments.forEach(seg => {
+            for (let i=1; i<seg.length; i++) {
+                totalDist += haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
+            }
+        }));
+        const distKm = (totalDist / 1000).toFixed(1);
+        const reviewText = `Отличная поездка! Вы преодолели ${distKm} км. Обратите внимание на подъём на 5-м километре — там самый крутой участок. Рекомендую в следующий раз попробовать маршрут через лесопарк, он более живописный! 🌲`;
+        content.innerHTML = `<i class="fas fa-robot" style="color:var(--accent);"></i> ${reviewText}`;
+        loading.style.display = 'none';
+        content.style.display = 'block';
+    }, 1500);
 }
 
 function parseGPX(xmlString) {
@@ -122,4 +147,5 @@ function resetGPX() {
     gpxMap.setView([55.751244, 37.618423], 10);
     currentGpxContent = null;
     document.getElementById('saveGpxBtn').style.display = 'none';
+    document.getElementById('aiReviewBox').style.display = 'none';
 }
