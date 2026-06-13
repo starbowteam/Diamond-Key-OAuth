@@ -1,7 +1,7 @@
 function loadSettings() {
     if (!currentUser) return;
     document.getElementById('settingsName').value = currentUser.name || '';
-    document.getElementById('settingsLanguage').value = localStorage.getItem('diamkey_lang') || 'ru';
+    document.getElementById('settingsLanguage').value = currentLang;
 }
 
 document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
@@ -22,7 +22,11 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
         updates.avatar = avatar;
     }
     await updateProfile(updates);
-    localStorage.setItem('diamkey_lang', lang);
+    if (lang !== currentLang) {
+        localStorage.setItem('diamkey_lang', lang);
+        currentLang = lang;
+        showToast('Язык изменён. Обновите страницу для полного эффекта.');
+    }
     showToast('Настройки сохранены');
     loadProfile().then(() => renderProfile());
 });
