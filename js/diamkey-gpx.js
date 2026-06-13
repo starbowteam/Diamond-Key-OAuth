@@ -1,76 +1,66 @@
-// ==================== DIAMOND GPX – карта и парсер ====================
 let gpxMap, gpxLayerGroup, elevationChart, currentGpxContent = null;
 let gpxInitialized = false;
 
-// Ждём загрузки Leaflet и DOM
-function ensureLeaflet(callback) {
-    if (typeof L !== 'undefined' && L.tileLayer) {
-        callback();
-    } else {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = callback;
-        document.head.appendChild(script);
-    }
-}
-
 function initGPX() {
     if (gpxInitialized) return;
-    ensureLeaflet(() => {
-        const mapContainer = document.getElementById('gpx-map');
-        if (!mapContainer) return;
+    if (typeof L === 'undefined') {
+        console.warn('Leaflet not loaded yet');
+        return;
+    }
 
-        gpxMap = L.map('gpx-map', {
-            center: [55.751244, 37.618423],
-            zoom: 10,
-            layers: [L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-                attribution: '© Google',
-                maxZoom: 20
-            })],
-            zoomControl: true
-        });
-        gpxLayerGroup = L.featureGroup().addTo(gpxMap);
-        gpxInitialized = true;
+    const mapContainer = document.getElementById('gpx-map');
+    if (!mapContainer) return;
 
-        // Обработчик загрузки файла
-        document.getElementById('gpx-file-input').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => {
-                try {
-                    const data = parseGPX(ev.target.result);
-                    displayGPX(data);
-                    currentGpxContent = ev.target.result;
-                    document.getElementById('saveGpxBtn').style.display = 'inline-flex';
-                    showAIReview(data);
-                } catch (err) {
-                    alert('Ошибка: ' + err.message);
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        // Сохранение GPX
-        document.getElementById('saveGpxBtn').addEventListener('click', () => {
-            document.getElementById('gpxNameModal').style.display = 'flex';
-        });
-        document.getElementById('saveGpxNameBtn').addEventListener('click', async () => {
-            const name = document.getElementById('gpxNameInput').value.trim() || 'Без названия';
-            await _supabase.from('gpx_files').insert([{
-                user_login: currentUser.login,
-                name,
-                content: currentGpxContent
-            }]);
-            document.getElementById('gpxNameModal').style.display = 'none';
-            showToast('Прогулка сохранена!');
-        });
-
-        // Если вкладка GPX уже активна, обновляем размер карты
-        if (document.getElementById('page-gpx').classList.contains('active')) {
-            setTimeout(() => gpxMap.invalidateSize(), 100);
-        }
+    gpxMap = L.map('gpx-map', {
+        center: [55.751244, 37.618423],
+        zoom: 10,
+        layers: [L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: '© Google',
+            maxZoom: 20
+        })],
+        zoomControl: true
     });
+    gpxLayerGroup = L.featureGroup().addTo(gpxMap);
+    gpxInitialized = true;
+
+    // Обработчик загрузки файла
+    document.getElementById('gpx-file-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            try {
+                const data = parseGPX(ev.target.result);
+                displayGPX(data);
+                currentGpxContent = ev.target.result;
+                document.getElementById('saveGpxBtn').style.display = 'inline-flex';
+                showAIReview(data);
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // Сохранение GPX
+    document.getElementById('saveGpxBtn').addEventListener('click', () => {
+        document.getElementById('gpxNameModal').style.display = 'flex';
+    });
+    document.getElementById('saveGpxNameBtn').addEventListener('click', async () => {
+        const name = document.getElementById('gpxNameInput').value.trim() || 'Без названия';
+        await _supabase.from('gpx_files').insert([{
+            user_login: currentUser.login,
+            name,
+            content: currentGpxContent
+        }]);
+        document.getElementById('gpxNameModal').style.display = 'none';
+        showToast('Прогулка сохранена!');
+    });
+
+    // Если вкладка GPX уже активна, обновляем размер карты
+    if (document.getElementById('page-gpx').classList.contains('active')) {
+        setTimeout(() => gpxMap.invalidateSize(), 100);
+    }
 }
 
 // Парсинг GPX
@@ -183,9 +173,8 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Запускаем инициализацию после загрузки DOM
+// Запуск инициализации после активации вкладки
 document.addEventListener('DOMContentLoaded', () => {
-    // Не инициализируем сразу, подождём активации вкладки
     const observer = new MutationObserver(() => {
         const gpxPage = document.getElementById('page-gpx');
         if (gpxPage && gpxPage.classList.contains('active')) {
