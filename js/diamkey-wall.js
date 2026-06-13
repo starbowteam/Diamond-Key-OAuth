@@ -90,19 +90,19 @@ async function loadProfilePage() {
         document.getElementById('editDescriptionModal').style.display = 'none';
     };
 
-    // Статистика
-    const statsDiv = document.getElementById('profileStats');
-    statsDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка статистики...';
+    // Статистика с загрузкой
+    const statsContainer = document.getElementById('profileStats');
+    statsContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i> Загрузка статистики...</div>';
     const [chatsRes, forumRes, gpxRes] = await Promise.all([
         _supabase.from('diamond_chats').select('id,messages').eq('user_login', currentUser.login),
         _supabase.from('forum').select('*', { count: 'exact', head: true }).eq('login', currentUser.login),
         _supabase.from('gpx_files').select('*', { count: 'exact', head: true }).eq('user_login', currentUser.login)
     ]);
     const totalChats = chatsRes.data?.length || 0;
-    const totalMessages = chatsRes.data?.reduce((s, c) => s + (c.messages?.length || 0), 0) || 0;
+    const totalMessages = chatsRes.data?.reduce((s,c) => s + (c.messages?.length || 0), 0) || 0;
     const forumCount = forumRes.count || 0;
     const gpxCount = gpxRes.count || 0;
-    statsDiv.innerHTML = `
+    statsContainer.innerHTML = `
         <div style="display:flex; gap:20px; flex-wrap:wrap; margin:20px 0;">
             <div><i class="fas fa-comments"></i> ${forumCount} сообщений на форуме</div>
             <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщений в Diamond AI</div>
@@ -110,27 +110,33 @@ async function loadProfilePage() {
         </div>
     `;
 
-    // GPX-файлы
-    const gpxList = document.getElementById('profileGpxFiles');
-    gpxList.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка прогулок...';
+    // Карусель GPX
+    const gpxCarousel = document.getElementById('profileGpxFiles');
+    gpxCarousel.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i> Загрузка прогулок...</div>';
     const { data: gpxFiles } = await _supabase.from('gpx_files').select('id,name,created_at').eq('user_login', currentUser.login).order('created_at', { ascending: false });
-    gpxList.innerHTML = gpxFiles?.length ? gpxFiles.map(f => `
-        <div class="glass-panel" style="padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-            <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(f.name)}</span>
-            <span class="text-muted">${new Date(f.created_at).toLocaleDateString()}</span>
-        </div>
-    `).join('') : '<p class="text-muted">Нет сохранённых прогулок</p>';
+    if (gpxFiles && gpxFiles.length) {
+        gpxCarousel.innerHTML = `
+            <div class="carousel-container">
+                ${gpxFiles.map(f => `
+                    <div class="gpx-card">
+                        <div class="gpx-card-header"><i class="fas fa-map-marker-alt" style="color:var(--accent)"></i> <span>${escapeHtml(f.name)}</span></div>
+                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } else {
+        gpxCarousel.innerHTML = '<p class="text-muted">Нет сохранённых прогулок</p>';
+    }
 
     // Стена
-    const wallDiv = document.getElementById('profileWall');
-    wallDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка стены...';
     const { data: wall } = await _supabase.from('wall_posts').select('*').eq('profile_login', currentUser.login).order('created_at', { ascending: false });
-    wallDiv.innerHTML = wall?.length ? wall.map(p => `
+    document.getElementById('profileWall').innerHTML = wall?.map(p => `
         <div class="glass-panel" style="padding:12px;margin-bottom:8px;">
             <strong>${escapeHtml(p.user_login)}</strong>
             <p>${escapeHtml(p.content)}</p>
         </div>
-    `).join('') : '<p class="text-muted">На стене пока пусто</p>';
+    `).join('') || '';
 
     document.getElementById('postWallBtn').onclick = async () => {
         const msg = document.getElementById('wallMessage').value.trim();
