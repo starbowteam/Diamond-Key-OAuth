@@ -1,92 +1,108 @@
-const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
-const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let currentUser = null;
-let currentLang = localStorage.getItem('diamkey_lang') || 'ru';
+let gpxMap, gpxLayerGroup, elevationChart, elevationData;
 
-// Локализация
-const L = {
-    ru: {
-        welcome: 'Добро пожаловать в DiamKey',
-        desc: 'Единая учётная запись для сервисов Diamond.',
-        login: 'Войти',
-        register: 'Зарегистрироваться',
-        logout: 'Выйти',
-        forum: 'Форум',
-        gpx: 'GPX',
-        profile: 'Профиль',
-        settings: 'Настройки',
-        send: 'Отправить',
-        save: 'Сохранить',
-        delete: 'Удалить',
-        sureLogout: 'Вы уверены, что хотите выйти?',
-        sureDelete: 'Это действие необратимо.'
-    },
-    en: {
-        welcome: 'Welcome to DiamKey',
-        desc: 'Single account for Diamond services.',
-        login: 'Login',
-        register: 'Register',
-        logout: 'Logout',
-        forum: 'Forum',
-        gpx: 'GPX',
-        profile: 'Profile',
-        settings: 'Settings',
-        send: 'Send',
-        save: 'Save',
-        delete: 'Delete',
-        sureLogout: 'Are you sure you want to logout?',
-        sureDelete: 'This action is irreversible.'
+function initGPX() {
+    gpxMap = L.map('gpx-map', {
+        center: [55.751244, 37.618423],
+        zoom: 10,
+        layers: [L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19
+        })],
+        zoomControl: true
+    });
+    gpxLayerGroup = L.featureGroup().addTo(gpxMap);
+
+    document.getElementById('gpx-file-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            try { displayGPX(parseGPX(ev.target.result)); }
+            catch(err) { alert('Ошибка: ' + err.message); }
+        };
+        reader.readAsText(file);
+    });
+
+    // Принудительно обновляем размер карты, когда вкладка становится видимой
+    const observer = new MutationObserver(() => {
+        if (document.getElementById('page-gpx').classList.contains('active')) {
+            gpxMap.invalidateSize();
+        }
+    });
+    observer.observe(document.getElementById('page-gpx'), { attributes: true, attributeFilter: ['class'] });
+}
+
+function parseGPX(xmlString) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+    const tracks = [];
+    xmlDoc.querySelectorAll('trk').forEach(trk => {
+        const segments = [];
+        trk.querySelectorAll('trkseg').forEach(seg => {
+            const pts = [];
+            seg.querySelectorAll('trkpt').forEach(pt => {
+                const lat = +pt.getAttribute('lat'), lon = +pt.getAttribute('lon');
+                const ele = parseFloat(pt.querySelector('ele')?.textContent);
+                pts.push({ lat, lon, ele: isNaN(ele)?null:ele });
+            });
+            if (pts.length > 1) segments.push(pts);
+        });
+        if (segments.length) tracks.push({ segments });
+    });
+    return { tracks };
+}
+
+function displayGPX(data) {
+    gpxLayerGroup.clearLayers();
+    if (elevationChart) { elevationChart.destroy(); elevationChart = null; }
+    data.tracks.forEach(track => {
+        track.segments.forEach(seg => {
+            L.polyline(seg.map(p => [p.lat, p.lon]), { color: '#ff6b6b', weight: 5, opacity: 0.85 }).addTo(gpxLayerGroup);
+        });
+    });
+    if (gpxLayerGroup.getLayers().length) {
+        const bounds = gpxLayerGroup.getBounds();
+        if (bounds.isValid()) gpxMap.fitBounds(bounds, { padding: [40,40], maxZoom:16 });
     }
-};
-function t(key) { return (L[currentLang] && L[currentLang][key]) || key; }
-
-function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m); }
-function showToast(msg) { const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; el.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#222; color:#fff; padding:12px 20px; border-radius:12px; z-index:9999;'; document.body.appendChild(el); setTimeout(() => el.remove(), 3000); }
-
-const saved = localStorage.getItem('diamkey_current');
-if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
-
-async function login(login, password) {
-    const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
-    if (error || !user) return { error: t('loginError') };
-    const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'' };
-    localStorage.setItem('diamkey_current', JSON.stringify(session));
-    currentUser = session;
-    return { success: true };
+    updateDashboard(data.tracks);
 }
 
-async function register(login, password) {
-    if (password.length < 6) return { error: 'Пароль минимум 6 символов' };
-    const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
-    if (exist) return { error: 'Логин уже занят' };
-    const email = login + '@diamkey.local';
-    const { error } = await _supabase.from('users').insert([{ login, email, password, name: '', avatar: '' }]);
-    if (error) return { error: error.message };
-    const session = { login, email, name: '', avatar: '' };
-    localStorage.setItem('diamkey_current', JSON.stringify(session));
-    currentUser = session;
-    return { success: true };
+function updateDashboard(tracks) {
+    let allPoints = [];
+    tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
+    let totalDist = 0, ascent = 0, cumDist = 0;
+    elevationData = [];
+    for (let i=0; i<allPoints.length; i++) {
+        if (i>0) {
+            const prev = allPoints[i-1], pt = allPoints[i];
+            const d = haversine(prev.lat, prev.lon, pt.lat, pt.lon);
+            totalDist += d; cumDist += d;
+            if (prev.ele !== null && pt.ele !== null && pt.ele > prev.ele) ascent += pt.ele - prev.ele;
+        }
+        if (allPoints[i].ele !== null) elevationData.push({ dist: cumDist, ele: allPoints[i].ele });
+    }
+    document.getElementById('distVal').textContent = totalDist > 1000 ? (totalDist/1000).toFixed(2)+' км' : totalDist.toFixed(0)+' м';
+    document.getElementById('ascentVal').textContent = ascent > 0 ? '+' + ascent.toFixed(0)+' м' : '—';
+    if (elevationData.length > 1) {
+        document.getElementById('noElevationMsg').style.display = 'none';
+        const ctx = document.getElementById('elevationChart').getContext('2d');
+        elevationChart = new Chart(ctx, { type:'line', data:{ labels: elevationData.map(p=>(p.dist/1000).toFixed(1)), datasets:[{ data: elevationData.map(p=>p.ele), borderColor:'#4ecdc4', backgroundColor:'rgba(78,205,196,0.12)', borderWidth:2, pointRadius:0, tension:0.3, fill:true }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ color:'#888', maxTicksLimit:6 }, grid:{ color:'#222' } }, y:{ ticks:{ color:'#888' }, grid:{ color:'#222' } } } });
+    } else {
+        document.getElementById('noElevationMsg').style.display = 'block';
+    }
 }
 
-async function loadProfile() {
-    if (!currentUser) return;
-    const { data } = await _supabase.from('users').select('name, avatar, description').eq('login', currentUser.login).maybeSingle();
-    if (data) { currentUser.name = data.name || currentUser.login; currentUser.avatar = data.avatar || ''; }
+function haversine(lat1,lon1,lat2,lon2) {
+    const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-async function updateProfile(updates) {
-    if (!currentUser) return;
-    await _supabase.from('users').update(updates).eq('login', currentUser.login);
-    if (updates.name) currentUser.name = updates.name;
-    if (updates.avatar) currentUser.avatar = updates.avatar;
-    localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
-}
-
-async function deleteAccount() {
-    if (!currentUser) return;
-    await _supabase.from('users').delete().eq('login', currentUser.login);
-    localStorage.removeItem('diamkey_current');
-    currentUser = null;
-    window.location.reload();
+function resetGPX() {
+    gpxLayerGroup.clearLayers();
+    if (elevationChart) { elevationChart.destroy(); elevationChart = null; }
+    document.getElementById('distVal').textContent = '—';
+    document.getElementById('ascentVal').textContent = '—';
+    document.getElementById('noElevationMsg').style.display = 'block';
+    gpxMap.setView([55.751244, 37.618423], 10);
 }
