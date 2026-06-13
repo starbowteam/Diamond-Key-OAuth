@@ -15,24 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             switchPage(btn.dataset.page);
-            if (btn.dataset.page === 'gpx') {
-                if (!localStorage.getItem('gpx_info_seen')) {
-                    const modal = document.getElementById('gpxInfoModal');
-                    if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
-                }
+            if (btn.dataset.page === 'gpx' && !localStorage.getItem('gpx_info_seen')) {
+                const modal = document.getElementById('gpxInfoModal');
+                if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
             }
             if (btn.dataset.page === 'users') loadUsers();
         });
     });
 
-    document.getElementById('gpxInfoOkBtn')?.addEventListener('click', () => {
-        closeModal('gpxInfoModal');
-        localStorage.setItem('gpx_info_seen', '1');
-    });
+    document.getElementById('gpxInfoOkBtn')?.addEventListener('click', () => { closeModal('gpxInfoModal'); localStorage.setItem('gpx_info_seen', '1'); });
+    document.getElementById('logoutSidebarBtn').addEventListener('click', () => { localStorage.removeItem('diamkey_current'); window.location.reload(); });
 
-    document.getElementById('logoutSidebarBtn').addEventListener('click', () => {
-        localStorage.removeItem('diamkey_current');
-        window.location.reload();
+    // Закрытие модалок по клику на фон
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal.id); });
     });
 
     if (!currentUser) {
@@ -43,30 +39,20 @@ document.addEventListener('DOMContentLoaded', () => {
         guestLogin.className = 'sidebar-icon';
         guestLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i>';
         guestLogin.title = 'Войти';
-        guestLogin.addEventListener('click', () => {
-            const modal = document.getElementById('loginModal');
-            if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
-        });
+        guestLogin.addEventListener('click', () => { const modal = document.getElementById('loginModal'); modal.style.display = 'flex'; modal.classList.add('active'); });
         document.getElementById('sidebar').appendChild(guestLogin);
     } else {
-        loadProfile().then(() => {
-            loadAnnouncement();
-            loadForum();
-            loadProfilePage();
-            loadUsers();
-        });
+        loadProfile().then(() => { loadAnnouncement(); loadForum(); loadProfilePage(); loadUsers(); });
     }
 
     document.getElementById('doLoginBtn').addEventListener('click', async () => {
         const res = await login(document.getElementById('loginIdentity').value.trim(), document.getElementById('loginPassword').value);
         if (res.error) return showToast(res.error);
-        closeModal('loginModal');
-        window.location.reload();
+        closeModal('loginModal'); window.location.reload();
     });
     document.getElementById('doRegisterBtn').addEventListener('click', async () => {
         const res = await register(document.getElementById('loginIdentity').value.trim(), document.getElementById('loginPassword').value);
         if (res.error) return showToast(res.error);
-        closeModal('loginModal');
-        window.location.reload();
+        closeModal('loginModal'); window.location.reload();
     });
 });
