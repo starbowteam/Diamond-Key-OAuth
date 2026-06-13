@@ -29,7 +29,7 @@
         </nav>
 
         <main class="main-content" id="mainContent">
-            <!-- Главная (объявления) -->
+            <!-- Главная (богатый экран) -->
             <section class="page active" id="page-home">
                 <div class="home-hero glass-panel">
                     <img src="assets/KeyHold.png" alt="DiamKey" class="home-logo">
@@ -40,20 +40,35 @@
                         <span id="announcementText">Загрузка...</span>
                     </div>
                 </div>
+                <div class="features-grid" id="featuresGrid">
+                    <div class="feature-card glass-panel">
+                        <div class="feature-icon"><i class="fas fa-fingerprint"></i></div>
+                        <h3>Один аккаунт</h3>
+                        <p>Регистрируйся один раз и входи во все сервисы Diamond.</p>
+                    </div>
+                    <div class="feature-card glass-panel">
+                        <div class="feature-icon"><i class="fas fa-lock"></i></div>
+                        <h3>Секретное слово</h3>
+                        <p>Криптостойкий ключ, созданный на основе SHA-256.</p>
+                    </div>
+                    <div class="feature-card glass-panel">
+                        <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                        <h3>Облачная база</h3>
+                        <p>Все данные хранятся в Supabase — доступно отовсюду.</p>
+                    </div>
+                </div>
             </section>
 
-            <!-- Форум -->
+            <!-- Форум (как мессенджер) -->
             <section class="page" id="page-forum">
-                <div class="glass-panel">
+                <div class="glass-panel forum-container">
                     <h2><i class="fas fa-comments"></i> Форум</h2>
-                    <div id="forumPosts"></div>
-                    <div id="forumForm" style="margin-top: 20px;">
-                        <textarea id="forumMessage" placeholder="Ваше сообщение..." rows="2"></textarea>
+                    <div class="forum-messages" id="forumMessages"></div>
+                    <div class="forum-input">
+                        <textarea id="forumMessage" placeholder="Ваше сообщение..." rows="1"></textarea>
                         <input type="file" id="forumImage" accept="image/*" style="display:none">
-                        <div style="display:flex; gap:10px; margin-top:8px;">
-                            <button class="btn" onclick="document.getElementById('forumImage').click()"><i class="fas fa-image"></i> Фото</button>
-                            <button class="btn" id="sendForumBtn"><i class="fas fa-paper-plane"></i> Отправить</button>
-                        </div>
+                        <button class="btn btn-icon" onclick="document.getElementById('forumImage').click()"><i class="fas fa-paperclip"></i></button>
+                        <button class="btn btn-icon" id="sendForumBtn"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
             </section>
@@ -87,8 +102,16 @@
                     <h2><i class="fas fa-user"></i> Профиль</h2>
                     <div id="profileInfo"></div>
                     <div id="profileStats" style="margin: 20px 0;"></div>
-                    <h3>Мои сообщения на форуме</h3>
-                    <div id="profilePosts"></div>
+                    <h3>Записи на стене</h3>
+                    <div id="profileWallPosts"></div>
+                    <div class="wall-input" style="margin-top: 20px;">
+                        <textarea id="wallPostText" placeholder="Написать на стене..." rows="2"></textarea>
+                        <input type="file" id="wallPostImage" accept="image/*" style="display:none">
+                        <div style="display:flex; gap:10px; margin-top:8px;">
+                            <button class="btn" onclick="document.getElementById('wallPostImage').click()"><i class="fas fa-image"></i> Фото</button>
+                            <button class="btn" id="postWallBtn"><i class="fas fa-paper-plane"></i> Отправить</button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -145,6 +168,15 @@
             <p>Это действие необратимо.</p>
             <button class="btn" id="confirmDeleteBtn" style="background: rgba(200, 50, 50, 0.3);">Удалить навсегда</button>
             <button class="btn" onclick="document.getElementById('deleteAccountModal').style.display='none'">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Модалка редактирования описания -->
+    <div class="modal" id="descModal">
+        <div class="modal-content glass-panel">
+            <h3>Изменить описание</h3>
+            <textarea id="descInput" rows="3"></textarea>
+            <button class="btn" id="saveDescBtn"><i class="fas fa-save"></i> Сохранить</button>
         </div>
     </div>
 
