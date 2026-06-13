@@ -70,16 +70,16 @@
                     </div>
                     <div id="gpx-map"></div>
                     <div class="gpx-dashboard">
-                        <div class="key-stats">
-                            <div><i class="fas fa-ruler"></i><span id="distVal">—</span></div>
-                            <div><i class="fas fa-mountain"></i><span id="ascentVal">—</span></div>
-                            <div><i class="fas fa-clock"></i><span id="timeVal">—</span></div>
-                            <div><i class="fas fa-tachometer-alt"></i><span id="speedVal">—</span></div>
+                        <div class="stats-grid">
+                            <div class="gpx-stat-card"><i class="fas fa-ruler"></i><span class="stat-label">Дистанция</span><span id="distVal" class="stat-value">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-mountain"></i><span class="stat-label">Набор</span><span id="ascentVal" class="stat-value">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-clock"></i><span class="stat-label">Время</span><span id="timeVal" class="stat-value">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-tachometer-alt"></i><span class="stat-label">Ср. скорость</span><span id="speedVal" class="stat-value">—</span></div>
                         </div>
                         <div class="chart-wrap"><canvas id="elevationChart"></canvas></div>
                     </div>
                     <div id="aiReview" class="ai-review glass-panel" style="display:none; margin-top: 10px;">
-                        <div class="ai-review-header"><img src="assets/logo-ai.png" style="width:24px;height:24px;border-radius:50%;"> Diamond AI</div>
+                        <div class="ai-review-header"><i class="fas fa-robot" style="font-size:24px; color:var(--accent);"></i> Diamond AI</div>
                         <p id="aiReviewText"></p>
                     </div>
                 </div>
