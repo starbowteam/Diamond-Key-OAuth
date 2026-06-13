@@ -61,29 +61,46 @@ async function updateProfile(updates) {
     localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
 }
 
-// Показать модалку авторизации
+// ========== OAuth для Diamond AI ==========
+function redirectToOAuth() {
+    const redirect = encodeURIComponent('https://diam-ai.ru');
+    window.location.href = `https://diamkey.ru/oauth.html?redirect=${redirect}&app=Diamond+AI`;
+}
+
+// ========== Показать экран входа ==========
 function showAuthModal() {
-    const modal = document.getElementById('authModal');
-    const content = document.getElementById('authModalContent');
-    modal.style.display = 'flex';
-    content.innerHTML = `
-        <h3>Вход / Регистрация</h3>
-        <input id="authLogin" placeholder="Логин">
-        <input id="authPassword" type="password" placeholder="Пароль">
-        <button class="btn" id="authLoginBtn">Войти</button>
-        <button class="btn" id="authRegisterBtn">Зарегистрироваться</button>
-        <p class="text-muted" style="margin-top: 8px; cursor: pointer;" onclick="document.getElementById('authModal').style.display='none'">Закрыть</p>
-    `;
+    if (currentUser) return;
+    const authModal = document.getElementById('authModal');
+    authModal.style.display = 'flex';
+
+    document.getElementById('oauthDiamondAI').onclick = () => {
+        authModal.style.display = 'none';
+        redirectToOAuth();
+    };
+
+    document.getElementById('localLoginBtn').onclick = () => {
+        authModal.style.display = 'none';
+        document.getElementById('localLoginModal').style.display = 'flex';
+    };
+
+    // Обработчики локального входа
     document.getElementById('authLoginBtn').onclick = async () => {
-        const res = await login(document.getElementById('authLogin').value, document.getElementById('authPassword').value);
+        const res = await login(
+            document.getElementById('authLogin').value,
+            document.getElementById('authPassword').value
+        );
         if (res.error) return showToast(res.error);
-        modal.style.display = 'none';
+        document.getElementById('localLoginModal').style.display = 'none';
         location.reload();
     };
+
     document.getElementById('authRegisterBtn').onclick = async () => {
-        const res = await register(document.getElementById('authLogin').value, document.getElementById('authPassword').value);
+        const res = await register(
+            document.getElementById('authLogin').value,
+            document.getElementById('authPassword').value
+        );
         if (res.error) return showToast(res.error);
-        modal.style.display = 'none';
+        document.getElementById('localLoginModal').style.display = 'none';
         location.reload();
     };
 }
