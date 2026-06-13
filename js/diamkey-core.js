@@ -5,8 +5,8 @@ let currentUser = null;
 let currentLang = localStorage.getItem('diamkey_lang') || 'ru';
 
 const L = {
-    ru: { welcome: 'Добро пожаловать', login: 'Войти', register: 'Регистрация', logout: 'Выйти', forum: 'Форум', gpx: 'GPX', profile: 'Профиль', settings: 'Настройки', send: 'Отправить', save: 'Сохранить', delete: 'Удалить', sureLogout: 'Вы уверены?', sureDelete: 'Это действие необратимо.' },
-    en: { welcome: 'Welcome', login: 'Login', register: 'Register', logout: 'Logout', forum: 'Forum', gpx: 'GPX', profile: 'Profile', settings: 'Settings', send: 'Send', save: 'Save', delete: 'Delete', sureLogout: 'Are you sure?', sureDelete: 'This action is irreversible.' }
+    ru: { welcome: 'Добро пожаловать', login: 'Войти', register: 'Регистрация', logout: 'Выйти', send: 'Отправить', save: 'Сохранить', delete: 'Удалить', sureLogout: 'Вы уверены?', sureDelete: 'Это действие необратимо.' },
+    en: { welcome: 'Welcome', login: 'Login', register: 'Register', logout: 'Logout', send: 'Send', save: 'Save', delete: 'Delete', sureLogout: 'Are you sure?', sureDelete: 'This action is irreversible.' }
 };
 function t(key) { return (L[currentLang] && L[currentLang][key]) || key; }
 
@@ -19,7 +19,7 @@ if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
 async function login(login, password) {
     const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
     if (error || !user) return { error: 'Неверный логин или пароль' };
-    const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'' };
+    const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'', description: user.description||'' };
     localStorage.setItem('diamkey_current', JSON.stringify(session));
     currentUser = session;
     return { success: true };
@@ -30,9 +30,9 @@ async function register(login, password) {
     const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
     if (exist) return { error: 'Логин уже занят' };
     const email = login + '@diamkey.local';
-    const { error } = await _supabase.from('users').insert([{ login, email, password, name: '', avatar: '' }]);
+    const { error } = await _supabase.from('users').insert([{ login, email, password, name: '', avatar: '', description: '' }]);
     if (error) return { error: error.message };
-    const session = { login, email, name: '', avatar: '' };
+    const session = { login, email, name: '', avatar: '', description: '' };
     localStorage.setItem('diamkey_current', JSON.stringify(session));
     currentUser = session;
     return { success: true };
@@ -41,7 +41,7 @@ async function register(login, password) {
 async function loadProfile() {
     if (!currentUser) return;
     const { data } = await _supabase.from('users').select('name, avatar, description').eq('login', currentUser.login).maybeSingle();
-    if (data) { currentUser.name = data.name || currentUser.login; currentUser.avatar = data.avatar || ''; }
+    if (data) { currentUser.name = data.name || currentUser.login; currentUser.avatar = data.avatar || ''; currentUser.description = data.description || ''; }
 }
 
 async function updateProfile(updates) {
@@ -49,13 +49,6 @@ async function updateProfile(updates) {
     await _supabase.from('users').update(updates).eq('login', currentUser.login);
     if (updates.name) currentUser.name = updates.name;
     if (updates.avatar) currentUser.avatar = updates.avatar;
+    if (updates.description !== undefined) currentUser.description = updates.description;
     localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
-}
-
-async function deleteAccount() {
-    if (!currentUser) return;
-    await _supabase.from('users').delete().eq('login', currentUser.login);
-    localStorage.removeItem('diamkey_current');
-    currentUser = null;
-    window.location.reload();
 }
