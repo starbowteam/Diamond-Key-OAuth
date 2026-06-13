@@ -4,52 +4,21 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let currentLang = localStorage.getItem('diamkey_lang') || 'ru';
 
-// Локализация
 const L = {
-    ru: {
-        welcome: 'Добро пожаловать в DiamKey',
-        desc: 'Единая учётная запись для сервисов Diamond.',
-        login: 'Войти',
-        register: 'Зарегистрироваться',
-        logout: 'Выйти',
-        forum: 'Форум',
-        gpx: 'GPX',
-        profile: 'Профиль',
-        settings: 'Настройки',
-        send: 'Отправить',
-        save: 'Сохранить',
-        delete: 'Удалить',
-        sureLogout: 'Вы уверены, что хотите выйти?',
-        sureDelete: 'Это действие необратимо.'
-    },
-    en: {
-        welcome: 'Welcome to DiamKey',
-        desc: 'Single account for Diamond services.',
-        login: 'Login',
-        register: 'Register',
-        logout: 'Logout',
-        forum: 'Forum',
-        gpx: 'GPX',
-        profile: 'Profile',
-        settings: 'Settings',
-        send: 'Send',
-        save: 'Save',
-        delete: 'Delete',
-        sureLogout: 'Are you sure you want to logout?',
-        sureDelete: 'This action is irreversible.'
-    }
+    ru: { welcome: 'Добро пожаловать', login: 'Войти', register: 'Регистрация', logout: 'Выйти', forum: 'Форум', gpx: 'GPX', profile: 'Профиль', settings: 'Настройки', send: 'Отправить', save: 'Сохранить', delete: 'Удалить', sureLogout: 'Вы уверены?', sureDelete: 'Это действие необратимо.' },
+    en: { welcome: 'Welcome', login: 'Login', register: 'Register', logout: 'Logout', forum: 'Forum', gpx: 'GPX', profile: 'Profile', settings: 'Settings', send: 'Send', save: 'Save', delete: 'Delete', sureLogout: 'Are you sure?', sureDelete: 'This action is irreversible.' }
 };
 function t(key) { return (L[currentLang] && L[currentLang][key]) || key; }
 
 function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m); }
-function showToast(msg) { const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; el.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#222; color:#fff; padding:12px 20px; border-radius:12px; z-index:9999;'; document.body.appendChild(el); setTimeout(() => el.remove(), 3000); }
+function showToast(msg) { const el = document.createElement('div'); el.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#222; color:#fff; padding:12px 20px; border-radius:12px; z-index:9999;'; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 3000); }
 
 const saved = localStorage.getItem('diamkey_current');
 if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
 
 async function login(login, password) {
     const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
-    if (error || !user) return { error: t('loginError') };
+    if (error || !user) return { error: 'Неверный логин или пароль' };
     const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'' };
     localStorage.setItem('diamkey_current', JSON.stringify(session));
     currentUser = session;
