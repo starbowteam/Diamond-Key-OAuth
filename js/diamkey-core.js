@@ -64,3 +64,20 @@ function closeModal(id) {
     modal.classList.add('closing');
     setTimeout(() => { modal.style.display = 'none'; modal.classList.remove('active', 'closing'); }, 300);
 }
+
+// Шифрованный заголовок
+function startCipherEffect() {
+    const el = document.getElementById('cipherTitle');
+    if (!el) return;
+    const text = 'DIAMKEY';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    let display = text.split('');
+    setInterval(() => {
+        for (let i = 0; i < display.length; i++) {
+            if (Math.random() < 0.05) display[i] = chars[Math.floor(Math.random() * chars.length)];
+            else display[i] = text[i];
+        }
+        el.textContent = display.join('');
+    }, 150);
+}
+startCipherEffect();
