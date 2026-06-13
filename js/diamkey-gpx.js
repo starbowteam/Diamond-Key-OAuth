@@ -23,7 +23,7 @@ function initGPX() {
         reader.readAsText(file);
     });
 
-    // Принудительно обновляем размер карты, когда вкладка становится видимой
+    // Обновление размера при показе вкладки
     const observer = new MutationObserver(() => {
         if (document.getElementById('page-gpx').classList.contains('active')) {
             gpxMap.invalidateSize();
