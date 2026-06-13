@@ -4,10 +4,7 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let currentLang = localStorage.getItem('diamkey_lang') || 'ru';
 
-const L = {
-    ru: { welcome: 'Добро пожаловать', login: 'Войти', register: 'Регистрация', logout: 'Выйти', send: 'Отправить', save: 'Сохранить', delete: 'Удалить', sureLogout: 'Вы уверены?', sureDelete: 'Это действие необратимо.' },
-    en: { welcome: 'Welcome', login: 'Login', register: 'Register', logout: 'Logout', send: 'Send', save: 'Save', delete: 'Delete', sureLogout: 'Are you sure?', sureDelete: 'This action is irreversible.' }
-};
+const L = { ru: {}, en: {} };
 function t(key) { return (L[currentLang] && L[currentLang][key]) || key; }
 
 function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m); }
@@ -49,6 +46,6 @@ async function updateProfile(updates) {
     await _supabase.from('users').update(updates).eq('login', currentUser.login);
     if (updates.name) currentUser.name = updates.name;
     if (updates.avatar) currentUser.avatar = updates.avatar;
-    if (updates.description !== undefined) currentUser.description = updates.description;
+    if (updates.description) currentUser.description = updates.description;
     localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
 }
