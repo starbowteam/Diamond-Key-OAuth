@@ -1,38 +1,64 @@
-// ==================== DIAMKEY FORUM – обсуждения ====================
-async function loadTopics() {
-    const { data: topics } = await _supabase.from('forum_topics').select('*').order('created_at', { ascending: false });
-    const container = document.getElementById('forumTopics');
-    container.innerHTML = topics.map(t => `
+async function loadWall() {
+    const { data: posts } = await _supabase.from('wall_posts').select('*').order('created_at', { ascending: false });
+    const container = document.getElementById('wallPosts');
+    container.innerHTML = posts.map(p => `
         <div class="glass-panel" style="margin-bottom: 12px; padding: 16px;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                <strong>${escapeHtml(t.user_login)}</strong>
-                <span class="text-muted" style="margin-left:auto;">${new Date(t.created_at).toLocaleString()}</span>
+                <img src="${p.avatar || ''}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user-circle\\' style=\\'font-size:32px; color:var(--text-muted)\\'></i>'">
+                <strong>${escapeHtml(p.user_login)}</strong>
+                <span class="text-muted" style="margin-left:auto;">${new Date(p.created_at).toLocaleString()}</span>
             </div>
-            <h4>${escapeHtml(t.title)}</h4>
-            <p>${escapeHtml(t.content)}</p>
-            <button class="btn" onclick="viewReplies(${t.id})">Ответы</button>
-            <div id="replies-${t.id}" style="margin-top: 12px; display: none;"></div>
+            <p>${escapeHtml(p.content)}</p>
+            ${p.image_url ? `<img src="${p.image_url}" style="max-width:100%; border-radius:12px; margin-top:8px;">` : ''}
         </div>
     `).join('');
 }
 
-document.getElementById('createTopicBtn').addEventListener('click', async () => {
-    const title = document.getElementById('topicTitle').value.trim();
-    const content = document.getElementById('topicContent').value.trim();
-    if (!title || !content) return;
-    await _supabase.from('forum_topics').insert([{ user_login: currentUser.login, title, content }]);
-    document.getElementById('topicTitle').value = '';
-    document.getElementById('topicContent').value = '';
-    loadTopics();
+document.getElementById('postWallBtn')?.addEventListener('click', async () => {
+    const text = document.getElementById('wallText').value.trim();
+    const file = document.getElementById('wallImage').files[0];
+    if (!text && !file) return;
+    let imageUrl = null;
+    if (file) {
+        const reader = new FileReader();
+        imageUrl = await new Promise(resolve => {
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+        });
+    }
+    await _supabase.from('wall_posts').insert([{ user_login: currentUser.login, content: text, image_url: imageUrl }]);
+    document.getElementById('wallText').value = '';
+    document.getElementById('wallImage').value = '';
+    loadWall();
 });
 
-async function viewReplies(topicId) {
-    const container = document.getElementById(`replies-${topicId}`);
-    container.style.display = container.style.display === 'none' ? 'block' : 'none';
-    const { data: replies } = await _supabase.from('forum_replies').select('*').eq('topic_id', topicId).order('created_at');
-    container.innerHTML = replies.map(r => `
-        <div style="border-top: 1px solid rgba(255,255,255,0.1); padding: 8px 0;">
-            <strong>${escapeHtml(r.user_login)}</strong>: ${escapeHtml(r.content)}
+async function renderProfile() {
+    const info = document.getElementById('profileInfo');
+    info.innerHTML = `
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
+            <img src="${currentUser.avatar || ''}" style="width:64px; height:64px; border-radius:50%; object-fit:cover;" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user-circle\\' style=\\'font-size:64px; color:var(--text-muted)\\'></i>'">
+            <div><strong>${escapeHtml(currentUser.name || currentUser.login)}</strong><br><span class="text-muted">@${currentUser.login}</span></div>
+        </div>
+        <p class="text-muted">${currentUser.description || 'Нет описания'}</p>
+    `;
+
+    // Статистика
+    const { data: chatsData } = await _supabase.from('diamond_chats').select('id, messages').eq('user_login', currentUser.login);
+    const totalChats = chatsData ? chatsData.length : 0;
+    const totalMessages = chatsData ? chatsData.reduce((sum, c) => sum + (c.messages ? c.messages.length : 0), 0) : 0;
+    document.getElementById('profileStats').innerHTML = `
+        <div style="display:flex; gap: 20px; flex-wrap: wrap;">
+            <div><strong>${totalChats}</strong> чатов в Diamond AI</div>
+            <div><strong>${totalMessages}</strong> сообщений в Diamond AI</div>
+        </div>
+    `;
+
+    // Посты пользователя
+    const { data: userPosts } = await _supabase.from('wall_posts').select('*').eq('user_login', currentUser.login).order('created_at', { ascending: false });
+    document.getElementById('profilePosts').innerHTML = '<h3 style="margin-top: 20px;">Мои записи</h3>' + userPosts.map(p => `
+        <div class="glass-panel" style="margin-bottom: 8px; padding: 12px;">
+            <p>${escapeHtml(p.content)}</p>
+            ${p.image_url ? `<img src="${p.image_url}" style="max-width:100%; border-radius:8px; margin-top:6px;">` : ''}
         </div>
     `).join('');
 }
