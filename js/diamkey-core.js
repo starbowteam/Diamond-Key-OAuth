@@ -2,10 +2,6 @@ const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
-let currentLang = localStorage.getItem('diamkey_lang') || 'ru';
-
-const LOCALE = { ru: {}, en: {} };
-function t(key) { return (LOCALE[currentLang] && LOCALE[currentLang][key]) || key; }
 
 function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m); }
 function showToast(msg) {
@@ -60,4 +56,11 @@ async function updateProfile(updates) {
     if (updates.avatar) currentUser.avatar = updates.avatar;
     if (updates.description) currentUser.description = updates.description;
     localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('closing');
+    setTimeout(() => { modal.style.display = 'none'; modal.classList.remove('active', 'closing'); }, 300);
 }
