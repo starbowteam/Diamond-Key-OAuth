@@ -3,7 +3,6 @@ async function loadAnnouncement() {
     const { data } = await _supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
     const body = document.getElementById('announcementBody');
     if (data && data.length) {
-        // Получаем аватар viktorshopa
         const { data: creator } = await _supabase.from('users').select('avatar').eq('email', 'abugay12@mail.ru').maybeSingle();
         body.innerHTML = `
             <img src="${creator?.avatar || ''}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">
