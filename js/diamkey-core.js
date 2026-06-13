@@ -3,20 +3,19 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 
-// HTML для аватарки с fallback на fa-user
-function avatarHTML(url, size = 40) {
-    if (url) {
-        return `<div style="width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;flex-shrink:0;"><img src="${url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:${size*0.6}px;color:var(--text-muted)\\'></i>'"></div>`;
-    }
-    return `<div style="width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);flex-shrink:0;"><i class="fas fa-user" style="font-size:${size*0.6}px;color:var(--text-muted);"></i></div>`;
-}
-
 function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m); }
 function showToast(msg) {
     let container = document.querySelector('.toast-container');
-    if (!container) { container = document.createElement('div'); container.className = 'toast-container'; document.body.appendChild(container); }
-    const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = msg;
-    container.appendChild(toast); setTimeout(() => toast.remove(), 3000);
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
 const saved = localStorage.getItem('diamkey_current');
@@ -62,8 +61,8 @@ async function updateProfile(updates) {
 function closeModal(id) {
     const modal = document.getElementById(id);
     if (!modal) return;
-    modal.classList.add('closing');
-    setTimeout(() => { modal.style.display = 'none'; modal.classList.remove('active', 'closing'); }, 300);
+    modal.classList.remove('active');
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
 }
 
 // Шифрованный заголовок
@@ -71,8 +70,14 @@ function startCipherEffect() {
     const el = document.getElementById('cipherTitle');
     if (!el) return;
     const text = 'DIAMKEY';
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
     let display = text.split('');
-    setInterval(() => { for (let i=0; i<display.length; i++) { if (Math.random()<0.05) display[i] = chars[Math.floor(Math.random()*chars.length)]; else display[i] = text[i]; } el.textContent = display.join(''); }, 150);
+    setInterval(() => {
+        for (let i = 0; i < display.length; i++) {
+            if (Math.random() < 0.05) display[i] = chars[Math.floor(Math.random() * chars.length)];
+            else display[i] = text[i];
+        }
+        el.textContent = display.join('');
+    }, 150);
 }
 startCipherEffect();
