@@ -19,50 +19,19 @@ function initGPX() {
                 displayGPX(data);
                 currentGpxContent = ev.target.result;
                 document.getElementById('saveGpxBtn').style.display = 'inline-flex';
-                generateAiReview(data);
+                showAIReview(data);
             } catch(err) { alert('Ошибка: ' + err.message); }
         };
         reader.readAsText(file);
     });
 
-    document.getElementById('saveGpxBtn').addEventListener('click', () => {
-        document.getElementById('gpxNameModal').style.display = 'flex';
-    });
-
+    document.getElementById('saveGpxBtn').addEventListener('click', () => document.getElementById('gpxNameModal').style.display = 'flex');
     document.getElementById('saveGpxNameBtn').addEventListener('click', async () => {
         const name = document.getElementById('gpxNameInput').value.trim() || 'Без названия';
-        await _supabase.from('gpx_files').insert([{
-            user_login: currentUser.login,
-            name,
-            content: currentGpxContent
-        }]);
+        await _supabase.from('gpx_files').insert([{ user_login: currentUser.login, name, content: currentGpxContent }]);
         document.getElementById('gpxNameModal').style.display = 'none';
         showToast('Прогулка сохранена!');
     });
-}
-
-function generateAiReview(data) {
-    const box = document.getElementById('aiReviewBox');
-    const loading = document.getElementById('aiReviewLoading');
-    const content = document.getElementById('aiReviewContent');
-    box.style.display = 'block';
-    loading.style.display = 'block';
-    content.style.display = 'none';
-
-    // Имитация запроса к ИИ
-    setTimeout(() => {
-        let totalDist = 0;
-        data.tracks.forEach(t => t.segments.forEach(seg => {
-            for (let i=1; i<seg.length; i++) {
-                totalDist += haversine(seg[i-1].lat, seg[i-1].lon, seg[i].lat, seg[i].lon);
-            }
-        }));
-        const distKm = (totalDist / 1000).toFixed(1);
-        const reviewText = `Отличная поездка! Вы преодолели ${distKm} км. Обратите внимание на подъём на 5-м километре — там самый крутой участок. Рекомендую в следующий раз попробовать маршрут через лесопарк, он более живописный! 🌲`;
-        content.innerHTML = `<i class="fas fa-robot" style="color:var(--accent);"></i> ${reviewText}`;
-        loading.style.display = 'none';
-        content.style.display = 'block';
-    }, 1500);
 }
 
 function parseGPX(xmlString) {
@@ -120,32 +89,26 @@ function updateDashboard(tracks) {
         const ctx = document.getElementById('elevationChart').getContext('2d');
         elevationChart = new Chart(ctx, {
             type: 'line',
-            data: {
-                labels: elevationData.map(p => (p.dist/1000).toFixed(1)),
-                datasets: [{ data: elevationData.map(p => p.ele), borderColor: '#4ecdc4', backgroundColor: 'rgba(78,205,196,0.12)', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { ticks: { color: '#888' }, grid: { color: '#222' } }, y: { ticks: { color: '#888' }, grid: { color: '#222' } } }
-            }
+            data: { labels: elevationData.map(p => (p.dist/1000).toFixed(1)), datasets: [{ data: elevationData.map(p => p.ele), borderColor: '#4ecdc4', backgroundColor: 'rgba(78,205,196,0.12)', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#888' } }, y: { ticks: { color: '#888' } } } }
         });
     }
+}
+
+function showAIReview(data) {
+    const box = document.getElementById('aiReview');
+    const text = document.getElementById('aiReviewText');
+    let allPoints = [];
+    data.tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
+    let totalDist = 0;
+    for (let i=1; i<allPoints.length; i++) totalDist += haversine(allPoints[i-1].lat, allPoints[i-1].lon, allPoints[i].lat, allPoints[i].lon);
+    const km = (totalDist/1000).toFixed(1);
+    text.textContent = `Отличная прогулка! Вы проехали ${km} км. Продолжайте исследовать новые маршруты!`;
+    box.style.display = 'flex';
 }
 
 function haversine(lat1,lon1,lat2,lon2) {
     const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
     const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function resetGPX() {
-    gpxLayerGroup.clearLayers();
-    if (elevationChart) { elevationChart.destroy(); elevationChart = null; }
-    document.getElementById('distVal').textContent = '—';
-    document.getElementById('ascentVal').textContent = '—';
-    gpxMap.setView([55.751244, 37.618423], 10);
-    currentGpxContent = null;
-    document.getElementById('saveGpxBtn').style.display = 'none';
-    document.getElementById('aiReviewBox').style.display = 'none';
 }
