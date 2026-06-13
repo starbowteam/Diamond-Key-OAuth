@@ -33,8 +33,7 @@ function initGPX() {
     document.getElementById('saveGpxNameBtn').addEventListener('click', async () => {
         const name = document.getElementById('gpxNameInput')?.value?.trim() || 'Без названия';
         await _supabase.from('gpx_files').insert([{ user_login: currentUser.login, name, content: currentGpxContent }]);
-        closeModal('gpxNameModal');
-        showToast('Прогулка опубликована!');
+        closeModal('gpxNameModal'); showToast('Прогулка опубликована!');
     });
 
     if (document.getElementById('page-gpx').classList.contains('active')) setTimeout(() => gpxMap.invalidateSize(), 100);
