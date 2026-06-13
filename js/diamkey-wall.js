@@ -90,44 +90,29 @@ async function loadProfilePage() {
         document.getElementById('editDescriptionModal').style.display = 'none';
     };
 
-    // Статистика с загрузкой
-    const statsContainer = document.getElementById('profileStats');
-    statsContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i> Загрузка статистики...</div>';
-    const [chatsRes, forumRes, gpxRes] = await Promise.all([
-        _supabase.from('diamond_chats').select('id,messages').eq('user_login', currentUser.login),
-        _supabase.from('forum').select('*', { count: 'exact', head: true }).eq('login', currentUser.login),
-        _supabase.from('gpx_files').select('*', { count: 'exact', head: true }).eq('user_login', currentUser.login)
-    ]);
-    const totalChats = chatsRes.data?.length || 0;
-    const totalMessages = chatsRes.data?.reduce((s,c) => s + (c.messages?.length || 0), 0) || 0;
-    const forumCount = forumRes.count || 0;
-    const gpxCount = gpxRes.count || 0;
-    statsContainer.innerHTML = `
+    // Статистика
+    const { data: chats } = await _supabase.from('diamond_chats').select('id,messages').eq('user_login', currentUser.login);
+    const totalChats = chats?.length || 0;
+    const totalMessages = chats?.reduce((s,c) => s + (c.messages?.length || 0), 0) || 0;
+    const { count: forumCount } = await _supabase.from('forum').select('*', { count: 'exact', head: true }).eq('login', currentUser.login);
+    const { count: gpxCount } = await _supabase.from('gpx_files').select('*', { count: 'exact', head: true }).eq('user_login', currentUser.login);
+    document.getElementById('profileStats').innerHTML = `
         <div style="display:flex; gap:20px; flex-wrap:wrap; margin:20px 0;">
-            <div><i class="fas fa-comments"></i> ${forumCount} сообщений на форуме</div>
+            <div><i class="fas fa-comments"></i> ${forumCount || 0} сообщений на форуме</div>
             <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщений в Diamond AI</div>
-            <div><i class="fas fa-map-marker-alt"></i> ${gpxCount} GPX-прогулок</div>
+            <div><i class="fas fa-map-marker-alt"></i> ${gpxCount || 0} GPX-прогулок</div>
         </div>
     `;
 
-    // Карусель GPX
-    const gpxCarousel = document.getElementById('profileGpxFiles');
-    gpxCarousel.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i> Загрузка прогулок...</div>';
+    // GPX-файлы
     const { data: gpxFiles } = await _supabase.from('gpx_files').select('id,name,created_at').eq('user_login', currentUser.login).order('created_at', { ascending: false });
-    if (gpxFiles && gpxFiles.length) {
-        gpxCarousel.innerHTML = `
-            <div class="carousel-container">
-                ${gpxFiles.map(f => `
-                    <div class="gpx-card">
-                        <div class="gpx-card-header"><i class="fas fa-map-marker-alt" style="color:var(--accent)"></i> <span>${escapeHtml(f.name)}</span></div>
-                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    } else {
-        gpxCarousel.innerHTML = '<p class="text-muted">Нет сохранённых прогулок</p>';
-    }
+    const gpxContainer = document.getElementById('profileGpxFiles');
+    gpxContainer.innerHTML = gpxFiles?.length ? `<div class="gpx-cards">${gpxFiles.map(f => `
+        <div class="gpx-card glass-panel" onclick="alert('Просмотр маршрута пока не реализован')">
+            <h4><i class="fas fa-map-marker-alt"></i> ${escapeHtml(f.name)}</h4>
+            <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+        </div>
+    `).join('')}</div>` : '<p class="text-muted">Нет сохранённых прогулок</p>';
 
     // Стена
     const { data: wall } = await _supabase.from('wall_posts').select('*').eq('profile_login', currentUser.login).order('created_at', { ascending: false });
@@ -146,19 +131,3 @@ async function loadProfilePage() {
         loadProfilePage();
     };
 }
-
-// ... (вся предыдущая функция loadProfilePage) ...
-
-    // GPX-файлы (карточки)
-    const { data: gpxFiles } = await _supabase.from('gpx_files').select('id,name,created_at').eq('user_login', currentUser.login).order('created_at', { ascending: false });
-    const gpxContainer = document.getElementById('profileGpxFiles');
-    if (gpxFiles && gpxFiles.length) {
-        gpxContainer.innerHTML = `<div class="gpx-cards">${gpxFiles.map(f => `
-            <div class="gpx-card glass-panel" onclick="alert('Просмотр маршрута пока не реализован')">
-                <h4><i class="fas fa-map-marker-alt"></i> ${escapeHtml(f.name)}</h4>
-                <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-            </div>
-        `).join('')}</div>`;
-    } else {
-        gpxContainer.innerHTML = '<p class="text-muted">Нет сохранённых прогулок</p>';
-    }
