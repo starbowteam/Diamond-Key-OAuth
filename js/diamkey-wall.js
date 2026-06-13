@@ -1,6 +1,9 @@
 // Объявление
 async function loadAnnouncement() {
     const { data } = await _supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
+    const { data: creator } = await _supabase.from('users').select('avatar').eq('email', 'abugay12@mail.ru').maybeSingle();
+    const avatar = creator?.avatar || '';
+    document.getElementById('announcementAvatar').src = avatar;
     const el = document.getElementById('announcementText');
     const dateEl = document.getElementById('announcementDate');
     if (data && data.length) {
@@ -9,7 +12,7 @@ async function loadAnnouncement() {
     }
 }
 
-// Форум
+// Форум (мгновенная загрузка)
 async function loadForum() {
     const { data: posts } = await _supabase.from('forum').select('*').order('time', { ascending: false });
     const container = document.getElementById('forumMessages');
@@ -21,7 +24,6 @@ async function loadForum() {
                 <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.time).toLocaleString()}</span>
             </div>
             <p>${escapeHtml(p.message)}</p>
-            ${p.image_url ? `<img src="${p.image_url}" style="max-width:100%;border-radius:10px;margin-top:6px;">` : ''}
         </div>
     `).join('');
     container.scrollTop = 0;
@@ -29,27 +31,16 @@ async function loadForum() {
 
 document.getElementById('sendForumBtn').addEventListener('click', async () => {
     const msg = document.getElementById('forumMessage').value.trim();
-    const file = document.getElementById('forumImage').files[0];
-    if (!msg && !file) return;
-    let imageUrl = null;
-    if (file) {
-        imageUrl = await new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(file);
-        });
-    }
+    if (!msg) return;
     await _supabase.from('forum').insert([{
         email: currentUser.email || '',
         login: currentUser.login,
         name: currentUser.name || currentUser.login,
         avatar: currentUser.avatar || '',
         message: msg,
-        image_url: imageUrl,
         time: new Date().toISOString()
     }]);
     document.getElementById('forumMessage').value = '';
-    document.getElementById('forumImage').value = '';
     loadForum();
 });
 
@@ -59,7 +50,7 @@ async function loadProfilePage() {
     document.getElementById('profileAvatar').src = currentUser.avatar || '';
     document.getElementById('profileDescription').textContent = currentUser.description || 'Нажмите, чтобы добавить описание';
 
-    // Аватарка — замена по клику
+    // Аватарка
     document.getElementById('profileAvatarWrapper').onclick = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -79,7 +70,7 @@ async function loadProfilePage() {
         input.click();
     };
 
-    // Описание — клик открывает модалку
+    // Описание
     document.getElementById('profileDescription').onclick = () => {
         document.getElementById('editDescriptionInput').value = currentUser.description || '';
         document.getElementById('editDescriptionModal').style.display = 'flex';
@@ -99,10 +90,10 @@ async function loadProfilePage() {
     const { count: forumCount } = await _supabase.from('forum').select('*', { count: 'exact', head: true }).eq('login', currentUser.login);
     const { count: gpxCount } = await _supabase.from('gpx_files').select('*', { count: 'exact', head: true }).eq('user_login', currentUser.login);
     document.getElementById('profileStats').innerHTML = `
-        <div class="stats-grid" style="display:flex;gap:20px;flex-wrap:wrap;margin:20px 0;">
-            <div><i class="fas fa-comments"></i> ${forumCount || 0} сообщений на форуме</div>
-            <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщений в Diamond AI</div>
-            <div><i class="fas fa-map-marker-alt"></i> ${gpxCount || 0} GPX-прогулок</div>
+        <div class="stats-grid" style="display:flex; gap:20px; flex-wrap:wrap; margin:20px 0;">
+            <div class="glass-panel" style="padding:12px; text-align:center;"><i class="fas fa-comments"></i><br>${forumCount || 0}<br><small>сообщений на форуме</small></div>
+            <div class="glass-panel" style="padding:12px; text-align:center;"><i class="fas fa-robot"></i><br>${totalChats} чатов / ${totalMessages} сообщ.<br><small>в Diamond AI</small></div>
+            <div class="glass-panel" style="padding:12px; text-align:center;"><i class="fas fa-map-marker-alt"></i><br>${gpxCount || 0}<br><small>GPX-прогулок</small></div>
         </div>
     `;
 
@@ -121,30 +112,18 @@ async function loadProfilePage() {
         <div class="glass-panel" style="padding:12px;margin-bottom:8px;">
             <strong>${escapeHtml(p.user_login)}</strong>
             <p>${escapeHtml(p.content)}</p>
-            ${p.image_url ? `<img src="${p.image_url}" style="max-width:100%;border-radius:8px;margin-top:6px;">` : ''}
         </div>
     `).join('') || '';
 
     document.getElementById('postWallBtn').onclick = async () => {
         const msg = document.getElementById('wallMessage').value.trim();
-        const file = document.getElementById('wallImage').files[0];
-        if (!msg && !file) return;
-        let imageUrl = null;
-        if (file) {
-            imageUrl = await new Promise(resolve => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-            });
-        }
+        if (!msg) return;
         await _supabase.from('wall_posts').insert([{
             user_login: currentUser.login,
             profile_login: currentUser.login,
-            content: msg,
-            image_url: imageUrl
+            content: msg
         }]);
         document.getElementById('wallMessage').value = '';
-        document.getElementById('wallImage').value = '';
         loadProfilePage();
     };
 }
