@@ -44,6 +44,7 @@ document.getElementById('sendForumBtn')?.addEventListener('click', async () => {
         name: currentUser.name || currentUser.login,
         avatar: currentUser.avatar || '',
         message: msg,
+        image_url: imageUrl,
         time: new Date().toISOString()
     }]);
     document.getElementById('forumMessage').value = '';
