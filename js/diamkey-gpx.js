@@ -1,4 +1,4 @@
-// ==================== DIAMOND GPX – карта и парсер ====================
+// ==================== DIAMOND GPX – карта и парсер (стиль DiamKey) ====================
 let gpxMap, gpxLayerGroup, elevationChart, elevationData;
 
 function initGPX() {
@@ -85,7 +85,7 @@ function updateDashboard(tracks) {
 
     document.getElementById('distVal').textContent = totalDist > 1000 ? (totalDist/1000).toFixed(2)+' км' : totalDist.toFixed(0)+' м';
     document.getElementById('ascentVal').textContent = ascent > 0 ? '+' + ascent.toFixed(0)+' м' : '—';
-    document.getElementById('timeVal').textContent = '—'; // время без таймстемпов
+    document.getElementById('timeVal').textContent = '—';
     document.getElementById('speedVal').textContent = '—';
 
     if (elevationData.length > 1) {
