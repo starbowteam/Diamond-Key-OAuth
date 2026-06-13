@@ -6,7 +6,7 @@ async function loadUsers() {
         const filtered = users.filter(u => u.login.toLowerCase().includes(filter.toLowerCase()) || (u.name && u.name.toLowerCase().includes(filter.toLowerCase())));
         container.innerHTML = filtered.map(u => `
             <div class="user-card glass-panel" onclick="viewProfile('${u.login}')">
-                <img src="${u.avatar || ''}" onerror="this.style.display='none'">
+                <div class="avatar">${avatarHTML(u.avatar, 44)}</div>
                 <div>
                     <h4>${escapeHtml(u.name || u.login)}</h4>
                     <span>@${u.login}</span>
