@@ -15,20 +15,19 @@
 </head>
 <body>
     <div class="app-shell" id="appShell">
-        <!-- Сайдбар -->
+        <!-- Маленький закруглённый сайдбар -->
         <nav class="sidebar" id="sidebar">
-            <button class="sidebar-icon active" data-page="home" title="Главная"><i class="fas fa-home"></i><span>Главная</span></button>
-            <button class="sidebar-icon" data-page="forum" title="Форум"><i class="fas fa-comments"></i><span>Форум</span></button>
-            <button class="sidebar-icon" data-page="gpx" title="Diamond GPX"><i class="fas fa-map-marker-alt"></i><span>GPX</span></button>
-            <button class="sidebar-icon" data-page="profile" title="Профиль"><i class="fas fa-user"></i><span>Профиль</span></button>
-            <button class="sidebar-icon" data-page="settings" title="Настройки"><i class="fas fa-cog"></i><span>Настройки</span></button>
+            <button class="sidebar-icon active" data-page="home" title="Главная"><i class="fas fa-home"></i></button>
+            <button class="sidebar-icon" data-page="forum" title="Форум"><i class="fas fa-comments"></i></button>
+            <button class="sidebar-icon" data-page="gpx" title="Diamond GPX"><i class="fas fa-map-marker-alt"></i></button>
+            <button class="sidebar-icon" data-page="profile" title="Профиль"><i class="fas fa-user"></i></button>
+            <button class="sidebar-icon" data-page="settings" title="Настройки"><i class="fas fa-cog"></i></button>
             <a class="sidebar-icon" href="https://diamond-ai.ru" target="_blank" title="Diamond AI">
-                <img src="assets/diamond-ai.png" alt="AI" style="width:22px; height:22px;"><span>AI</span>
+                <img src="assets/diamond-ai.png" alt="AI" style="width:20px; height:20px;">
             </a>
-            <button class="sidebar-icon" id="logoutSidebarBtn" title="Выйти"><i class="fas fa-sign-out-alt"></i><span>Выйти</span></button>
+            <button class="sidebar-icon" id="logoutSidebarBtn" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
         </nav>
 
-        <!-- Контент -->
         <main class="main-content" id="mainContent">
             <!-- Главная (объявления) -->
             <section class="page active" id="page-home">
@@ -36,8 +35,9 @@
                     <img src="assets/KeyHold.png" alt="DiamKey" class="home-logo">
                     <h1>DiamKey</h1>
                     <p class="text-muted">Единая учётная запись для сервисов Diamond. Общайтесь, делитесь маршрутами и оставайтесь на связи.</p>
-                    <div id="announcementBox" class="glass-panel" style="margin-top: 20px; padding: 20px;">
-                        <i class="fas fa-bullhorn" style="color: var(--accent);"></i> <span id="announcementText">Загрузка...</span>
+                    <div id="announcementBox" class="glass-panel" style="margin-top: 20px; padding: 20px; text-align: left;">
+                        <i class="fas fa-bullhorn" style="color: var(--accent);"></i>
+                        <span id="announcementText">Загрузка...</span>
                     </div>
                 </div>
             </section>
@@ -60,7 +60,7 @@
 
             <!-- GPX -->
             <section class="page" id="page-gpx">
-                <div class="glass-panel" style="height: calc(100vh - 80px); display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+                <div class="glass-panel" style="height: calc(100vh - 40px); display: flex; flex-direction: column; padding: 0; overflow: hidden;">
                     <div class="gpx-toolbar" style="padding: 12px 16px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--glass-border);">
                         <span style="font-size: 1.2rem; font-weight: 600;"><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
                         <button class="btn" onclick="document.getElementById('gpx-file-input').click()"><i class="fas fa-folder-open"></i> Загрузить GPX</button>
