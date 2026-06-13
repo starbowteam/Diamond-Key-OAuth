@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const sidebar = document.getElementById('sidebar');
-
-    // Переключение вкладок
+    // Сайдбар: переключение вкладок
     document.querySelectorAll('.sidebar-icon[data-page]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (btn.tagName === 'A') return;
@@ -12,49 +10,51 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const target = document.getElementById(`page-${page}`);
             if (target) target.classList.add('active');
-            if (page === 'gpx' && typeof gpxMap !== 'undefined') setTimeout(() => gpxMap.invalidateSize(), 100);
+            if (page === 'gpx') {
+                if (!localStorage.getItem('gpx_info_seen')) {
+                    document.getElementById('gpxInfoModal').style.display = 'flex';
+                }
+                setTimeout(() => gpxMap?.invalidateSize(), 100);
+            }
         });
     });
 
-    // Кнопка выхода
-    document.getElementById('logoutSidebarBtn')?.addEventListener('click', () => {
+    // Кнопка "Понял" в GPX-модалке
+    document.getElementById('gpxInfoOkBtn').addEventListener('click', () => {
+        document.getElementById('gpxInfoModal').style.display = 'none';
+        localStorage.setItem('gpx_info_seen', '1');
+    });
+
+    // Выход
+    document.getElementById('logoutSidebarBtn').addEventListener('click', () => {
         document.getElementById('logoutModal').style.display = 'flex';
     });
-    document.getElementById('confirmLogoutBtn')?.addEventListener('click', () => {
+    document.getElementById('confirmLogoutBtn').addEventListener('click', () => {
         localStorage.removeItem('diamkey_current');
-        currentUser = null;
         window.location.reload();
     });
 
     // Гостевой режим
     if (!currentUser) {
-        // Скрываем все вкладки кроме home
         document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => {
             if (b.dataset.page !== 'home') b.style.display = 'none';
         });
         document.getElementById('logoutSidebarBtn').style.display = 'none';
         document.getElementById('page-home').classList.add('active');
-
         // Зелёная кнопка входа
         const guestLogin = document.createElement('button');
-        guestLogin.className = 'sidebar-icon guest-login-btn';
+        guestLogin.className = 'sidebar-icon';
         guestLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i>';
+        guestLogin.style.background = '#2e7d32';
         guestLogin.title = 'Войти';
         guestLogin.addEventListener('click', () => { document.getElementById('loginModal').style.display = 'flex'; });
-        sidebar.appendChild(guestLogin);
+        document.getElementById('sidebar').appendChild(guestLogin);
     } else {
-        // Инициализация приложения
-        loadProfile().then(() => {
-            loadAnnouncement();
-            loadForum();
-            initGPX();
-            renderProfile();
-            loadSettings();
-        });
+        initApp();
     }
 
-    // Модалка входа
-    document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
+    // Локальный вход
+    document.getElementById('doLoginBtn').addEventListener('click', async () => {
         const res = await login(
             document.getElementById('loginIdentity').value.trim(),
             document.getElementById('loginPassword').value
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('loginModal').style.display = 'none';
         window.location.reload();
     });
-    document.getElementById('doRegisterBtn')?.addEventListener('click', async () => {
+    document.getElementById('doRegisterBtn').addEventListener('click', async () => {
         const res = await register(
             document.getElementById('loginIdentity').value.trim(),
             document.getElementById('loginPassword').value
@@ -73,3 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
     });
 });
+
+async function initApp() {
+    await loadProfile();
+    loadAnnouncement();
+    loadForum();
+    initGPX();
+    loadProfilePage();
+}
