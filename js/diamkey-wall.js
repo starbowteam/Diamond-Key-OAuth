@@ -91,22 +91,30 @@ async function loadProfilePage() {
     };
 
     // Статистика
-    const { data: chats } = await _supabase.from('diamond_chats').select('id,messages').eq('user_login', currentUser.login);
-    const totalChats = chats?.length || 0;
-    const totalMessages = chats?.reduce((s,c) => s + (c.messages?.length || 0), 0) || 0;
-    const { count: forumCount } = await _supabase.from('forum').select('*', { count: 'exact', head: true }).eq('login', currentUser.login);
-    const { count: gpxCount } = await _supabase.from('gpx_files').select('*', { count: 'exact', head: true }).eq('user_login', currentUser.login);
-    document.getElementById('profileStats').innerHTML = `
+    const statsDiv = document.getElementById('profileStats');
+    statsDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка статистики...';
+    const [chatsRes, forumRes, gpxRes] = await Promise.all([
+        _supabase.from('diamond_chats').select('id,messages').eq('user_login', currentUser.login),
+        _supabase.from('forum').select('*', { count: 'exact', head: true }).eq('login', currentUser.login),
+        _supabase.from('gpx_files').select('*', { count: 'exact', head: true }).eq('user_login', currentUser.login)
+    ]);
+    const totalChats = chatsRes.data?.length || 0;
+    const totalMessages = chatsRes.data?.reduce((s, c) => s + (c.messages?.length || 0), 0) || 0;
+    const forumCount = forumRes.count || 0;
+    const gpxCount = gpxRes.count || 0;
+    statsDiv.innerHTML = `
         <div style="display:flex; gap:20px; flex-wrap:wrap; margin:20px 0;">
-            <div><i class="fas fa-comments"></i> ${forumCount || 0} сообщений на форуме</div>
+            <div><i class="fas fa-comments"></i> ${forumCount} сообщений на форуме</div>
             <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщений в Diamond AI</div>
-            <div><i class="fas fa-map-marker-alt"></i> ${gpxCount || 0} GPX-прогулок</div>
+            <div><i class="fas fa-map-marker-alt"></i> ${gpxCount} GPX-прогулок</div>
         </div>
     `;
 
     // GPX-файлы
+    const gpxList = document.getElementById('profileGpxFiles');
+    gpxList.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка прогулок...';
     const { data: gpxFiles } = await _supabase.from('gpx_files').select('id,name,created_at').eq('user_login', currentUser.login).order('created_at', { ascending: false });
-    document.getElementById('profileGpxFiles').innerHTML = gpxFiles?.length ? gpxFiles.map(f => `
+    gpxList.innerHTML = gpxFiles?.length ? gpxFiles.map(f => `
         <div class="glass-panel" style="padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
             <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(f.name)}</span>
             <span class="text-muted">${new Date(f.created_at).toLocaleDateString()}</span>
@@ -114,13 +122,15 @@ async function loadProfilePage() {
     `).join('') : '<p class="text-muted">Нет сохранённых прогулок</p>';
 
     // Стена
+    const wallDiv = document.getElementById('profileWall');
+    wallDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка стены...';
     const { data: wall } = await _supabase.from('wall_posts').select('*').eq('profile_login', currentUser.login).order('created_at', { ascending: false });
-    document.getElementById('profileWall').innerHTML = wall?.map(p => `
+    wallDiv.innerHTML = wall?.length ? wall.map(p => `
         <div class="glass-panel" style="padding:12px;margin-bottom:8px;">
             <strong>${escapeHtml(p.user_login)}</strong>
             <p>${escapeHtml(p.content)}</p>
         </div>
-    `).join('') || '';
+    `).join('') : '<p class="text-muted">На стене пока пусто</p>';
 
     document.getElementById('postWallBtn').onclick = async () => {
         const msg = document.getElementById('wallMessage').value.trim();
