@@ -1,3 +1,4 @@
+// ==================== DIAMOND GPX – полный модуль ====================
 let gpxMap, gpxLayerGroup, elevationChart, currentGpxContent = null;
 
 function initGPX() {
@@ -23,17 +24,21 @@ function initGPX() {
                 currentGpxContent = ev.target.result;
                 document.getElementById('saveGpxBtn').style.display = 'inline-flex';
                 showAIReview(data);
-            } catch (err) { alert('Ошибка: ' + err.message); }
+                showToast('GPX-файл загружен');
+            } catch (err) { showToast('Ошибка: ' + err.message); }
         };
         reader.readAsText(file);
     });
 
-    document.getElementById('saveGpxBtn').addEventListener('click', () => document.getElementById('gpxNameModal').style.display = 'flex');
+    document.getElementById('saveGpxBtn').addEventListener('click', () => {
+        const modal = document.getElementById('gpxNameModal');
+        modal.style.display = 'flex'; modal.classList.add('active');
+    });
     document.getElementById('saveGpxNameBtn').addEventListener('click', async () => {
         const name = document.getElementById('gpxNameInput').value.trim() || 'Без названия';
         await _supabase.from('gpx_files').insert([{ user_login: currentUser.login, name, content: currentGpxContent }]);
-        document.getElementById('gpxNameModal').style.display = 'none';
-        showToast('Прогулка сохранена!');
+        closeModal('gpxNameModal');
+        showToast('Прогулка опубликована!');
     });
 
     if (document.getElementById('page-gpx').classList.contains('active')) {
@@ -70,8 +75,14 @@ function displayGPX(data) {
             if (seg.length === 0) return;
             L.polyline(seg.map(p => [p.lat, p.lon]), { color: '#4ecdc4', weight: 5, opacity: 0.9 }).addTo(gpxLayerGroup);
             const start = seg[0], end = seg[seg.length-1];
-            L.marker([start.lat, start.lon], { icon: L.divIcon({ className: 'gpx-marker-start', html: '<i class="fas fa-flag-checkered"></i>', iconSize: [30,30], iconAnchor: [15,30] }) }).addTo(gpxLayerGroup).bindPopup('Старт');
-            if (seg.length > 1) L.marker([end.lat, end.lon], { icon: L.divIcon({ className: 'gpx-marker-end', html: '<i class="fas fa-flag"></i>', iconSize: [30,30], iconAnchor: [15,30] }) }).addTo(gpxLayerGroup).bindPopup('Финиш');
+            L.marker([start.lat, start.lon], {
+                icon: L.divIcon({ className: 'gpx-marker-start', html: '<i class="fas fa-flag-checkered"></i>', iconSize: [30,30], iconAnchor: [15,30] })
+            }).addTo(gpxLayerGroup).bindPopup('Старт');
+            if (seg.length > 1) {
+                L.marker([end.lat, end.lon], {
+                    icon: L.divIcon({ className: 'gpx-marker-end', html: '<i class="fas fa-flag"></i>', iconSize: [30,30], iconAnchor: [15,30] })
+                }).addTo(gpxLayerGroup).bindPopup('Финиш');
+            }
         });
     });
 
@@ -120,7 +131,7 @@ function showAIReview(data) {
     data.tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
     let totalDist = 0;
     for (let i=1; i<allPoints.length; i++) totalDist += haversine(allPoints[i-1].lat, allPoints[i-1].lon, allPoints[i].lat, allPoints[i].lon);
-    text.textContent = `Отличная прогулка! Вы проехали ${(totalDist/1000).toFixed(1)} км.`;
+    text.textContent = `Отличная прогулка! Вы проехали ${(totalDist/1000).toFixed(1)} км. Продолжайте исследовать новые маршруты!`;
     box.style.display = 'flex';
 }
 
@@ -128,6 +139,12 @@ function haversine(lat1,lon1,lat2,lon2) {
     const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
     const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    modal.classList.add('closing');
+    setTimeout(() => { modal.style.display = 'none'; modal.classList.remove('active', 'closing'); }, 300);
 }
 
 // Активация при открытии вкладки GPX
