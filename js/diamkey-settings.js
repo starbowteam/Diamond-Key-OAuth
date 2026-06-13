@@ -25,7 +25,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
     if (lang !== currentLang) {
         localStorage.setItem('diamkey_lang', lang);
         currentLang = lang;
-        showToast('Язык изменён. Обновите страницу для полного эффекта.');
+        showToast('Язык изменён. Обновите страницу.');
     }
     showToast('Настройки сохранены');
     loadProfile().then(() => renderProfile());
