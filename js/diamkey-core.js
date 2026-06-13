@@ -4,8 +4,12 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let currentLang = localStorage.getItem('diamkey_lang') || 'ru';
 
-const L = { ru: {}, en: {} };
-function t(key) { return (L[currentLang] && L[currentLang][key]) || key; }
+// Локализация (переименовано, чтобы не конфликтовать с Leaflet)
+const LOCALE = {
+    ru: {},
+    en: {}
+};
+function t(key) { return (LOCALE[currentLang] && LOCALE[currentLang][key]) || key; }
 
 function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m); }
 function showToast(msg) { const el = document.createElement('div'); el.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#222; color:#fff; padding:12px 20px; border-radius:12px; z-index:9999;'; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 3000); }
