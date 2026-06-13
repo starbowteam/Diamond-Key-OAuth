@@ -15,125 +15,118 @@
 </head>
 <body>
     <div class="app-shell" id="appShell">
-        <!-- Маленький закруглённый сайдбар -->
+        <!-- Сайдбар (только иконки) -->
         <nav class="sidebar" id="sidebar">
-            <button class="sidebar-icon active" data-page="home" title="Главная"><i class="fas fa-home"></i></button>
-            <button class="sidebar-icon" data-page="forum" title="Форум"><i class="fas fa-comments"></i></button>
-            <button class="sidebar-icon" data-page="gpx" title="Diamond GPX"><i class="fas fa-map-marker-alt"></i></button>
-            <button class="sidebar-icon" data-page="profile" title="Профиль"><i class="fas fa-user"></i></button>
-            <button class="sidebar-icon" data-page="settings" title="Настройки"><i class="fas fa-cog"></i></button>
+            <button class="sidebar-icon active" data-page="home"><i class="fas fa-home"></i></button>
+            <button class="sidebar-icon" data-page="forum"><i class="fas fa-comments"></i></button>
+            <button class="sidebar-icon" data-page="gpx"><i class="fas fa-map-marker-alt"></i></button>
+            <button class="sidebar-icon" data-page="profile"><i class="fas fa-user"></i></button>
             <a class="sidebar-icon" href="https://diamond-ai.ru" target="_blank" title="Diamond AI">
-                <img src="assets/diamond-ai.png" alt="AI" style="width:20px; height:20px;">
+                <img src="assets/diamond-ai.png" style="width:20px;height:20px;">
             </a>
             <button class="sidebar-icon" id="logoutSidebarBtn" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
         </nav>
 
         <main class="main-content" id="mainContent">
-            <!-- Главная (богатый экран) -->
+            <!-- Главная -->
             <section class="page active" id="page-home">
-                <div class="home-hero glass-panel">
-                    <img src="assets/KeyHold.png" alt="DiamKey" class="home-logo">
+                <div class="glass-panel home-hero">
+                    <img src="assets/KeyHold.png" class="home-logo">
                     <h1>DiamKey</h1>
-                    <p class="text-muted">Единая учётная запись для сервисов Diamond. Общайтесь, делитесь маршрутами и оставайтесь на связи.</p>
-                    <div id="announcementBox" class="glass-panel" style="margin-top: 20px; padding: 20px; text-align: left;">
-                        <i class="fas fa-bullhorn" style="color: var(--accent);"></i>
-                        <span id="announcementText">Загрузка...</span>
+                    <p class="home-subtitle">Единая учётная запись для всей экосистемы Diamond</p>
+                    <div class="features-grid">
+                        <div class="feature-card glass-panel">
+                            <i class="fas fa-fingerprint"></i>
+                            <h3>Один аккаунт</h3>
+                            <p>Для всех сервисов: Diamond AI, GPX, Форум</p>
+                        </div>
+                        <div class="feature-card glass-panel">
+                            <i class="fas fa-shield-alt"></i>
+                            <h3>Приватность</h3>
+                            <p>Ваши данные под полным контролем</p>
+                        </div>
+                        <div class="feature-card glass-panel">
+                            <i class="fas fa-cloud"></i>
+                            <h3>Синхронизация</h3>
+                            <p>Чаты, файлы и маршруты доступны везде</p>
+                        </div>
                     </div>
-                </div>
-                <div class="features-grid" id="featuresGrid">
-                    <div class="feature-card glass-panel">
-                        <div class="feature-icon"><i class="fas fa-fingerprint"></i></div>
-                        <h3>Один аккаунт</h3>
-                        <p>Регистрируйся один раз и входи во все сервисы Diamond.</p>
-                    </div>
-                    <div class="feature-card glass-panel">
-                        <div class="feature-icon"><i class="fas fa-lock"></i></div>
-                        <h3>Секретное слово</h3>
-                        <p>Криптостойкий ключ, созданный на основе SHA-256.</p>
-                    </div>
-                    <div class="feature-card glass-panel">
-                        <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
-                        <h3>Облачная база</h3>
-                        <p>Все данные хранятся в Supabase — доступно отовсюду.</p>
+                    <!-- Объявление от создателя -->
+                    <div class="announcement-card glass-panel" id="announcementCard">
+                        <div class="announcement-header">
+                            <i class="fas fa-bullhorn"></i>
+                            <span>Объявление от создателя</span>
+                        </div>
+                        <p id="announcementText">Загрузка...</p>
+                        <div class="announcement-footer">
+                            <span class="announcement-author">viktorshopa</span>
+                            <span class="announcement-badge">Создатель Diamond EcoSystem</span>
+                            <span class="announcement-date" id="announcementDate"></span>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Форум (как мессенджер) -->
+            <!-- Форум -->
             <section class="page" id="page-forum">
                 <div class="glass-panel forum-container">
                     <h2><i class="fas fa-comments"></i> Форум</h2>
                     <div class="forum-messages" id="forumMessages"></div>
-                    <div class="forum-input">
-                        <textarea id="forumMessage" placeholder="Ваше сообщение..." rows="1"></textarea>
+                    <div class="forum-input-area">
+                        <textarea id="forumMessage" rows="1" placeholder="Написать сообщение..."></textarea>
                         <input type="file" id="forumImage" accept="image/*" style="display:none">
-                        <button class="btn btn-icon" onclick="document.getElementById('forumImage').click()"><i class="fas fa-paperclip"></i></button>
-                        <button class="btn btn-icon" id="sendForumBtn"><i class="fas fa-paper-plane"></i></button>
+                        <button class="btn" onclick="document.getElementById('forumImage').click()"><i class="fas fa-paperclip"></i></button>
+                        <button class="btn" id="sendForumBtn"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
             </section>
 
             <!-- GPX -->
             <section class="page" id="page-gpx">
-                <div class="glass-panel" style="height: calc(100vh - 40px); display: flex; flex-direction: column; padding: 0; overflow: hidden;">
-                    <div class="gpx-toolbar" style="padding: 12px 16px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--glass-border);">
-                        <span style="font-size: 1.2rem; font-weight: 600;"><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
+                <div class="glass-panel gpx-container">
+                    <div class="gpx-toolbar">
+                        <span><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
                         <button class="btn" onclick="document.getElementById('gpx-file-input').click()"><i class="fas fa-folder-open"></i> Загрузить GPX</button>
-                        <input type="file" id="gpx-file-input" accept=".gpx,.xml" style="display:none" />
-                        <button class="btn" onclick="resetGPX()"><i class="fas fa-trash"></i> Сброс</button>
+                        <input type="file" id="gpx-file-input" accept=".gpx,.xml" style="display:none">
+                        <button class="btn" id="saveGpxBtn" style="display:none"><i class="fas fa-save"></i> Сохранить</button>
                     </div>
-                    <div id="gpx-map" style="flex: 1; width: 100%;"></div>
-                    <div class="gpx-dashboard" style="padding: 12px 16px; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);">
-                        <div class="key-stats" style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
-                            <div class="stat-item"><i class="fas fa-ruler" style="margin-right:6px;"></i><div class="stat-content"><span class="stat-label">Дистанция</span><span class="stat-value" id="distVal">—</span></div></div>
-                            <div class="stat-item"><i class="fas fa-mountain" style="margin-right:6px;"></i><div class="stat-content"><span class="stat-label">Набор</span><span class="stat-value" id="ascentVal">—</span></div></div>
-                            <div class="stat-item"><i class="fas fa-clock" style="margin-right:6px;"></i><div class="stat-content"><span class="stat-label">Время</span><span class="stat-value" id="timeVal">—</span></div></div>
-                            <div class="stat-item"><i class="fas fa-tachometer-alt" style="margin-right:6px;"></i><div class="stat-content"><span class="stat-label">Ср. скорость</span><span class="stat-value" id="speedVal">—</span></div></div>
+                    <div id="gpx-map"></div>
+                    <div class="gpx-dashboard">
+                        <div class="key-stats">
+                            <div><i class="fas fa-ruler"></i><span id="distVal">—</span></div>
+                            <div><i class="fas fa-mountain"></i><span id="ascentVal">—</span></div>
+                            <div><i class="fas fa-clock"></i><span id="timeVal">—</span></div>
+                            <div><i class="fas fa-tachometer-alt"></i><span id="speedVal">—</span></div>
                         </div>
-                        <div class="chart-wrap" style="height: 140px; margin-top: 8px;"><canvas id="elevationChart"></canvas></div>
-                        <div class="no-elevation" id="noElevationMsg" style="color: var(--text-muted); text-align: center; font-size: 0.85rem;">Нет данных о высоте</div>
+                        <div class="chart-wrap"><canvas id="elevationChart"></canvas></div>
                     </div>
                 </div>
             </section>
 
             <!-- Профиль -->
             <section class="page" id="page-profile">
-                <div class="glass-panel">
-                    <h2><i class="fas fa-user"></i> Профиль</h2>
-                    <div id="profileInfo"></div>
-                    <div id="profileStats" style="margin: 20px 0;"></div>
-                    <h3>Записи на стене</h3>
-                    <div id="profileWallPosts"></div>
-                    <div class="wall-input" style="margin-top: 20px;">
-                        <textarea id="wallPostText" placeholder="Написать на стене..." rows="2"></textarea>
-                        <input type="file" id="wallPostImage" accept="image/*" style="display:none">
-                        <div style="display:flex; gap:10px; margin-top:8px;">
-                            <button class="btn" onclick="document.getElementById('wallPostImage').click()"><i class="fas fa-image"></i> Фото</button>
-                            <button class="btn" id="postWallBtn"><i class="fas fa-paper-plane"></i> Отправить</button>
+                <div class="glass-panel profile-container">
+                    <div class="profile-header">
+                        <div class="avatar-wrapper" id="profileAvatarWrapper">
+                            <img id="profileAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
+                            <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="profileName"></h2>
+                            <p id="profileDescription" class="editable-text">Нажмите, чтобы добавить описание</p>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- Настройки -->
-            <section class="page" id="page-settings">
-                <div class="glass-panel">
-                    <h2><i class="fas fa-cog"></i> Настройки</h2>
-                    <div class="settings-grid">
-                        <div class="input-group"><label>Никнейм</label><input type="text" id="settingsName" placeholder="Ваше имя"></div>
-                        <div class="input-group"><label>Новый пароль</label><input type="password" id="settingsPassword" placeholder="Оставьте пустым, чтобы не менять"></div>
-                        <div class="input-group"><label>Аватар</label><input type="file" id="settingsAvatar" accept="image/*"></div>
-                        <div class="input-group"><label>Язык</label>
-                            <select id="settingsLanguage" class="btn">
-                                <option value="ru">Русский</option>
-                                <option value="en">English</option>
-                            </select>
-                        </div>
+                    <div class="profile-stats" id="profileStats"></div>
+                    <h3>Мои GPX-прогулки</h3>
+                    <div id="profileGpxFiles"></div>
+                    <h3>Стена</h3>
+                    <div class="wall-input">
+                        <textarea id="wallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                        <input type="file" id="wallImage" accept="image/*" style="display:none">
+                        <button class="btn" onclick="document.getElementById('wallImage').click()"><i class="fas fa-paperclip"></i></button>
+                        <button class="btn" id="postWallBtn"><i class="fas fa-paper-plane"></i></button>
                     </div>
-                    <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
-                        <button class="btn" id="saveSettingsBtn"><i class="fas fa-save"></i> Сохранить изменения</button>
-                        <button class="btn" id="deleteAccountBtn" style="background: rgba(200, 50, 50, 0.3); border-color: rgba(200, 50, 50, 0.6);"><i class="fas fa-trash"></i> Удалить аккаунт</button>
-                    </div>
+                    <div id="profileWall"></div>
                 </div>
             </section>
         </main>
@@ -142,12 +135,12 @@
     <!-- Модалка входа -->
     <div class="modal" id="loginModal">
         <div class="modal-content glass-panel">
-            <h3>Вход</h3>
+            <h3>Вход в DiamKey</h3>
             <input id="loginIdentity" placeholder="Логин">
             <input id="loginPassword" type="password" placeholder="Пароль">
             <button class="btn" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
             <button class="btn" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
-            <p class="text-muted" style="margin-top:8px; cursor:pointer;" onclick="document.getElementById('loginModal').style.display='none'">Закрыть</p>
+            <button class="btn" onclick="document.getElementById('loginModal').style.display='none'">Закрыть</button>
         </div>
     </div>
 
@@ -155,28 +148,43 @@
     <div class="modal" id="logoutModal">
         <div class="modal-content glass-panel">
             <h3>Выход</h3>
-            <p>Вы уверены?</p>
+            <p>Вы уверены, что хотите выйти?</p>
             <button class="btn" id="confirmLogoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
             <button class="btn" onclick="document.getElementById('logoutModal').style.display='none'">Отмена</button>
         </div>
     </div>
 
-    <!-- Модалка удаления аккаунта -->
-    <div class="modal" id="deleteAccountModal">
+    <!-- Модалка "Что такое GPX" -->
+    <div class="modal" id="gpxInfoModal">
         <div class="modal-content glass-panel">
-            <h3>Удаление аккаунта</h3>
-            <p>Это действие необратимо.</p>
-            <button class="btn" id="confirmDeleteBtn" style="background: rgba(200, 50, 50, 0.3);">Удалить навсегда</button>
-            <button class="btn" onclick="document.getElementById('deleteAccountModal').style.display='none'">Отмена</button>
+            <h3><i class="fas fa-map-marker-alt"></i> Что такое GPX?</h3>
+            <p>GPX — это формат файлов для хранения GPS-треков: велопрогулок, походов, пробежек.</p>
+            <p>Загрузите свой трек, чтобы увидеть маршрут на карте и получить статистику!</p>
+            <div class="gpx-links">
+                <a href="https://apps.apple.com/app/biketracker/id123456" target="_blank"><i class="fab fa-apple"></i> BikeTracker для iPhone</a>
+                <a href="https://play.google.com/store/apps/details?id=com.biketracker" target="_blank"><i class="fab fa-android"></i> BikeTracker для Android</a>
+            </div>
+            <button class="btn" id="gpxInfoOkBtn"><i class="fas fa-check"></i> Хорошо, я понял(а)</button>
         </div>
     </div>
 
-    <!-- Модалка редактирования описания -->
-    <div class="modal" id="descModal">
+    <!-- Модалка "Редактировать описание" -->
+    <div class="modal" id="editDescriptionModal">
         <div class="modal-content glass-panel">
-            <h3>Изменить описание</h3>
-            <textarea id="descInput" rows="3"></textarea>
-            <button class="btn" id="saveDescBtn"><i class="fas fa-save"></i> Сохранить</button>
+            <h3>Редактировать описание</h3>
+            <textarea id="editDescriptionInput" rows="3" placeholder="Расскажите о себе..."></textarea>
+            <button class="btn" id="saveDescriptionBtn"><i class="fas fa-save"></i> Сохранить</button>
+            <button class="btn" onclick="document.getElementById('editDescriptionModal').style.display='none'">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Модалка "Название GPX" -->
+    <div class="modal" id="gpxNameModal">
+        <div class="modal-content glass-panel">
+            <h3>Название прогулки</h3>
+            <input id="gpxNameInput" placeholder="Например: Утренняя поездка">
+            <button class="btn" id="saveGpxNameBtn"><i class="fas fa-save"></i> Сохранить</button>
+            <button class="btn" onclick="document.getElementById('gpxNameModal').style.display='none'">Отмена</button>
         </div>
     </div>
 
