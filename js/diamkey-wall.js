@@ -61,6 +61,7 @@ async function loadProfilePage() {
     document.getElementById('profileName').textContent = currentUser.name || currentUser.login;
     document.getElementById('profileAvatar').src = currentUser.avatar || '';
     document.getElementById('profileDescription').textContent = currentUser.description || 'Нажмите, чтобы добавить описание';
+    document.getElementById('profileRegDate').textContent = currentUser.created_at ? 'Аккаунт создан: ' + new Date(currentUser.created_at).toLocaleDateString() : '';
 
     document.getElementById('profileAvatarWrapper').onclick = () => {
         const input = document.createElement('input');
@@ -81,13 +82,14 @@ async function loadProfilePage() {
 
     document.getElementById('profileDescription').onclick = () => {
         document.getElementById('editDescriptionInput').value = currentUser.description || '';
-        document.getElementById('editDescriptionModal').style.display = 'flex';
+        const modal = document.getElementById('editDescriptionModal');
+        modal.style.display = 'flex'; modal.classList.add('active');
     };
     document.getElementById('saveDescriptionBtn').onclick = async () => {
         const desc = document.getElementById('editDescriptionInput').value.trim();
         await updateProfile({ description: desc });
         document.getElementById('profileDescription').textContent = desc || 'Нажмите, чтобы добавить описание';
-        document.getElementById('editDescriptionModal').style.display = 'none';
+        closeModal('editDescriptionModal');
     };
 
     // Статистика
@@ -97,37 +99,24 @@ async function loadProfilePage() {
     const { count: forumCount } = await _supabase.from('forum').select('*', { count: 'exact', head: true }).eq('login', currentUser.login);
     const { count: gpxCount } = await _supabase.from('gpx_files').select('*', { count: 'exact', head: true }).eq('user_login', currentUser.login);
     document.getElementById('profileStats').innerHTML = `
-        <div style="display:flex; gap:20px; flex-wrap:wrap; margin:20px 0;">
-            <div><i class="fas fa-comments"></i> ${forumCount || 0} сообщений на форуме</div>
-            <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщений в Diamond AI</div>
-            <div><i class="fas fa-map-marker-alt"></i> ${gpxCount || 0} GPX-прогулок</div>
-        </div>
+        <div><i class="fas fa-comments"></i> ${forumCount || 0} сообщений</div>
+        <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщ.</div>
+        <div><i class="fas fa-map-marker-alt"></i> ${gpxCount || 0} прогулок</div>
     `;
 
     // GPX-файлы
     const { data: gpxFiles } = await _supabase.from('gpx_files').select('id,name,created_at').eq('user_login', currentUser.login).order('created_at', { ascending: false });
     const gpxContainer = document.getElementById('profileGpxFiles');
     gpxContainer.innerHTML = gpxFiles?.length ? `<div class="gpx-cards">${gpxFiles.map(f => `
-        <div class="gpx-card glass-panel" onclick="alert('Просмотр маршрута пока не реализован')">
+        <div class="gpx-card glass-panel">
             <h4><i class="fas fa-map-marker-alt"></i> ${escapeHtml(f.name)}</h4>
             <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
         </div>
     `).join('')}</div>` : '<p class="text-muted">Нет сохранённых прогулок</p>';
+}
 
-    // Стена
-    const { data: wall } = await _supabase.from('wall_posts').select('*').eq('profile_login', currentUser.login).order('created_at', { ascending: false });
-    document.getElementById('profileWall').innerHTML = wall?.map(p => `
-        <div class="glass-panel" style="padding:12px;margin-bottom:8px;">
-            <strong>${escapeHtml(p.user_login)}</strong>
-            <p>${escapeHtml(p.content)}</p>
-        </div>
-    `).join('') || '';
-
-    document.getElementById('postWallBtn').onclick = async () => {
-        const msg = document.getElementById('wallMessage').value.trim();
-        if (!msg) return;
-        await _supabase.from('wall_posts').insert([{ user_login: currentUser.login, profile_login: currentUser.login, content: msg }]);
-        document.getElementById('wallMessage').value = '';
-        loadProfilePage();
-    };
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    modal.classList.add('closing');
+    setTimeout(() => { modal.style.display = 'none'; modal.classList.remove('active', 'closing'); }, 300);
 }
