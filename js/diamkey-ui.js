@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Сайдбар: переключение вкладок
+    // Сайдбар
     document.querySelectorAll('.sidebar-icon[data-page]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (btn.tagName === 'A') return;
@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Кнопка "Понял" в GPX-модалке
     document.getElementById('gpxInfoOkBtn').addEventListener('click', () => {
         document.getElementById('gpxInfoModal').style.display = 'none';
         localStorage.setItem('gpx_info_seen', '1');
@@ -41,11 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         document.getElementById('logoutSidebarBtn').style.display = 'none';
         document.getElementById('page-home').classList.add('active');
-        // Зелёная кнопка входа
         const guestLogin = document.createElement('button');
-        guestLogin.className = 'sidebar-icon';
+        guestLogin.className = 'sidebar-icon guest-login-btn';
         guestLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i>';
-        guestLogin.style.background = '#2e7d32';
         guestLogin.title = 'Войти';
         guestLogin.addEventListener('click', () => { document.getElementById('loginModal').style.display = 'flex'; });
         document.getElementById('sidebar').appendChild(guestLogin);
