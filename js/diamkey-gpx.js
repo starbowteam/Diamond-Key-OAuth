@@ -1,13 +1,10 @@
-let gpxMap, gpxLayerGroup, elevationChart, elevationData;
+let gpxMap, gpxLayerGroup, elevationChart, currentGpxContent = null;
 
 function initGPX() {
     gpxMap = L.map('gpx-map', {
         center: [55.751244, 37.618423],
         zoom: 10,
-        layers: [L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap',
-            maxZoom: 19
-        })],
+        layers: [L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { attribution: '© Google', maxZoom: 20 })],
         zoomControl: true
     });
     gpxLayerGroup = L.featureGroup().addTo(gpxMap);
@@ -17,19 +14,30 @@ function initGPX() {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = ev => {
-            try { displayGPX(parseGPX(ev.target.result)); }
-            catch(err) { alert('Ошибка: ' + err.message); }
+            try {
+                const data = parseGPX(ev.target.result);
+                displayGPX(data);
+                currentGpxContent = ev.target.result;
+                document.getElementById('saveGpxBtn').style.display = 'inline-flex';
+            } catch(err) { alert('Ошибка: ' + err.message); }
         };
         reader.readAsText(file);
     });
 
-    // Обновление размера при показе вкладки
-    const observer = new MutationObserver(() => {
-        if (document.getElementById('page-gpx').classList.contains('active')) {
-            gpxMap.invalidateSize();
-        }
+    document.getElementById('saveGpxBtn').addEventListener('click', () => {
+        document.getElementById('gpxNameModal').style.display = 'flex';
     });
-    observer.observe(document.getElementById('page-gpx'), { attributes: true, attributeFilter: ['class'] });
+
+    document.getElementById('saveGpxNameBtn').addEventListener('click', async () => {
+        const name = document.getElementById('gpxNameInput').value.trim() || 'Без названия';
+        await _supabase.from('gpx_files').insert([{
+            user_login: currentUser.login,
+            name,
+            content: currentGpxContent
+        }]);
+        document.getElementById('gpxNameModal').style.display = 'none';
+        showToast('Прогулка сохранена!');
+    });
 }
 
 function parseGPX(xmlString) {
@@ -71,7 +79,7 @@ function updateDashboard(tracks) {
     let allPoints = [];
     tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
     let totalDist = 0, ascent = 0, cumDist = 0;
-    elevationData = [];
+    const elevationData = [];
     for (let i=0; i<allPoints.length; i++) {
         if (i>0) {
             const prev = allPoints[i-1], pt = allPoints[i];
@@ -84,11 +92,19 @@ function updateDashboard(tracks) {
     document.getElementById('distVal').textContent = totalDist > 1000 ? (totalDist/1000).toFixed(2)+' км' : totalDist.toFixed(0)+' м';
     document.getElementById('ascentVal').textContent = ascent > 0 ? '+' + ascent.toFixed(0)+' м' : '—';
     if (elevationData.length > 1) {
-        document.getElementById('noElevationMsg').style.display = 'none';
         const ctx = document.getElementById('elevationChart').getContext('2d');
-        elevationChart = new Chart(ctx, { type:'line', data:{ labels: elevationData.map(p=>(p.dist/1000).toFixed(1)), datasets:[{ data: elevationData.map(p=>p.ele), borderColor:'#4ecdc4', backgroundColor:'rgba(78,205,196,0.12)', borderWidth:2, pointRadius:0, tension:0.3, fill:true }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ color:'#888', maxTicksLimit:6 }, grid:{ color:'#222' } }, y:{ ticks:{ color:'#888' }, grid:{ color:'#222' } } } });
-    } else {
-        document.getElementById('noElevationMsg').style.display = 'block';
+        elevationChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: elevationData.map(p => (p.dist/1000).toFixed(1)),
+                datasets: [{ data: elevationData.map(p => p.ele), borderColor: '#4ecdc4', backgroundColor: 'rgba(78,205,196,0.12)', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { color: '#888' }, grid: { color: '#222' } }, y: { ticks: { color: '#888' }, grid: { color: '#222' } } }
+            }
+        });
     }
 }
 
@@ -103,6 +119,7 @@ function resetGPX() {
     if (elevationChart) { elevationChart.destroy(); elevationChart = null; }
     document.getElementById('distVal').textContent = '—';
     document.getElementById('ascentVal').textContent = '—';
-    document.getElementById('noElevationMsg').style.display = 'block';
     gpxMap.setView([55.751244, 37.618423], 10);
+    currentGpxContent = null;
+    document.getElementById('saveGpxBtn').style.display = 'none';
 }
