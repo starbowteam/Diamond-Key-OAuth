@@ -1,0 +1,1 @@
+console.log('[DiamKey] Settings module loaded');
