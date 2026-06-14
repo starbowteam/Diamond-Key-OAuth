@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>DiamKey · Социальная экосистема</title>
+    <link rel="icon" href="assets/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/style.css?v=7">
+</head>
+<body>
+    <div class="dot-bg"></div>
+    <div class="app-shell" id="appShell">
+        <nav class="sidebar" id="sidebar">
+            <button class="sidebar-icon active" data-page="home"><i class="fas fa-home"></i></button>
+            <button class="sidebar-icon" data-page="forum"><i class="fas fa-comments"></i></button>
+            <button class="sidebar-icon" data-page="gpx"><i class="fas fa-map-marker-alt"></i></button>
+            <button class="sidebar-icon" data-page="users"><i class="fas fa-users"></i></button>
+            <button class="sidebar-icon" data-page="profile"><i class="fas fa-user"></i></button>
+            <a class="sidebar-icon" href="https://diamond-ai.ru" target="_blank"><img src="assets/diamond-ai.ico" style="width:30px;height:30px;"></a>
+            <button class="sidebar-icon" id="logoutSidebarBtn"><i class="fas fa-sign-out-alt"></i></button>
+        </nav>
+        <main class="main-content" id="mainContent">
+            <!-- Главная -->
+            <section class="page active" id="page-home">
+                <div class="glass-panel home-hero">
+                    <img src="assets/favicon.ico" class="home-logo">
+                    <h1 id="cipherTitle">DIAMKEY</h1>
+                    <p class="home-subtitle">Единая учётная запись для сервисов Diamond</p>
+                    <div class="home-description">
+                        <p>DiamKey — центр вашей цифровой жизни в экосистеме Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong>, <strong>Diamond GPX</strong> и общему форуму.</p>
+                    </div>
+                    <div class="announcement-card glass-panel accent-glass" id="announcementCard">
+                        <div class="announcement-header"><i class="fas fa-bullhorn"></i> Объявление от создателя</div>
+                        <div class="announcement-body" id="announcementBody">
+                            <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                        </div>
+                    </div>
+                    <div class="features-grid">
+                        <div class="feature-card glass-panel"><i class="fas fa-robot"></i><h3>Diamond AI</h3><p>Интеллектуальный помощник</p></div>
+                        <div class="feature-card glass-panel"><i class="fas fa-map-marker-alt"></i><h3>Diamond GPX</h3><p>Анализ GPS-треков</p></div>
+                        <div class="feature-card glass-panel"><i class="fas fa-shield-alt"></i><h3>Приватность</h3><p>Ваши данные под контролем</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Форум -->
+            <section class="page" id="page-forum">
+                <div class="glass-panel forum-container">
+                    <h2><i class="fas fa-comments"></i> Форум</h2>
+                    <div class="forum-messages" id="forumMessages">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                    <div class="forum-input-area">
+                        <textarea id="forumMessage" rows="1" placeholder="Написать сообщение..."></textarea>
+                        <button class="btn btn-send" id="sendForumBtn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GPX -->
+            <section class="page" id="page-gpx">
+                <div class="glass-panel gpx-container">
+                    <div class="gpx-toolbar">
+                        <span><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
+                        <button class="btn" onclick="document.getElementById('gpx-file-input').click()"><i class="fas fa-folder-open"></i> Загрузить GPX</button>
+                        <input type="file" id="gpx-file-input" accept=".gpx,.xml" style="display:none">
+                        <button class="btn" id="saveGpxBtn" style="display:none"><i class="fas fa-cloud-upload-alt"></i> Опубликовать</button>
+                    </div>
+                    <div id="gpx-map"></div>
+                    <div class="gpx-dashboard glass-panel">
+                        <div class="chart-wrap"><canvas id="elevationChart"></canvas></div>
+                        <div class="gpx-stats-grid">
+                            <div class="gpx-stat-card"><i class="fas fa-ruler"></i><span class="stat-label">Дистанция</span><span id="distVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-mountain"></i><span class="stat-label">Набор</span><span id="ascentVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-clock"></i><span class="stat-label">Время</span><span id="timeVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-tachometer-alt"></i><span class="stat-label">Скорость</span><span id="speedVal">—</span></div>
+                        </div>
+                    </div>
+                    <div id="aiReview" class="ai-review glass-panel" style="display:none;">
+                        <div class="ai-review-header"><img src="assets/logo-ai.ico" style="width:24px;height:24px;border-radius:50%;"><span>Diamond AI</span></div>
+                        <p id="aiReviewText"></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Пользователи -->
+            <section class="page" id="page-users">
+                <div class="glass-panel">
+                    <h2><i class="fas fa-users"></i> Пользователи</h2>
+                    <input type="text" id="userSearch" placeholder="Поиск по нику..." style="margin-bottom:16px;">
+                    <div id="usersList">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Профиль -->
+            <section class="page" id="page-profile">
+                <div class="glass-panel profile-top">
+                    <div class="profile-header">
+                        <div class="avatar-wrapper" id="profileAvatarWrapper">
+                            <img id="profileAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
+                            <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="profileName"></h2>
+                            <p id="profileDescription" class="editable-text">Нажмите, чтобы добавить описание</p>
+                            <span class="profile-regdate" id="profileRegDate"></span>
+                        </div>
+                    </div>
+                    <div class="profile-stats" id="profileStats"></div>
+                    <!-- Кнопка "Назад" (появляется только при просмотре чужого профиля) -->
+                    <button class="btn btn-back" id="backToUsersBtn" style="display:none; margin-top:16px;" onclick="goBackToUsers()"><i class="fas fa-arrow-left"></i> Назад к пользователям</button>
+                </div>
+                <div class="glass-panel profile-gpx">
+                    <h3>Поездки с Diamond GPX</h3>
+                    <div id="profileGpxFiles">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+                <div class="glass-panel profile-wall">
+                    <h3>Стена</h3>
+                    <div class="wall-input">
+                        <textarea id="wallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                        <button class="btn btn-send" id="postWallBtn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                    <div id="profileWall">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Модалки -->
+    <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <img src="assets/favicon.ico" class="modal-logo" style="width:60px;height:60px;animation:float 3s ease-in-out infinite;">
+            <h3>Вход в DiamKey</h3>
+            <input id="loginIdentity" placeholder="Логин">
+            <input id="loginPassword" type="password" placeholder="Пароль">
+            <button class="btn" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+            <button class="btn" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+        </div>
+    </div>
+
+    <div class="modal" id="gpxInfoModal" onclick="if(event.target===this) closeModal('gpxInfoModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <h3><i class="fas fa-map-marker-alt"></i> Что такое GPX?</h3>
+            <p>GPX — формат для хранения GPS-треков (велопрогулки, походы). Загрузите файл, чтобы увидеть маршрут и статистику!</p>
+            <div class="gpx-links">
+                <a href="https://apps.apple.com/app/biketracker/id123456" target="_blank"><i class="fab fa-apple"></i> BikeTracker для iPhone</a>
+                <a href="https://play.google.com/store/apps/details?id=com.biketracker" target="_blank"><i class="fab fa-android"></i> BikeTracker для Android</a>
+            </div>
+            <button class="btn" id="gpxInfoOkBtn"><i class="fas fa-check"></i> Хорошо, я понял(а)</button>
+        </div>
+    </div>
+
+    <div class="modal" id="gpxNameModal" onclick="if(event.target===this) closeModal('gpxNameModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <h3>Название прогулки</h3>
+            <input id="gpxNameInput" placeholder="Например: Утренняя поездка">
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn" id="saveGpxNameBtn"><i class="fas fa-save"></i> Опубликовать</button>
+                <button class="btn" onclick="closeModal('gpxNameModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="editDescriptionModal" onclick="if(event.target===this) closeModal('editDescriptionModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <h3>Редактировать описание</h3>
+            <textarea id="editDescriptionInput" rows="3" placeholder="Расскажите о себе..."></textarea>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn" id="saveDescriptionBtn"><i class="fas fa-save"></i> Сохранить</button>
+                <button class="btn" onclick="closeModal('editDescriptionModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/diamkey-core.js?v=7"></script>
+    <script src="js/diamkey-ui.js?v=7"></script>
+    <script src="js/diamkey-wall.js?v=7"></script>
+    <script src="js/diamkey-gpx.js?v=7"></script>
+    <script src="js/diamkey-users.js?v=7"></script>
+    <script src="js/diamkey-settings.js?v=7"></script>
+</body>
+</html>
