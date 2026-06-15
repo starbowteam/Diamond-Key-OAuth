@@ -1,12 +1,17 @@
-// Объявление (загружается всегда)
+// ========== ОБЪЯВЛЕНИЕ ==========
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
     if (!body) return;
     body.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    if (cache.announcements) {
+        body.innerHTML = cache.announcements;
+        return;
+    }
     const { data } = await _supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
+    let html = '';
     if (data && data.length) {
         const { data: creator } = await _supabase.from('users').select('avatar').eq('email', 'abugay12@mail.ru').maybeSingle();
-        body.innerHTML = `
+        html = `
             <img src="${creator?.avatar || ''}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" onerror="this.onerror=null; this.innerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:40px;color:var(--text-muted)\\'></i>'">
             <div class="announcement-content">
                 <p>${escapeHtml(data[0].content)}</p>
@@ -17,52 +22,49 @@ async function loadAnnouncement() {
             </div>
         `;
     } else {
-        body.innerHTML = '<p class="text-muted">Нет новых объявлений</p>';
+        html = '<p class="text-muted">Нет новых объявлений</p>';
     }
+    cache.announcements = html;
+    body.innerHTML = html;
 }
 
-// Глобальная статистика
+// ========== ГЛОБАЛЬНАЯ СТАТИСТИКА ==========
 async function loadGlobalStats() {
     const grid = document.getElementById('globalStatsGrid');
     if (!grid) return;
     grid.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    if (cache.globalStats) {
+        grid.innerHTML = cache.globalStats;
+        return;
+    }
     try {
         const { data, error } = await _supabase.rpc('get_global_stats');
         if (error || !data || data.length === 0) throw new Error('No data');
-        const stats = data[0]; // первая строка
-        grid.innerHTML = `
-            <div class="stat-box">
-                <i class="fas fa-users"></i>
-                <div class="stat-number">${stats.total_users}</div>
-                <div class="stat-label">пользователей</div>
-            </div>
-            <div class="stat-box">
-                <i class="fas fa-comments"></i>
-                <div class="stat-number">${stats.total_forum_messages}</div>
-                <div class="stat-label">сообщений на форуме</div>
-            </div>
-            <div class="stat-box">
-                <i class="fas fa-map-marked-alt"></i>
-                <div class="stat-number">${stats.total_gpx_files}</div>
-                <div class="stat-label">GPX-маршрутов</div>
-            </div>
-            <div class="stat-box">
-                <i class="fas fa-robot"></i>
-                <div class="stat-number">${stats.total_ai_messages}</div>
-                <div class="stat-label">сообщений в Diamond AI</div>
-            </div>
+        const stats = data[0];
+        const html = `
+            <div class="stat-box"><i class="fas fa-users"></i><div class="stat-number">${stats.total_users}</div><div class="stat-label">пользователей</div></div>
+            <div class="stat-box"><i class="fas fa-comments"></i><div class="stat-number">${stats.total_forum_messages}</div><div class="stat-label">сообщений на форуме</div></div>
+            <div class="stat-box"><i class="fas fa-map-marked-alt"></i><div class="stat-number">${stats.total_gpx_files}</div><div class="stat-label">GPX-маршрутов</div></div>
+            <div class="stat-box"><i class="fas fa-robot"></i><div class="stat-number">${stats.total_ai_messages}</div><div class="stat-label">сообщений в Diamond AI</div></div>
         `;
+        cache.globalStats = html;
+        grid.innerHTML = html;
     } catch (e) {
         grid.innerHTML = '<p class="text-muted">Не удалось загрузить статистику</p>';
     }
 }
 
-// Форум
+// ========== ФОРУМ ==========
 async function loadForum() {
     const container = document.getElementById('forumMessages');
     container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    if (cache.forumPosts) {
+        container.innerHTML = cache.forumPosts;
+        container.scrollTop = 0;
+        return;
+    }
     const { data: posts } = await _supabase.from('forum').select('*').order('time', { ascending: false });
-    container.innerHTML = posts.map(p => `
+    const html = posts.map(p => `
         <div class="glass-panel" style="padding:14px;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
                 ${p.avatar ? `<img src="${p.avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;cursor:pointer" onclick="viewProfile('${p.login}')" onerror="this.outerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:28px;color:var(--text-muted);cursor:pointer\\' onclick=\\'viewProfile(\\'${p.login}\\')\\'>'">` : `<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);cursor:pointer" onclick="viewProfile('${p.login}')"></i>`}
@@ -72,6 +74,8 @@ async function loadForum() {
             <p>${escapeHtml(p.message)}</p>
         </div>
     `).join('');
+    cache.forumPosts = html;
+    container.innerHTML = html;
     container.scrollTop = 0;
 }
 
@@ -94,10 +98,13 @@ document.getElementById('sendForumBtn').addEventListener('click', async () => {
     container.insertBefore(tempEl, container.firstChild);
     document.getElementById('forumMessage').value = '';
     await _supabase.from('forum').insert([{ email: currentUser.email || '', login: currentUser.login, name: currentUser.name || currentUser.login, avatar: currentUser.avatar || '', message: msg, time: temp.time }]);
+    cache.forumPosts = null; // сбрасываем кэш форума
     loadForum();
 });
 
-// Переход на чужой профиль
+// ========== ПРОФИЛЬ (исправлена навигация) ==========
+let currentViewingProfile = null;
+
 function viewProfile(login) {
     document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => b.classList.remove('active'));
     document.querySelector('.sidebar-icon[data-page="profile"]').classList.add('active');
@@ -109,7 +116,6 @@ function viewProfile(login) {
     loadProfilePage(login);
 }
 
-// Вернуться к списку пользователей
 function goBackToUsers() {
     document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => b.classList.remove('active'));
     document.querySelector('.sidebar-icon[data-page="users"]').classList.add('active');
@@ -117,14 +123,16 @@ function goBackToUsers() {
     const usersPage = document.getElementById('page-users');
     usersPage.classList.add('active');
     usersPage.style.opacity = '1';
-    currentViewingProfile = null;
+    currentViewingProfile = null;  // ВАЖНО: сбрасываем чужой профиль
 }
 
-// Профиль
-let currentViewingProfile = null;
 async function loadProfilePage(login = null) {
+    // Если явно не передан логин – показываем СВОЙ профиль
     const targetLogin = login || (currentUser ? currentUser.login : null);
     if (!targetLogin) return;
+
+    // Сбрасываем кэш для этого профиля, чтобы видеть актуальные данные
+    cache.profiles[targetLogin] = null;
 
     document.getElementById('profileName').textContent = 'Загрузка...';
     document.getElementById('profileAvatar').style.display = 'none';
@@ -134,10 +142,20 @@ async function loadProfilePage(login = null) {
     document.getElementById('profileGpxFiles').innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
     document.getElementById('profileWall').innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
 
-    const { data: profile } = await _supabase.from('users').select('name, avatar, description, created_at').eq('login', targetLogin).maybeSingle();
-    if (!profile) return;
+    // Параллельная загрузка всех данных профиля
+    const [profileRes, chatsRes, forumCountRes, gpxCountRes, gpxFilesRes, wallRes] = await Promise.all([
+        _supabase.from('users').select('name, avatar, description, created_at').eq('login', targetLogin).maybeSingle(),
+        _supabase.from('diamond_chats').select('id,messages').eq('user_login', targetLogin),
+        _supabase.from('forum').select('*', { count: 'exact', head: true }).eq('login', targetLogin),
+        _supabase.from('gpx_files').select('*', { count: 'exact', head: true }).eq('user_login', targetLogin),
+        _supabase.from('gpx_files').select('*').eq('user_login', targetLogin).order('created_at', { ascending: false }),
+        _supabase.from('profile_wall').select('*').eq('profile_login', targetLogin).order('created_at', { ascending: false })
+    ]);
 
+    const profile = profileRes.data;
+    if (!profile) return;
     const isOwner = currentUser && currentUser.login === targetLogin;
+
     const backBtn = document.getElementById('backToUsersBtn');
     if (backBtn) backBtn.style.display = isOwner ? 'none' : 'inline-flex';
 
@@ -154,6 +172,7 @@ async function loadProfilePage(login = null) {
     document.getElementById('profileDescription').textContent = profile.description || (isOwner ? 'Нажмите, чтобы добавить описание' : 'Нет описания');
     document.getElementById('profileRegDate').textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
 
+    // Редактирование (только для владельца)
     if (isOwner) {
         document.getElementById('profileAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
@@ -177,19 +196,20 @@ async function loadProfilePage(login = null) {
     }
 
     // Статистика
-    const { data: chats } = await _supabase.from('diamond_chats').select('id,messages').eq('user_login', targetLogin);
-    const totalChats = chats?.length || 0;
-    const totalMessages = chats?.reduce((s,c) => s + (c.messages?.length || 0), 0) || 0;
-    const { count: forumCount } = await _supabase.from('forum').select('*', { count: 'exact', head: true }).eq('login', targetLogin);
-    const { count: gpxCount } = await _supabase.from('gpx_files').select('*', { count: 'exact', head: true }).eq('user_login', targetLogin);
+    const chats = chatsRes.data || [];
+    const totalChats = chats.length;
+    const totalMessages = chats.reduce((s,c) => s + (c.messages?.length || 0), 0);
+    const forumCount = forumCountRes.count || 0;
+    const gpxCount = gpxCountRes.count || 0;
     document.getElementById('profileStats').innerHTML = `
-        <div><i class="fas fa-comments"></i> ${forumCount || 0} сообщений</div>
+        <div><i class="fas fa-comments"></i> ${forumCount} сообщений</div>
         <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщ.</div>
-        <div><i class="fas fa-map-marker-alt"></i> ${gpxCount || 0} поездок</div>
+        <div><i class="fas fa-map-marker-alt"></i> ${gpxCount} поездок</div>
     `;
 
-    const { data: gpxFiles } = await _supabase.from('gpx_files').select('*').eq('user_login', targetLogin).order('created_at', { ascending: false });
-    document.getElementById('profileGpxFiles').innerHTML = gpxFiles?.length ? `<div class="gpx-cards">${gpxFiles.map(f => `
+    // GPX-карточки
+    const gpxFiles = gpxFilesRes.data || [];
+    document.getElementById('profileGpxFiles').innerHTML = gpxFiles.length ? `<div class="gpx-cards">${gpxFiles.map(f => `
         <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
             <i class="fas fa-map-marker-alt"></i>
             <h4>${escapeHtml(f.name)}</h4>
@@ -197,8 +217,9 @@ async function loadProfilePage(login = null) {
         </div>
     `).join('')}</div>` : '<p class="text-muted">Нет поездок</p>';
 
-    const { data: wall } = await _supabase.from('profile_wall').select('*').eq('profile_login', targetLogin).order('created_at', { ascending: false });
-    document.getElementById('profileWall').innerHTML = wall?.length ? wall.map(p => `
+    // Стена
+    const wall = wallRes.data || [];
+    document.getElementById('profileWall').innerHTML = wall.length ? wall.map(p => `
         <div class="glass-panel" style="padding:12px;margin-bottom:8px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
                 ${p.user_avatar ? `<img src="${p.user_avatar}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.outerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:24px;color:var(--text-muted)\\'></i>'">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);"></i>'}
@@ -209,6 +230,7 @@ async function loadProfilePage(login = null) {
         </div>
     `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
+    // Кнопка отправки на стене
     document.getElementById('postWallBtn').onclick = async () => {
         const msg = document.getElementById('wallMessage').value.trim();
         if (!msg || !currentUser) return;
@@ -231,6 +253,7 @@ async function loadProfilePage(login = null) {
     };
 }
 
+// ========== ПРОСМОТР GPX ДРУГОГО ПОЛЬЗОВАТЕЛЯ ==========
 async function viewGpxRoute(fileId) {
     const { data } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
     if (!data || !data.content) return showToast('Не удалось загрузить маршрут');
