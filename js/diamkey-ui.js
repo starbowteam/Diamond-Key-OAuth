@@ -6,6 +6,24 @@ document.addEventListener('DOMContentLoaded', () => {
         pages.forEach(p => { if (p.classList.contains('active') && p !== target) { p.style.opacity = '0'; setTimeout(() => p.classList.remove('active'), 300); } });
         target.classList.add('active');
         setTimeout(() => { target.style.opacity = '1'; }, 10);
+
+        // Обновляем данные при переходе на главную
+        if (pageId === 'home') {
+            updateHeroButton();
+            loadGlobalStats();
+            loadAnnouncement();
+        }
+        if (pageId === 'users') loadUsers();
+        if (pageId === 'profile') {
+            currentViewingProfile = null;
+            loadProfilePage();
+        }
+        if (pageId === 'gpx') {
+            if (!localStorage.getItem('gpx_info_seen')) {
+                const modal = document.getElementById('gpxInfoModal');
+                if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
+            }
+        }
     }
 
     document.querySelectorAll('.sidebar-icon[data-page]').forEach(btn => {
@@ -15,18 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             switchPage(btn.dataset.page);
-            // Всегда показываем СВОЙ профиль при клике на иконку профиля
-            if (btn.dataset.page === 'profile') {
-                currentViewingProfile = null;
-                loadProfilePage();
-            }
-            if (btn.dataset.page === 'gpx') {
-                if (!localStorage.getItem('gpx_info_seen')) {
-                    const modal = document.getElementById('gpxInfoModal');
-                    if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
-                }
-            }
-            if (btn.dataset.page === 'users') loadUsers();
         });
     });
 
@@ -40,6 +46,23 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
     });
 
+    // Кнопка на главной
+    function updateHeroButton() {
+        const btn = document.getElementById('heroActionBtn');
+        if (!btn) return;
+        if (currentUser) {
+            btn.innerHTML = '<i class="fas fa-user"></i> Мой профиль';
+            btn.onclick = () => { switchPage('profile'); };
+        } else {
+            btn.innerHTML = '<i class="fas fa-user-plus"></i> Создать DiamKey';
+            btn.onclick = () => {
+                const modal = document.getElementById('loginModal');
+                if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
+            };
+        }
+    }
+
+    // Первоначальная настройка для гостей
     if (!currentUser) {
         document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => { if (b.dataset.page !== 'home') b.style.display = 'none'; });
         document.getElementById('logoutSidebarBtn').style.display = 'none';
@@ -52,8 +75,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
         });
         document.getElementById('sidebar').appendChild(guestLogin);
+        // Загружаем общую статистику и объявление (доступно гостям)
+        updateHeroButton();
+        loadGlobalStats();
+        loadAnnouncement();
     } else {
+        // Авторизованный пользователь
         loadProfile().then(() => {
+            updateHeroButton();
+            loadGlobalStats();
             loadAnnouncement();
             loadForum();
             loadProfilePage();
@@ -61,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Локальный вход
     document.getElementById('doLoginBtn').addEventListener('click', async () => {
         const res = await login(document.getElementById('loginIdentity').value.trim(), document.getElementById('loginPassword').value);
         if (res.error) return showToast(res.error);
