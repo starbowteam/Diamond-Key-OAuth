@@ -21,9 +21,8 @@ function handleRoute() {
     if (path === '/' || path === '') {
         document.getElementById('page-home').classList.add('active');
         if (typeof loadHomeData === 'function') loadHomeData();
-    } else if (path === '/forum') {
-        document.getElementById('page-forum').classList.add('active');
-        if (typeof loadForum === 'function') loadForum();
+    } else if (path === '/chats') {
+        document.getElementById('page-chats').classList.add('active');
     } else if (path === '/gpx') {
         document.getElementById('page-gpx').classList.add('active');
         if (typeof initGPX === 'function') {
