@@ -11,15 +11,14 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="css/style.css?v=10">
+    <link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
     <div class="dot-bg"></div>
     <div class="app-shell" id="appShell">
-        <!-- Сайдбар с абсолютными путями -->
         <nav class="sidebar" id="sidebar">
             <a class="sidebar-icon" href="/"><i class="fas fa-home"></i></a>
-            <a class="sidebar-icon" href="/forum"><i class="fas fa-comments"></i></a>
+            <a class="sidebar-icon" href="/chats"><i class="fas fa-comments"></i></a>
             <a class="sidebar-icon" href="/gpx"><i class="fas fa-map-marker-alt"></i></a>
             <a class="sidebar-icon" href="/users"><i class="fas fa-users"></i></a>
             <a class="sidebar-icon" href="/profile"><i class="fas fa-user"></i></a>
@@ -34,7 +33,7 @@
                     <h1 id="cipherTitle">DIAMKEY</h1>
                     <p class="hero-subtitle">Единая учётная запись для всей экосистемы Diamond</p>
                     <div class="hero-description">
-                        <p>DiamKey — это ваш ключ ко всем сервисам Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ GPS-треков и маршрутов) и общему форуму, где можно общаться и делиться файлами.</p>
+                        <p>DiamKey — это ваш ключ ко всем сервисам Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ GPS-треков и маршрутов) и будущему мессенджеру.</p>
                         <p>Присоединяйтесь к сообществу Diamond уже сегодня и получите полный контроль над своими данными, синхронизацию между устройствами и настоящую приватность.</p>
                     </div>
                     <div id="heroActionArea">
@@ -52,14 +51,7 @@
                 <div class="features-grid">
                     <div class="feature-card glass-panel"><i class="fas fa-robot"></i><h3>Diamond AI</h3><p>Интеллектуальный помощник с синхронизацией чатов, папок и поддержкой LaTeX.</p></div>
                     <div class="feature-card glass-panel"><i class="fas fa-map-marker-alt"></i><h3>Diamond GPX</h3><p>Загружайте GPS-треки, анализируйте маршруты и делитесь прогулками с друзьями.</p></div>
-                    <div class="feature-card glass-panel"><i class="fas fa-comments"></i><h3>Форум</h3><p>Общайтесь с сообществом Diamond, обсуждайте проекты и делитесь идеями.</p></div>
-                </div>
-
-                <div class="glass-panel stats-panel">
-                    <h2><i class="fas fa-chart-bar"></i> Экосистема в цифрах</h2>
-                    <div class="stats-grid" id="globalStatsGrid">
-                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
-                    </div>
+                    <div class="feature-card glass-panel"><i class="fas fa-comments"></i><h3>Мессенджер</h3><p>Скоро здесь будет быстрый и безопасный мессенджер от Diamond.</p></div>
                 </div>
 
                 <div class="glass-panel">
@@ -79,15 +71,12 @@
                 </div>
             </section>
 
-            <!-- Форум -->
-            <section class="page" id="page-forum">
-                <div class="glass-panel forum-container">
-                    <h2><i class="fas fa-comments"></i> Форум</h2>
-                    <div class="forum-messages" id="forumMessages"><div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div></div>
-                    <div class="forum-input-area">
-                        <textarea id="forumMessage" rows="1" placeholder="Написать сообщение..."></textarea>
-                        <button class="btn btn-send" id="sendForumBtn"><i class="fas fa-paper-plane"></i></button>
-                    </div>
+            <!-- Мессенджер (заглушка) -->
+            <section class="page" id="page-chats">
+                <div class="glass-panel" style="text-align: center; padding: 80px 40px;">
+                    <i class="fas fa-comments" style="font-size: 4rem; color: var(--accent); margin-bottom: 20px;"></i>
+                    <h2>Скоро здесь будет мессенджер от Diamond</h2>
+                    <p class="text-muted" style="font-size: 1.1rem; max-width: 500px; margin: 0 auto;">Мы уже работаем над быстрым и безопасным мессенджером. Ожидайте!</p>
                 </div>
             </section>
 
@@ -137,7 +126,6 @@
                             <span class="profile-regdate" id="userRegDate"></span>
                         </div>
                     </div>
-                    <div class="profile-stats" id="userStats"></div>
                     <button class="btn btn-back" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i> Назад к пользователям</button>
                 </div>
                 <div class="glass-panel profile-gpx" id="userGpxSection" style="display:none;">
@@ -168,7 +156,6 @@
                             <span class="profile-regdate" id="myRegDate"></span>
                         </div>
                     </div>
-                    <div class="profile-stats" id="myStats"></div>
                 </div>
                 <div class="glass-panel profile-gpx" id="myGpxSection">
                     <h3>Поездки с Diamond GPX</h3>
@@ -232,11 +219,12 @@
         </div>
     </div>
 
-    <script src="js/diamkey-core.js?v=10"></script>
-    <script src="js/diamkey-router.js?v=10"></script>
-    <script src="js/diamkey-ui.js?v=10"></script>
-    <script src="js/diamkey-wall.js?v=10"></script>
-    <script src="js/diamkey-gpx.js?v=10"></script>
-    <script src="js/diamkey-settings.js?v=10"></script>
+    <script src="js/diamkey-core.js?v=11"></script>
+    <script src="js/diamkey-router.js?v=11"></script>
+    <script src="js/diamkey-ui.js?v=11"></script>
+    <script src="js/diamkey-wall.js?v=11"></script>
+    <script src="js/diamkey-gpx.js?v=11"></script>
+    <script src="js/diamkey-users.js?v=11"></script>
+    <script src="js/diamkey-settings.js?v=11"></script>
 </body>
 </html>
