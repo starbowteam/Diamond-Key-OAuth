@@ -6,46 +6,48 @@ function navigateTo(path) {
 
 function handleRoute() {
     const path = window.location.pathname;
-    const pages = document.querySelectorAll('.page');
-    pages.forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
 
-    // Сброс просмотра чужого профиля
+    // Сброс вида профиля в users
     const usersPanel = document.getElementById('usersPanel');
     const userProfileView = document.getElementById('userProfileView');
-    const userGpxSection = document.getElementById('userGpxSection');
-    const userWallSection = document.getElementById('userWallSection');
     if (usersPanel) usersPanel.style.display = 'block';
     if (userProfileView) userProfileView.style.display = 'none';
-    if (userGpxSection) userGpxSection.style.display = 'none';
-    if (userWallSection) userWallSection.style.display = 'none';
+    const userGpx = document.getElementById('userGpxSection');
+    const userWall = document.getElementById('userWallSection');
+    if (userGpx) userGpx.style.display = 'none';
+    if (userWall) userWall.style.display = 'none';
 
     if (path === '/' || path === '') {
         document.getElementById('page-home').classList.add('active');
-        loadHomeData();
+        if (typeof loadHomeData === 'function') loadHomeData();
     } else if (path === '/forum') {
         document.getElementById('page-forum').classList.add('active');
-        loadForum();
+        if (typeof loadForum === 'function') loadForum();
     } else if (path === '/gpx') {
         document.getElementById('page-gpx').classList.add('active');
-        initGPX();
+        if (typeof initGPX === 'function') {
+            initGPX();
+            if (gpxMap) setTimeout(() => gpxMap.invalidateSize(), 100);
+        }
         if (!localStorage.getItem('gpx_info_seen')) {
             const modal = document.getElementById('gpxInfoModal');
             if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
         }
     } else if (path === '/users') {
         document.getElementById('page-users').classList.add('active');
-        loadUsers();
+        if (typeof loadUsers === 'function') loadUsers();
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
         document.getElementById('page-users').classList.add('active');
-        showUserProfile(login);
+        if (typeof showUserProfile === 'function') showUserProfile(login);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
         document.getElementById('page-profile').classList.add('active');
-        loadMyProfile();
+        if (typeof loadMyProfile === 'function') loadMyProfile();
     } else {
         document.getElementById('page-home').classList.add('active');
-        loadHomeData();
+        if (typeof loadHomeData === 'function') loadHomeData();
     }
 
     // Подсветка сайдбара
