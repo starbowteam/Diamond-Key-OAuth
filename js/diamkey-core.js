@@ -14,6 +14,15 @@ function showToast(msg) {
 const saved = localStorage.getItem('diamkey_current');
 if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
 
+// Простой кэш в памяти (ускоряет повторные запросы в течение сессии)
+const cache = {
+    announcements: null,
+    globalStats: null,
+    forumPosts: null,
+    users: null,
+    profiles: {}
+};
+
 async function login(login, password) {
     const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
     if (error || !user) return { error: 'Неверный логин или пароль' };
@@ -53,7 +62,6 @@ function closeModal(id) {
     modal.classList.remove('active');
     setTimeout(() => { modal.style.display = 'none'; }, 300);
 }
-
 function startCipherEffect() {
     const el = document.getElementById('cipherTitle');
     if (!el) return;
