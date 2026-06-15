@@ -11,7 +11,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="css/style.css?v=11">
+    <link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
     <div class="dot-bg"></div>
@@ -33,7 +33,7 @@
                     <h1 id="cipherTitle">DIAMKEY</h1>
                     <p class="hero-subtitle">Единая учётная запись для всей экосистемы Diamond</p>
                     <div class="hero-description">
-                        <p>DiamKey — это ваш ключ ко всем сервисам Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ GPS-треков и маршрутов) и будущему мессенджеру.</p>
+                        <p>DiamKey — это ваш ключ ко всем сервисам Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ GPS-треков и маршрутов) и будущему мессенджеру <strong>.drm</strong>.</p>
                         <p>Присоединяйтесь к сообществу Diamond уже сегодня и получите полный контроль над своими данными, синхронизацию между устройствами и настоящую приватность.</p>
                     </div>
                     <div id="heroActionArea">
@@ -51,7 +51,7 @@
                 <div class="features-grid">
                     <div class="feature-card glass-panel"><i class="fas fa-robot"></i><h3>Diamond AI</h3><p>Интеллектуальный помощник с синхронизацией чатов, папок и поддержкой LaTeX.</p></div>
                     <div class="feature-card glass-panel"><i class="fas fa-map-marker-alt"></i><h3>Diamond GPX</h3><p>Загружайте GPS-треки, анализируйте маршруты и делитесь прогулками с друзьями.</p></div>
-                    <div class="feature-card glass-panel"><i class="fas fa-comments"></i><h3>Мессенджер</h3><p>Скоро здесь будет быстрый и безопасный мессенджер от Diamond.</p></div>
+                    <div class="feature-card glass-panel"><i class="fas fa-comments"></i><h3>.drm Messenger</h3><p>Скоро: быстрый и безопасный мессенджер для экосистемы Diamond.</p></div>
                 </div>
 
                 <div class="glass-panel">
@@ -71,12 +71,27 @@
                 </div>
             </section>
 
-            <!-- Мессенджер (заглушка) -->
+            <!-- Мессенджер .drm (заглушка) -->
             <section class="page" id="page-chats">
-                <div class="glass-panel" style="text-align: center; padding: 80px 40px;">
+                <div class="glass-panel" style="text-align: center; padding: 60px 40px;">
                     <i class="fas fa-comments" style="font-size: 4rem; color: var(--accent); margin-bottom: 20px;"></i>
-                    <h2>Скоро здесь будет мессенджер от Diamond</h2>
-                    <p class="text-muted" style="font-size: 1.1rem; max-width: 500px; margin: 0 auto;">Мы уже работаем над быстрым и безопасным мессенджером. Ожидайте!</p>
+                    <h2>.drm Messenger</h2>
+                    <p class="text-muted" style="font-size: 1.2rem; max-width: 500px; margin: 0 auto 20px;">Быстрый и безопасный мессенджер от Diamond.</p>
+                    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <i class="fas fa-shield-alt" style="font-size: 2rem; color: var(--accent); margin-bottom: 8px;"></i>
+                            <p>Сквозное шифрование</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <i class="fas fa-bolt" style="font-size: 2rem; color: var(--accent); margin-bottom: 8px;"></i>
+                            <p>Мгновенная доставка</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <i class="fas fa-sync-alt" style="font-size: 2rem; color: var(--accent); margin-bottom: 8px;"></i>
+                            <p>Синхронизация с DiamKey</p>
+                        </div>
+                    </div>
+                    <p class="text-muted" style="margin-top: 30px; font-size: 0.9rem;">Мы уже работаем над запуском. Ожидайте!</p>
                 </div>
             </section>
 
@@ -173,7 +188,7 @@
         </main>
     </div>
 
-    <!-- Модалки -->
+    <!-- Модалки (без изменений) -->
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <img src="assets/favicon.ico" class="modal-logo" style="width:60px;height:60px;animation:float 3s ease-in-out infinite;">
@@ -219,12 +234,12 @@
         </div>
     </div>
 
-    <script src="js/diamkey-core.js?v=11"></script>
-    <script src="js/diamkey-router.js?v=11"></script>
-    <script src="js/diamkey-ui.js?v=11"></script>
-    <script src="js/diamkey-wall.js?v=11"></script>
-    <script src="js/diamkey-gpx.js?v=11"></script>
-    <script src="js/diamkey-users.js?v=11"></script>
-    <script src="js/diamkey-settings.js?v=11"></script>
+    <script src="js/diamkey-core.js?v=12"></script>
+    <script src="js/diamkey-router.js?v=12"></script>
+    <script src="js/diamkey-ui.js?v=12"></script>
+    <script src="js/diamkey-wall.js?v=12"></script>
+    <script src="js/diamkey-gpx.js?v=12"></script>
+    <script src="js/diamkey-users.js?v=12"></script>
+    <script src="js/diamkey-settings.js?v=12"></script>
 </body>
 </html>
