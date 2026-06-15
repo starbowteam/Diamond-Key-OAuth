@@ -15,8 +15,8 @@ function updateHeroButton() {
 
 function loadHomeData() {
     updateHeroButton();
-    loadAnnouncement();
-    loadGlobalStats();
+    if (typeof loadAnnouncement === 'function') loadAnnouncement();
+    if (typeof loadGlobalStats === 'function') loadGlobalStats();
 }
 
 document.getElementById('doLoginBtn').addEventListener('click', async () => {
