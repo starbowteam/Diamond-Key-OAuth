@@ -3,10 +3,7 @@ async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
     if (!body) return;
     body.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
-    if (cache.announcements) {
-        body.innerHTML = cache.announcements;
-        return;
-    }
+    if (cache.announcements) { body.innerHTML = cache.announcements; return; }
     const { data } = await _supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
     let html = '';
     if (data && data.length) {
@@ -33,10 +30,7 @@ async function loadGlobalStats() {
     const grid = document.getElementById('globalStatsGrid');
     if (!grid) return;
     grid.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
-    if (cache.globalStats) {
-        grid.innerHTML = cache.globalStats;
-        return;
-    }
+    if (cache.globalStats) { grid.innerHTML = cache.globalStats; return; }
     try {
         const { data, error } = await _supabase.rpc('get_global_stats');
         if (error || !data || data.length === 0) throw new Error('No data');
@@ -49,21 +43,15 @@ async function loadGlobalStats() {
         `;
         cache.globalStats = html;
         grid.innerHTML = html;
-    } catch (e) {
-        grid.innerHTML = '<p class="text-muted">Не удалось загрузить статистику</p>';
-    }
+    } catch (e) { grid.innerHTML = '<p class="text-muted">Не удалось загрузить статистику</p>'; }
 }
 
 // ========== ФОРУМ ==========
 async function loadForum() {
     const container = document.getElementById('forumMessages');
     container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
-    if (cache.forumPosts) {
-        container.innerHTML = cache.forumPosts;
-        container.scrollTop = 0;
-        return;
-    }
-    const { data: posts } = await _supabase.from('forum').select('*').order('time', { ascending: false });
+    if (cache.forumPosts) { container.innerHTML = cache.forumPosts; container.scrollTop = 0; return; }
+    const { data: posts } = await _supabase.from('forum').select('login, name, avatar, message, time').order('time', { ascending: false });
     const html = posts.map(p => `
         <div class="glass-panel" style="padding:14px;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
@@ -98,13 +86,11 @@ document.getElementById('sendForumBtn').addEventListener('click', async () => {
     container.insertBefore(tempEl, container.firstChild);
     document.getElementById('forumMessage').value = '';
     await _supabase.from('forum').insert([{ email: currentUser.email || '', login: currentUser.login, name: currentUser.name || currentUser.login, avatar: currentUser.avatar || '', message: msg, time: temp.time }]);
-    cache.forumPosts = null; // сбрасываем кэш форума
+    cache.forumPosts = null;
     loadForum();
 });
 
-// ========== ПРОФИЛЬ (исправлена навигация) ==========
-let currentViewingProfile = null;
-
+// ========== ПЕРЕХОД НА ПРОФИЛЬ ==========
 function viewProfile(login) {
     document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => b.classList.remove('active'));
     document.querySelector('.sidebar-icon[data-page="profile"]').classList.add('active');
@@ -123,16 +109,14 @@ function goBackToUsers() {
     const usersPage = document.getElementById('page-users');
     usersPage.classList.add('active');
     usersPage.style.opacity = '1';
-    currentViewingProfile = null;  // ВАЖНО: сбрасываем чужой профиль
+    currentViewingProfile = null;
 }
 
+// ========== ПРОФИЛЬ ==========
+let currentViewingProfile = null;
 async function loadProfilePage(login = null) {
-    // Если явно не передан логин – показываем СВОЙ профиль
     const targetLogin = login || (currentUser ? currentUser.login : null);
     if (!targetLogin) return;
-
-    // Сбрасываем кэш для этого профиля, чтобы видеть актуальные данные
-    cache.profiles[targetLogin] = null;
 
     document.getElementById('profileName').textContent = 'Загрузка...';
     document.getElementById('profileAvatar').style.display = 'none';
@@ -142,7 +126,6 @@ async function loadProfilePage(login = null) {
     document.getElementById('profileGpxFiles').innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
     document.getElementById('profileWall').innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
 
-    // Параллельная загрузка всех данных профиля
     const [profileRes, chatsRes, forumCountRes, gpxCountRes, gpxFilesRes, wallRes] = await Promise.all([
         _supabase.from('users').select('name, avatar, description, created_at').eq('login', targetLogin).maybeSingle(),
         _supabase.from('diamond_chats').select('id,messages').eq('user_login', targetLogin),
@@ -156,9 +139,7 @@ async function loadProfilePage(login = null) {
     if (!profile) return;
     const isOwner = currentUser && currentUser.login === targetLogin;
 
-    const backBtn = document.getElementById('backToUsersBtn');
-    if (backBtn) backBtn.style.display = isOwner ? 'none' : 'inline-flex';
-
+    document.getElementById('backToUsersBtn').style.display = isOwner ? 'none' : 'inline-flex';
     document.getElementById('profileName').textContent = profile.name || targetLogin;
     const avatarEl = document.getElementById('profileAvatar');
     if (profile.avatar) {
@@ -172,7 +153,6 @@ async function loadProfilePage(login = null) {
     document.getElementById('profileDescription').textContent = profile.description || (isOwner ? 'Нажмите, чтобы добавить описание' : 'Нет описания');
     document.getElementById('profileRegDate').textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
 
-    // Редактирование (только для владельца)
     if (isOwner) {
         document.getElementById('profileAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
@@ -199,12 +179,10 @@ async function loadProfilePage(login = null) {
     const chats = chatsRes.data || [];
     const totalChats = chats.length;
     const totalMessages = chats.reduce((s,c) => s + (c.messages?.length || 0), 0);
-    const forumCount = forumCountRes.count || 0;
-    const gpxCount = gpxCountRes.count || 0;
     document.getElementById('profileStats').innerHTML = `
-        <div><i class="fas fa-comments"></i> ${forumCount} сообщений</div>
+        <div><i class="fas fa-comments"></i> ${forumCountRes.count || 0} сообщений</div>
         <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщ.</div>
-        <div><i class="fas fa-map-marker-alt"></i> ${gpxCount} поездок</div>
+        <div><i class="fas fa-map-marker-alt"></i> ${gpxCountRes.count || 0} поездок</div>
     `;
 
     // GPX-карточки
@@ -230,17 +208,10 @@ async function loadProfilePage(login = null) {
         </div>
     `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
-    // Кнопка отправки на стене
     document.getElementById('postWallBtn').onclick = async () => {
         const msg = document.getElementById('wallMessage').value.trim();
         if (!msg || !currentUser) return;
-        await _supabase.from('profile_wall').insert([{
-            user_login: currentUser.login,
-            user_name: currentUser.name || currentUser.login,
-            user_avatar: currentUser.avatar || '',
-            profile_login: targetLogin,
-            content: msg
-        }]);
+        await _supabase.from('profile_wall').insert([{ user_login: currentUser.login, user_name: currentUser.name || currentUser.login, user_avatar: currentUser.avatar || '', profile_login: targetLogin, content: msg }]);
         document.getElementById('wallMessage').value = '';
         loadProfilePage(targetLogin);
     };
@@ -253,7 +224,6 @@ async function loadProfilePage(login = null) {
     };
 }
 
-// ========== ПРОСМОТР GPX ДРУГОГО ПОЛЬЗОВАТЕЛЯ ==========
 async function viewGpxRoute(fileId) {
     const { data } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
     if (!data || !data.content) return showToast('Не удалось загрузить маршрут');
