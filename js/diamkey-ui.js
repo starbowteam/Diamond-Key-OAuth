@@ -7,12 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
         target.classList.add('active');
         setTimeout(() => { target.style.opacity = '1'; }, 10);
 
-        // Обновляем данные при переходе на главную
-        if (pageId === 'home') {
-            updateHeroButton();
-            loadGlobalStats();
-            loadAnnouncement();
-        }
+        if (pageId === 'home') { updateHeroButton(); loadGlobalStats(); loadAnnouncement(); }
         if (pageId === 'users') loadUsers();
         if (pageId === 'profile') {
             currentViewingProfile = null;
@@ -36,17 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.getElementById('gpxInfoOkBtn')?.addEventListener('click', () => {
-        closeModal('gpxInfoModal');
-        localStorage.setItem('gpx_info_seen', '1');
-    });
+    document.getElementById('gpxInfoOkBtn')?.addEventListener('click', () => { closeModal('gpxInfoModal'); localStorage.setItem('gpx_info_seen', '1'); });
+    document.getElementById('logoutSidebarBtn').addEventListener('click', () => { localStorage.removeItem('diamkey_current'); window.location.reload(); });
 
-    document.getElementById('logoutSidebarBtn').addEventListener('click', () => {
-        localStorage.removeItem('diamkey_current');
-        window.location.reload();
-    });
-
-    // Кнопка на главной
     function updateHeroButton() {
         const btn = document.getElementById('heroActionBtn');
         if (!btn) return;
@@ -55,14 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.onclick = () => { switchPage('profile'); };
         } else {
             btn.innerHTML = '<i class="fas fa-user-plus"></i> Создать DiamKey';
-            btn.onclick = () => {
-                const modal = document.getElementById('loginModal');
-                if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
-            };
+            btn.onclick = () => { const modal = document.getElementById('loginModal'); if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); } };
         }
     }
 
-    // Первоначальная настройка для гостей
     if (!currentUser) {
         document.querySelectorAll('.sidebar-icon[data-page]').forEach(b => { if (b.dataset.page !== 'home') b.style.display = 'none'; });
         document.getElementById('logoutSidebarBtn').style.display = 'none';
@@ -70,17 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const guestLogin = document.createElement('button');
         guestLogin.className = 'sidebar-icon';
         guestLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i>';
-        guestLogin.addEventListener('click', () => {
-            const modal = document.getElementById('loginModal');
-            if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
-        });
+        guestLogin.addEventListener('click', () => { const modal = document.getElementById('loginModal'); if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); } });
         document.getElementById('sidebar').appendChild(guestLogin);
-        // Загружаем общую статистику и объявление (доступно гостям)
         updateHeroButton();
         loadGlobalStats();
         loadAnnouncement();
     } else {
-        // Авторизованный пользователь
         loadProfile().then(() => {
             updateHeroButton();
             loadGlobalStats();
@@ -91,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Локальный вход
     document.getElementById('doLoginBtn').addEventListener('click', async () => {
         const res = await login(document.getElementById('loginIdentity').value.trim(), document.getElementById('loginPassword').value);
         if (res.error) return showToast(res.error);
