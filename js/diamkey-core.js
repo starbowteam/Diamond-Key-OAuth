@@ -14,7 +14,6 @@ function showToast(msg) {
 const saved = localStorage.getItem('diamkey_current');
 if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
 
-// Простой кэш в памяти (ускоряет повторные запросы в течение сессии)
 const cache = {
     announcements: null,
     globalStats: null,
