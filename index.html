@@ -26,49 +26,100 @@
             <button class="sidebar-icon" id="logoutSidebarBtn"><i class="fas fa-sign-out-alt"></i></button>
         </nav>
         <main class="main-content" id="mainContent">
-            <!-- Главная -->
+            <!-- Главная страница (обновлённая) -->
             <section class="page active" id="page-home">
-                <div class="glass-panel home-hero">
-                    <img src="assets/favicon.ico" class="home-logo">
+                <div class="glass-panel hero">
+                    <img src="assets/favicon.ico" class="hero-logo" alt="DiamKey">
                     <h1 id="cipherTitle">DIAMKEY</h1>
-                    <p class="home-subtitle">Единая учётная запись для сервисов Diamond</p>
-                    <div class="home-description">
-                        <p>DiamKey — центр вашей цифровой жизни в экосистеме Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong>, <strong>Diamond GPX</strong> и общему форуму.</p>
+                    <p class="hero-subtitle">Единая учётная запись для всей экосистемы Diamond</p>
+                    <div class="hero-description">
+                        <p>DiamKey — это ваш ключ ко всем сервисам Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ GPS-треков и маршрутов) и общему форуму, где можно общаться и делиться файлами.</p>
+                        <p>Присоединяйтесь к сообществу Diamond уже сегодня и получите полный контроль над своими данными, синхронизацию между устройствами и настоящую приватность.</p>
                     </div>
-                    <!-- Объявление от создателя -->
-                    <div class="announcement-card glass-panel accent-glass" id="announcementCard">
-                        <div class="announcement-header"><i class="fas fa-bullhorn"></i> Объявление от создателя</div>
-                        <div class="announcement-body" id="announcementBody">
-                            <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    <!-- Кнопка, меняющаяся в зависимости от авторизации -->
+                    <div id="heroActionArea">
+                        <button class="btn btn-primary" id="heroActionBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button>
+                    </div>
+                </div>
+
+                <!-- Объявление от создателя (теперь выше) -->
+                <div class="glass-panel accent-glass announcement-card" id="announcementCard">
+                    <div class="announcement-header"><i class="fas fa-bullhorn"></i> Объявление от создателя</div>
+                    <div class="announcement-body" id="announcementBody">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+
+                <!-- Карточки экосистемы -->
+                <div class="features-grid">
+                    <div class="feature-card glass-panel">
+                        <i class="fas fa-robot"></i>
+                        <h3>Diamond AI</h3>
+                        <p>Интеллектуальный помощник с синхронизацией чатов, папок и поддержкой LaTeX.</p>
+                    </div>
+                    <div class="feature-card glass-panel">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h3>Diamond GPX</h3>
+                        <p>Загружайте GPS-треки, анализируйте маршруты и делитесь прогулками с друзьями.</p>
+                    </div>
+                    <div class="feature-card glass-panel">
+                        <i class="fas fa-comments"></i>
+                        <h3>Форум</h3>
+                        <p>Общайтесь с сообществом Diamond, обсуждайте проекты и делитесь идеями.</p>
+                    </div>
+                </div>
+
+                <!-- Живая статистика экосистемы -->
+                <div class="glass-panel stats-panel">
+                    <h2><i class="fas fa-chart-bar"></i> Экосистема в цифрах</h2>
+                    <div class="stats-grid" id="globalStatsGrid">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+
+                <!-- Преимущества DiamKey -->
+                <div class="glass-panel">
+                    <h2><i class="fas fa-star"></i> Почему DiamKey?</h2>
+                    <div class="advantage-list">
+                        <div class="advantage-item">
+                            <i class="fas fa-fingerprint"></i>
+                            <div>
+                                <h3>Один аккаунт для всего</h3>
+                                <p>Регистрируйтесь один раз и входите во все сервисы экосистемы Diamond без повторной авторизации.</p>
+                            </div>
+                        </div>
+                        <div class="advantage-item">
+                            <i class="fas fa-shield-alt"></i>
+                            <div>
+                                <h3>Полная приватность</h3>
+                                <p>Ваши данные хранятся в зашифрованном виде в облаке Supabase. Никаких утечек и слежки.</p>
+                            </div>
+                        </div>
+                        <div class="advantage-item">
+                            <i class="fas fa-sync-alt"></i>
+                            <div>
+                                <h3>Мгновенная синхронизация</h3>
+                                <p>Чаты, файлы, маршруты — всё доступно на любом устройстве, где вы вошли в DiamKey.</p>
+                            </div>
+                        </div>
+                        <div class="advantage-item">
+                            <i class="fas fa-code"></i>
+                            <div>
+                                <h3>Создано с душой</h3>
+                                <p>Проект с открытым исходным кодом, разработанный командой Diamond во главе с viktorshopa.</p>
+                            </div>
                         </div>
                     </div>
-                    <!-- Статистика экосистемы -->
-                    <div class="glass-panel global-stats" id="globalStats">
-                        <h2><i class="fas fa-chart-bar"></i> Экосистема в цифрах</h2>
-                        <div class="stats-grid">
-                            <div class="stat-box"><i class="fas fa-users"></i><div class="stat-number" id="statUsers">—</div><div class="stat-label">пользователей</div></div>
-                            <div class="stat-box"><i class="fas fa-comment-dots"></i><div class="stat-number" id="statForum">—</div><div class="stat-label">сообщений на форуме</div></div>
-                            <div class="stat-box"><i class="fas fa-map-marked-alt"></i><div class="stat-number" id="statGpx">—</div><div class="stat-label">GPX-прогулок</div></div>
-                            <div class="stat-box"><i class="fas fa-robot"></i><div class="stat-number" id="statAiChats">—</div><div class="stat-label">чатов в Diamond AI</div></div>
-                            <div class="stat-box"><i class="fas fa-envelope"></i><div class="stat-number" id="statAiMessages">—</div><div class="stat-label">сообщений в Diamond AI</div></div>
-                        </div>
-                        <div class="loading-spinner" id="globalStatsLoader"><i class="fas fa-spinner fa-spin"></i></div>
+                </div>
+
+                <!-- Блок о Diamond AI (вместо "Начните прямо сейчас") -->
+                <div class="glass-panel ai-preview">
+                    <div class="ai-review-header">
+                        <img src="assets/logo-ai.ico" style="width:28px;height:28px;border-radius:50%;">
+                        <span>Diamond AI</span>
                     </div>
-                    <!-- Карточки экосистемы -->
-                    <div class="features-grid">
-                        <div class="feature-card glass-panel"><i class="fas fa-robot"></i><h3>Diamond AI</h3><p>Интеллектуальный помощник с синхронизацией чатов и папок</p></div>
-                        <div class="feature-card glass-panel"><i class="fas fa-map-marker-alt"></i><h3>Diamond GPX</h3><p>Анализ GPS-треков</p></div>
-                        <div class="feature-card glass-panel"><i class="fas fa-shield-alt"></i><h3>Приватность</h3><p>Ваши данные под контролем</p></div>
-                    </div>
-                    <!-- Блок о Diamond AI -->
-                    <div class="glass-panel diamond-ai-block" style="display:flex; gap:20px; align-items:center;">
-                        <img src="assets/logo-ai.ico" style="width:64px;height:64px;border-radius:50%;">
-                        <div>
-                            <h3>Diamond AI — ваш личный помощник</h3>
-                            <p class="text-muted">Общайтесь с ИИ, задавайте вопросы, загружайте файлы. Все чаты синхронизируются через DiamKey.</p>
-                            <a href="https://diamond-ai.ru" target="_blank" class="btn"><i class="fas fa-external-link-alt"></i> Перейти в Diamond AI</a>
-                        </div>
-                    </div>
+                    <p>Привет! Я — Diamond AI, твой персональный помощник. Я могу отвечать на вопросы, помогать с кодом, решать задачи и просто болтать. Мои ответы всегда чёткие и по делу. Попробуй спросить меня о чём-нибудь!</p>
+                    <p style="font-size:0.9rem; color:var(--text-muted);">Это пример сообщения от ИИ. В реальном чате ответы генерируются мгновенно.</p>
                 </div>
             </section>
 
@@ -86,25 +137,123 @@
                 </div>
             </section>
 
-            <!-- GPX (без изменений) -->
+            <!-- GPX, Пользователи, Профиль – без изменений -->
             <section class="page" id="page-gpx">
-                <!-- ... полный GPX как в последней рабочей версии ... -->
+                <div class="glass-panel gpx-container">
+                    <div class="gpx-toolbar">
+                        <span><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
+                        <button class="btn" onclick="document.getElementById('gpx-file-input').click()"><i class="fas fa-folder-open"></i> Загрузить GPX</button>
+                        <input type="file" id="gpx-file-input" accept=".gpx,.xml" style="display:none">
+                        <button class="btn" id="saveGpxBtn" style="display:none"><i class="fas fa-cloud-upload-alt"></i> Опубликовать</button>
+                    </div>
+                    <div id="gpx-map"></div>
+                    <div class="gpx-dashboard glass-panel">
+                        <div class="chart-wrap"><canvas id="elevationChart"></canvas></div>
+                        <div class="gpx-stats-grid">
+                            <div class="gpx-stat-card"><i class="fas fa-ruler"></i><span class="stat-label">Дистанция</span><span id="distVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-mountain"></i><span class="stat-label">Набор</span><span id="ascentVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-clock"></i><span class="stat-label">Время</span><span id="timeVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-tachometer-alt"></i><span class="stat-label">Скорость</span><span id="speedVal">—</span></div>
+                        </div>
+                    </div>
+                    <div id="aiReview" class="ai-review glass-panel" style="display:none;">
+                        <div class="ai-review-header"><img src="assets/logo-ai.ico" style="width:24px;height:24px;border-radius:50%;"><span>Diamond AI</span></div>
+                        <p id="aiReviewText"></p>
+                    </div>
+                </div>
             </section>
 
-            <!-- Пользователи (без изменений) -->
             <section class="page" id="page-users">
-                <!-- ... -->
+                <div class="glass-panel">
+                    <h2><i class="fas fa-users"></i> Пользователи</h2>
+                    <input type="text" id="userSearch" placeholder="Поиск по нику..." style="margin-bottom:16px;">
+                    <div id="usersList">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
             </section>
 
-            <!-- Профиль (без изменений) -->
             <section class="page" id="page-profile">
-                <!-- ... -->
+                <div class="glass-panel profile-top">
+                    <div class="profile-header">
+                        <div class="avatar-wrapper" id="profileAvatarWrapper">
+                            <img id="profileAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
+                            <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="profileName"></h2>
+                            <p id="profileDescription" class="editable-text">Нажмите, чтобы добавить описание</p>
+                            <span class="profile-regdate" id="profileRegDate"></span>
+                        </div>
+                    </div>
+                    <div class="profile-stats" id="profileStats"></div>
+                    <button class="btn btn-back" id="backToUsersBtn" style="display:none; margin-top:16px;" onclick="goBackToUsers()"><i class="fas fa-arrow-left"></i> Назад к пользователям</button>
+                </div>
+                <div class="glass-panel profile-gpx" style="margin-top:20px;">
+                    <h3>Поездки с Diamond GPX</h3>
+                    <div id="profileGpxFiles">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+                <div class="glass-panel profile-wall" style="margin-top:20px;">
+                    <h3>Стена</h3>
+                    <div class="wall-input">
+                        <textarea id="wallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                        <button class="btn btn-send" id="postWallBtn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                    <div id="profileWall">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>
 
     <!-- Модалки (без изменений) -->
-    <!-- ... -->
+    <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <img src="assets/favicon.ico" class="modal-logo" style="width:60px;height:60px;animation:float 3s ease-in-out infinite;">
+            <h3>Вход в DiamKey</h3>
+            <input id="loginIdentity" placeholder="Логин">
+            <input id="loginPassword" type="password" placeholder="Пароль">
+            <button class="btn" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+            <button class="btn" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+        </div>
+    </div>
+
+    <div class="modal" id="gpxInfoModal" onclick="if(event.target===this) closeModal('gpxInfoModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <h3><i class="fas fa-map-marker-alt"></i> Что такое GPX?</h3>
+            <p>GPX — формат для хранения GPS-треков (велопрогулки, походы). Загрузите файл, чтобы увидеть маршрут и статистику!</p>
+            <div class="gpx-links">
+                <a href="https://apps.apple.com/app/biketracker/id123456" target="_blank"><i class="fab fa-apple"></i> BikeTracker для iPhone</a>
+                <a href="https://play.google.com/store/apps/details?id=com.biketracker" target="_blank"><i class="fab fa-android"></i> BikeTracker для Android</a>
+            </div>
+            <button class="btn" id="gpxInfoOkBtn"><i class="fas fa-check"></i> Хорошо, я понял(а)</button>
+        </div>
+    </div>
+
+    <div class="modal" id="gpxNameModal" onclick="if(event.target===this) closeModal('gpxNameModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <h3>Название прогулки</h3>
+            <input id="gpxNameInput" placeholder="Например: Утренняя поездка">
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn" id="saveGpxNameBtn"><i class="fas fa-save"></i> Опубликовать</button>
+                <button class="btn" onclick="closeModal('gpxNameModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="editDescriptionModal" onclick="if(event.target===this) closeModal('editDescriptionModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <h3>Редактировать описание</h3>
+            <textarea id="editDescriptionInput" rows="3" placeholder="Расскажите о себе..."></textarea>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn" id="saveDescriptionBtn"><i class="fas fa-save"></i> Сохранить</button>
+                <button class="btn" onclick="closeModal('editDescriptionModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
 
     <script src="js/diamkey-core.js?v=9"></script>
     <script src="js/diamkey-ui.js?v=9"></script>
