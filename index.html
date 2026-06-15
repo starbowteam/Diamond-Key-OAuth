@@ -16,6 +16,7 @@
 <body>
     <div class="dot-bg"></div>
     <div class="app-shell" id="appShell">
+        <!-- Сайдбар с абсолютными путями -->
         <nav class="sidebar" id="sidebar">
             <a class="sidebar-icon" href="/"><i class="fas fa-home"></i></a>
             <a class="sidebar-icon" href="/forum"><i class="fas fa-comments"></i></a>
@@ -123,7 +124,7 @@
                     <input type="text" id="userSearch" placeholder="Поиск по нику..." style="margin-bottom:16px;">
                     <div id="usersList"><div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div></div>
                 </div>
-                <!-- Профиль пользователя (внутри users) -->
+                <!-- Профиль пользователя внутри users -->
                 <div class="glass-panel profile-top" id="userProfileView" style="display:none;">
                     <div class="profile-header">
                         <div class="avatar-wrapper" id="userAvatarWrapper">
@@ -185,7 +186,7 @@
         </main>
     </div>
 
-    <!-- Модалки (без изменений, только id) -->
+    <!-- Модалки -->
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <img src="assets/favicon.ico" class="modal-logo" style="width:60px;height:60px;animation:float 3s ease-in-out infinite;">
