@@ -1,6 +1,7 @@
-// Объявление
+// Объявление (загружается всегда)
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
+    if (!body) return;
     body.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
     const { data } = await _supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
     if (data && data.length) {
@@ -17,6 +18,42 @@ async function loadAnnouncement() {
         `;
     } else {
         body.innerHTML = '<p class="text-muted">Нет новых объявлений</p>';
+    }
+}
+
+// Глобальная статистика
+async function loadGlobalStats() {
+    const grid = document.getElementById('globalStatsGrid');
+    if (!grid) return;
+    grid.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    try {
+        const { data, error } = await _supabase.rpc('get_global_stats');
+        if (error || !data || data.length === 0) throw new Error('No data');
+        const stats = data[0]; // первая строка
+        grid.innerHTML = `
+            <div class="stat-box">
+                <i class="fas fa-users"></i>
+                <div class="stat-number">${stats.total_users}</div>
+                <div class="stat-label">пользователей</div>
+            </div>
+            <div class="stat-box">
+                <i class="fas fa-comments"></i>
+                <div class="stat-number">${stats.total_forum_messages}</div>
+                <div class="stat-label">сообщений на форуме</div>
+            </div>
+            <div class="stat-box">
+                <i class="fas fa-map-marked-alt"></i>
+                <div class="stat-number">${stats.total_gpx_files}</div>
+                <div class="stat-label">GPX-маршрутов</div>
+            </div>
+            <div class="stat-box">
+                <i class="fas fa-robot"></i>
+                <div class="stat-number">${stats.total_ai_messages}</div>
+                <div class="stat-label">сообщений в Diamond AI</div>
+            </div>
+        `;
+    } catch (e) {
+        grid.innerHTML = '<p class="text-muted">Не удалось загрузить статистику</p>';
     }
 }
 
@@ -89,7 +126,6 @@ async function loadProfilePage(login = null) {
     const targetLogin = login || (currentUser ? currentUser.login : null);
     if (!targetLogin) return;
 
-    // Показываем загрузку
     document.getElementById('profileName').textContent = 'Загрузка...';
     document.getElementById('profileAvatar').style.display = 'none';
     document.getElementById('profileDescription').textContent = '';
@@ -102,8 +138,6 @@ async function loadProfilePage(login = null) {
     if (!profile) return;
 
     const isOwner = currentUser && currentUser.login === targetLogin;
-
-    // Кнопка «Назад» видна только при просмотре чужого профиля
     const backBtn = document.getElementById('backToUsersBtn');
     if (backBtn) backBtn.style.display = isOwner ? 'none' : 'inline-flex';
 
@@ -154,7 +188,6 @@ async function loadProfilePage(login = null) {
         <div><i class="fas fa-map-marker-alt"></i> ${gpxCount || 0} поездок</div>
     `;
 
-    // GPX-карточки
     const { data: gpxFiles } = await _supabase.from('gpx_files').select('*').eq('user_login', targetLogin).order('created_at', { ascending: false });
     document.getElementById('profileGpxFiles').innerHTML = gpxFiles?.length ? `<div class="gpx-cards">${gpxFiles.map(f => `
         <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
@@ -164,7 +197,6 @@ async function loadProfilePage(login = null) {
         </div>
     `).join('')}</div>` : '<p class="text-muted">Нет поездок</p>';
 
-    // Стена
     const { data: wall } = await _supabase.from('profile_wall').select('*').eq('profile_login', targetLogin).order('created_at', { ascending: false });
     document.getElementById('profileWall').innerHTML = wall?.length ? wall.map(p => `
         <div class="glass-panel" style="padding:12px;margin-bottom:8px;">
