@@ -46,7 +46,7 @@ async function loadForum() {
     container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
     const { data: posts } = await _supabase.from('forum').select('login, name, avatar, message, time').order('time', { ascending: false });
     container.innerHTML = posts.map(p => `
-        <div class="glass-panel" style="padding:14px;">
+        <div class="glass-panel" style="padding:14px; margin-bottom:6px;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
                 ${p.avatar ? `<img src="${p.avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;cursor:pointer" onclick="navigateTo('/users/${p.login}')" onerror="this.outerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:28px;color:var(--text-muted);cursor:pointer\\' onclick=\\'navigateTo(\\'/users/${p.login}\\')\\'>'">` : `<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);cursor:pointer" onclick="navigateTo('/users/${p.login}')"></i>`}
                 <strong style="cursor:pointer" onclick="navigateTo('/users/${p.login}')">${escapeHtml(p.name || p.login)}</strong>
@@ -66,6 +66,7 @@ document.getElementById('sendForumBtn').addEventListener('click', async () => {
     const tempEl = document.createElement('div');
     tempEl.className = 'glass-panel';
     tempEl.style.padding = '14px';
+    tempEl.style.marginBottom = '6px';
     tempEl.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
             ${temp.avatar ? `<img src="${temp.avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
@@ -80,12 +81,16 @@ document.getElementById('sendForumBtn').addEventListener('click', async () => {
     loadForum();
 });
 
-// ========== ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ (во вкладке users) ==========
+// ========== ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ==========
 async function showUserProfile(login) {
-    document.getElementById('usersPanel').style.display = 'none';
-    document.getElementById('userProfileView').style.display = 'block';
-    document.getElementById('userGpxSection').style.display = 'block';
-    document.getElementById('userWallSection').style.display = 'block';
+    const usersPanel = document.getElementById('usersPanel');
+    const userView = document.getElementById('userProfileView');
+    const gpxSection = document.getElementById('userGpxSection');
+    const wallSection = document.getElementById('userWallSection');
+    if (usersPanel) usersPanel.style.display = 'none';
+    if (userView) userView.style.display = 'block';
+    if (gpxSection) gpxSection.style.display = 'block';
+    if (wallSection) wallSection.style.display = 'block';
 
     const [profileRes, chatsRes, forumCountRes, gpxCountRes, gpxFilesRes, wallRes] = await Promise.all([
         _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
@@ -99,30 +104,39 @@ async function showUserProfile(login) {
     const profile = profileRes.data;
     if (!profile) return;
 
-    document.getElementById('userName').textContent = profile.name || login;
+    const nameEl = document.getElementById('userName');
     const avatarEl = document.getElementById('userAvatar');
-    if (profile.avatar) {
-        avatarEl.src = profile.avatar;
-        avatarEl.style.display = '';
-        avatarEl.onerror = function() { this.style.display = 'none'; this.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:40px;color:var(--text-muted);"></i>'; };
-    } else {
-        avatarEl.style.display = 'none';
-        avatarEl.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:40px;color:var(--text-muted);"></i>';
+    const descEl = document.getElementById('userDescription');
+    const regEl = document.getElementById('userRegDate');
+    const statsEl = document.getElementById('userStats');
+    const gpxFilesEl = document.getElementById('userGpxFiles');
+    const wallPostsEl = document.getElementById('userWallPosts');
+
+    if (nameEl) nameEl.textContent = profile.name || login;
+    if (avatarEl) {
+        if (profile.avatar) {
+            avatarEl.src = profile.avatar;
+            avatarEl.style.display = '';
+            avatarEl.onerror = function() { this.style.display = 'none'; this.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:40px;color:var(--text-muted);"></i>'; };
+        } else {
+            avatarEl.style.display = 'none';
+            avatarEl.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:40px;color:var(--text-muted);"></i>';
+        }
     }
-    document.getElementById('userDescription').textContent = profile.description || 'Нет описания';
-    document.getElementById('userRegDate').textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
+    if (descEl) descEl.textContent = profile.description || 'Нет описания';
+    if (regEl) regEl.textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
 
     const chats = chatsRes.data || [];
     const totalChats = chats.length;
     const totalMessages = chats.reduce((s,c) => s + (c.messages?.length || 0), 0);
-    document.getElementById('userStats').innerHTML = `
+    if (statsEl) statsEl.innerHTML = `
         <div><i class="fas fa-comments"></i> ${forumCountRes.count || 0} сообщений</div>
         <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщ.</div>
         <div><i class="fas fa-map-marker-alt"></i> ${gpxCountRes.count || 0} поездок</div>
     `;
 
     const gpxFiles = gpxFilesRes.data || [];
-    document.getElementById('userGpxFiles').innerHTML = gpxFiles.length ? `<div class="gpx-cards">${gpxFiles.map(f => `
+    if (gpxFilesEl) gpxFilesEl.innerHTML = gpxFiles.length ? `<div class="gpx-cards">${gpxFiles.map(f => `
         <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
             <i class="fas fa-map-marker-alt"></i>
             <h4>${escapeHtml(f.name)}</h4>
@@ -131,7 +145,7 @@ async function showUserProfile(login) {
     `).join('')}</div>` : '<p class="text-muted">Нет поездок</p>';
 
     const wall = wallRes.data || [];
-    document.getElementById('userWallPosts').innerHTML = wall.length ? wall.map(p => `
+    if (wallPostsEl) wallPostsEl.innerHTML = wall.length ? wall.map(p => `
         <div class="glass-panel" style="padding:12px;margin-bottom:8px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
                 ${p.user_avatar ? `<img src="${p.user_avatar}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.outerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:24px;color:var(--text-muted)\\'></i>'">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);"></i>'}
@@ -142,20 +156,26 @@ async function showUserProfile(login) {
         </div>
     `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
-    document.getElementById('postUserWallBtn').onclick = async () => {
-        const msg = document.getElementById('userWallMessage').value.trim();
+    const postBtn = document.getElementById('postUserWallBtn');
+    if (postBtn) postBtn.onclick = async () => {
+        const msg = document.getElementById('userWallMessage')?.value.trim();
         if (!msg || !currentUser) return;
         await _supabase.from('profile_wall').insert([{ user_login: currentUser.login, user_name: currentUser.name || currentUser.login, user_avatar: currentUser.avatar || '', profile_login: login, content: msg }]);
-        document.getElementById('userWallMessage').value = '';
+        const wallMsg = document.getElementById('userWallMessage');
+        if (wallMsg) wallMsg.value = '';
         showUserProfile(login);
     };
 }
 
 function goBackToUsersList() {
-    document.getElementById('usersPanel').style.display = 'block';
-    document.getElementById('userProfileView').style.display = 'none';
-    document.getElementById('userGpxSection').style.display = 'none';
-    document.getElementById('userWallSection').style.display = 'none';
+    const usersPanel = document.getElementById('usersPanel');
+    const userView = document.getElementById('userProfileView');
+    const gpxSection = document.getElementById('userGpxSection');
+    const wallSection = document.getElementById('userWallSection');
+    if (usersPanel) usersPanel.style.display = 'block';
+    if (userView) userView.style.display = 'none';
+    if (gpxSection) gpxSection.style.display = 'none';
+    if (wallSection) wallSection.style.display = 'none';
     navigateTo('/users');
 }
 
@@ -173,22 +193,32 @@ async function loadMyProfile() {
 
     const profile = profileRes.data;
     if (!profile) return;
-    const isOwner = true;
 
-    document.getElementById('myName').textContent = profile.name || login;
+    const nameEl = document.getElementById('myName');
     const avatarEl = document.getElementById('myAvatar');
-    if (profile.avatar) {
-        avatarEl.src = profile.avatar;
-        avatarEl.style.display = '';
-        avatarEl.onerror = function() { this.style.display = 'none'; this.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:40px;color:var(--text-muted);"></i>'; };
-    } else {
-        avatarEl.style.display = 'none';
-        avatarEl.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:40px;color:var(--text-muted);"></i>';
-    }
-    document.getElementById('myDescription').textContent = profile.description || 'Нажмите, чтобы добавить описание';
-    document.getElementById('myRegDate').textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
+    const descEl = document.getElementById('myDescription');
+    const regEl = document.getElementById('myRegDate');
+    const statsEl = document.getElementById('myStats');
+    const gpxFilesEl = document.getElementById('myGpxFiles');
+    const wallPostsEl = document.getElementById('myWallPosts');
 
-    document.getElementById('myAvatarWrapper').onclick = () => {
+    if (nameEl) nameEl.textContent = profile.name || login;
+    if (avatarEl) {
+        if (profile.avatar) {
+            avatarEl.src = profile.avatar;
+            avatarEl.style.display = '';
+            avatarEl.onerror = function() { this.style.display = 'none'; this.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:40px;color:var(--text-muted);"></i>'; };
+        } else {
+            avatarEl.style.display = 'none';
+            avatarEl.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:40px;color:var(--text-muted);"></i>';
+        }
+    }
+    if (descEl) descEl.textContent = profile.description || 'Нажмите, чтобы добавить описание';
+    if (regEl) regEl.textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
+
+    // Редактирование
+    const avatarWrapper = document.getElementById('myAvatarWrapper');
+    if (avatarWrapper) avatarWrapper.onclick = () => {
         const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
         input.onchange = async (e) => {
             const file = e.target.files[0]; if (!file) return;
@@ -198,29 +228,34 @@ async function loadMyProfile() {
         };
         input.click();
     };
-    document.getElementById('myDescription').classList.add('editable-text');
-    document.getElementById('myDescription').onclick = () => {
-        document.getElementById('editDescriptionInput').value = profile.description || '';
-        const modal = document.getElementById('editDescriptionModal'); modal.style.display = 'flex'; modal.classList.add('active');
-    };
-    document.getElementById('saveDescriptionBtn').onclick = async () => {
-        const desc = document.getElementById('editDescriptionInput').value.trim();
+    if (descEl) {
+        descEl.classList.add('editable-text');
+        descEl.onclick = () => {
+            const editInput = document.getElementById('editDescriptionInput');
+            if (editInput) editInput.value = profile.description || '';
+            const modal = document.getElementById('editDescriptionModal');
+            if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
+        };
+    }
+    const saveDescBtn = document.getElementById('saveDescriptionBtn');
+    if (saveDescBtn) saveDescBtn.onclick = async () => {
+        const desc = document.getElementById('editDescriptionInput')?.value.trim() || '';
         await updateProfile({ description: desc });
-        document.getElementById('myDescription').textContent = desc || 'Нажмите, чтобы добавить описание';
+        if (descEl) descEl.textContent = desc || 'Нажмите, чтобы добавить описание';
         closeModal('editDescriptionModal');
     };
 
     const chats = chatsRes.data || [];
     const totalChats = chats.length;
     const totalMessages = chats.reduce((s,c) => s + (c.messages?.length || 0), 0);
-    document.getElementById('myStats').innerHTML = `
+    if (statsEl) statsEl.innerHTML = `
         <div><i class="fas fa-comments"></i> ${forumCountRes.count || 0} сообщений</div>
         <div><i class="fas fa-robot"></i> ${totalChats} чатов / ${totalMessages} сообщ.</div>
         <div><i class="fas fa-map-marker-alt"></i> ${gpxCountRes.count || 0} поездок</div>
     `;
 
     const gpxFiles = gpxFilesRes.data || [];
-    document.getElementById('myGpxFiles').innerHTML = gpxFiles.length ? `<div class="gpx-cards">${gpxFiles.map(f => `
+    if (gpxFilesEl) gpxFilesEl.innerHTML = gpxFiles.length ? `<div class="gpx-cards">${gpxFiles.map(f => `
         <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
             <i class="fas fa-map-marker-alt"></i>
             <h4>${escapeHtml(f.name)}</h4>
@@ -229,7 +264,7 @@ async function loadMyProfile() {
     `).join('')}</div>` : '<p class="text-muted">Нет поездок</p>';
 
     const wall = wallRes.data || [];
-    document.getElementById('myWallPosts').innerHTML = wall.length ? wall.map(p => `
+    if (wallPostsEl) wallPostsEl.innerHTML = wall.length ? wall.map(p => `
         <div class="glass-panel" style="padding:12px;margin-bottom:8px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
                 ${p.user_avatar ? `<img src="${p.user_avatar}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.outerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:24px;color:var(--text-muted)\\'></i>'">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);"></i>'}
@@ -240,11 +275,13 @@ async function loadMyProfile() {
         </div>
     `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
-    document.getElementById('postMyWallBtn').onclick = async () => {
-        const msg = document.getElementById('myWallMessage').value.trim();
+    const postBtn = document.getElementById('postMyWallBtn');
+    if (postBtn) postBtn.onclick = async () => {
+        const msg = document.getElementById('myWallMessage')?.value.trim();
         if (!msg || !currentUser) return;
         await _supabase.from('profile_wall').insert([{ user_login: currentUser.login, user_name: currentUser.name || currentUser.login, user_avatar: currentUser.avatar || '', profile_login: login, content: msg }]);
-        document.getElementById('myWallMessage').value = '';
+        const wallMsg = document.getElementById('myWallMessage');
+        if (wallMsg) wallMsg.value = '';
         loadMyProfile();
     };
 }
@@ -253,11 +290,13 @@ async function viewGpxRoute(fileId) {
     const { data } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
     if (!data || !data.content) return showToast('Не удалось загрузить маршрут');
     navigateTo('/gpx');
-    initGPX();
-    try {
-        const parsed = parseGPX(data.content);
-        displayGPX(parsed);
-        showAIReview(parsed);
-        showToast('Маршрут загружен');
-    } catch (err) { showToast('Ошибка при отображении маршрута'); }
+    setTimeout(async () => {
+        if (typeof initGPX === 'function') initGPX();
+        try {
+            const parsed = parseGPX(data.content);
+            displayGPX(parsed);
+            showAIReview(parsed);
+            showToast('Маршрут загружен');
+        } catch (err) { showToast('Ошибка при отображении маршрута'); }
+    }, 300);
 }
