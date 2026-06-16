@@ -1,38 +1,51 @@
+// ========== DIAMOND GPX — работа с GPS-треками ==========
 let gpxMap, gpxLayerGroup, elevationChart, currentGpxContent = null, hoverMarker = null;
 
 function initGPX() {
     if (typeof L === 'undefined' || !document.getElementById('gpx-map')) return;
     if (gpxMap) { gpxMap.invalidateSize(); return; }
 
-    const satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 });
-    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+    const satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        attribution: '© Google',
+        maxZoom: 20
+    });
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19
+    });
 
     gpxMap = L.map('gpx-map', {
-        center: [55.751244, 37.618423], zoom: 10,
+        center: [55.751244, 37.618423],
+        zoom: 10,
         layers: [satelliteLayer],
         zoomControl: true
     });
     gpxLayerGroup = L.featureGroup().addTo(gpxMap);
 
-    // Переключатель слоёв
-    const layerToggle = document.createElement('button');
-    layerToggle.className = 'layer-toggle';
-    layerToggle.textContent = 'Схема';
-    layerToggle.onclick = () => {
-        if (gpxMap.hasLayer(satelliteLayer)) {
-            gpxMap.removeLayer(satelliteLayer);
-            gpxMap.addLayer(streetLayer);
-            layerToggle.textContent = 'Спутник';
-        } else {
-            gpxMap.removeLayer(streetLayer);
-            gpxMap.addLayer(satelliteLayer);
-            layerToggle.textContent = 'Схема';
-        }
-    };
-    document.querySelector('.gpx-toolbar').appendChild(layerToggle);
+    // Переключатель слоёв карты
+    const toolbar = document.querySelector('.gpx-toolbar');
+    if (toolbar && !document.getElementById('layerToggleBtn')) {
+        const layerToggle = document.createElement('button');
+        layerToggle.id = 'layerToggleBtn';
+        layerToggle.className = 'btn layer-toggle';
+        layerToggle.textContent = '🗺 Схема';
+        layerToggle.addEventListener('click', () => {
+            if (gpxMap.hasLayer(satelliteLayer)) {
+                gpxMap.removeLayer(satelliteLayer);
+                gpxMap.addLayer(streetLayer);
+                layerToggle.textContent = '🛰 Спутник';
+            } else {
+                gpxMap.removeLayer(streetLayer);
+                gpxMap.addLayer(satelliteLayer);
+                layerToggle.textContent = '🗺 Схема';
+            }
+        });
+        toolbar.appendChild(layerToggle);
+    }
 
-    document.getElementById('gpx-file-input').addEventListener('change', function(e) {
-        const file = e.target.files[0]; if (!file) return;
+    document.getElementById('gpx-file-input').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = ev => {
             try {
@@ -41,28 +54,317 @@ function initGPX() {
                 currentGpxContent = ev.target.result;
                 document.getElementById('saveGpxBtn').style.display = 'inline-flex';
                 showAIReview(data);
+
+                // Предпросмотр перед публикацией
                 previewGpxBeforeSave(ev.target.result);
-            } catch (err) { showToast('Ошибка: ' + err.message); }
+            } catch (err) {
+                showToast('Ошибка: ' + err.message);
+            }
         };
         reader.readAsText(file);
     });
 
     document.getElementById('saveGpxBtn').addEventListener('click', () => {
         const modal = document.getElementById('gpxNameModal');
-        modal.style.display = 'flex';
-        modal.classList.add('active');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+        }
     });
 
     document.getElementById('saveGpxNameBtn').addEventListener('click', async () => {
         const name = document.getElementById('gpxNameInput')?.value?.trim() || 'Без названия';
-        await _supabase.from('gpx_files').insert([{ user_login: currentUser.login, name, content: currentGpxContent }]);
+        if (!currentUser) {
+            showToast('Необходимо войти');
+            return;
+        }
+        const { error } = await _supabase.from('gpx_files').insert([{
+            user_login: currentUser.login,
+            name,
+            content: currentGpxContent
+        }]);
+        if (error) {
+            showToast('Ошибка при сохранении: ' + error.message);
+            return;
+        }
         closeModal('gpxNameModal');
-        showToast('Прогулка опубликована!');
-        // Кнопка «Поделиться» появится после перезагрузки профиля, но можем сразу дать ссылку
+        showToast('✅ Прогулка опубликована!');
+        document.getElementById('saveGpxBtn').style.display = 'none';
     });
 
-    if (document.getElementById('page-gpx').classList.contains('active')) setTimeout(() => gpxMap.invalidateSize(), 100);
+    // Если страница уже активна, перерисовать карту
+    if (document.getElementById('page-gpx').classList.contains('active')) {
+        setTimeout(() => gpxMap.invalidateSize(), 100);
+    }
 }
 
-// Остальные функции (parseGPX, displayGPX, updateDashboard, showAIReview, haversine) без изменений
-// ... (приведены ниже полностью)
+function parseGPX(xmlString) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+    const tracks = [];
+
+    xmlDoc.querySelectorAll('trk').forEach(trk => {
+        const segments = [];
+        trk.querySelectorAll('trkseg').forEach(seg => {
+            const pts = [];
+            seg.querySelectorAll('trkpt').forEach(pt => {
+                const lat = +pt.getAttribute('lat');
+                const lon = +pt.getAttribute('lon');
+                const ele = parseFloat(pt.querySelector('ele')?.textContent);
+                const time = pt.querySelector('time')?.textContent;
+                pts.push({
+                    lat,
+                    lon,
+                    ele: isNaN(ele) ? null : ele,
+                    time: time ? new Date(time) : null
+                });
+            });
+            if (pts.length > 1) segments.push(pts);
+        });
+        if (segments.length) tracks.push({ segments });
+    });
+
+    return { tracks };
+}
+
+function displayGPX(data) {
+    gpxLayerGroup.clearLayers();
+    if (elevationChart) {
+        elevationChart.destroy();
+        elevationChart = null;
+    }
+
+    data.tracks.forEach(track => {
+        track.segments.forEach(seg => {
+            L.polyline(seg.map(p => [p.lat, p.lon]), {
+                color: '#4ecdc4',
+                weight: 5,
+                opacity: 0.9
+            }).addTo(gpxLayerGroup);
+
+            const start = seg[0];
+            const end = seg[seg.length - 1];
+
+            L.marker([start.lat, start.lon], {
+                icon: L.divIcon({
+                    className: 'gpx-marker-start',
+                    html: '<i class="fas fa-flag-checkered"></i>',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30]
+                })
+            }).addTo(gpxLayerGroup).bindPopup('Старт');
+
+            if (seg.length > 1) {
+                L.marker([end.lat, end.lon], {
+                    icon: L.divIcon({
+                        className: 'gpx-marker-end',
+                        html: '<i class="fas fa-flag"></i>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30]
+                    })
+                }).addTo(gpxLayerGroup).bindPopup('Финиш');
+            }
+        });
+    });
+
+    if (gpxLayerGroup.getLayers().length) {
+        const bounds = gpxLayerGroup.getBounds();
+        if (bounds.isValid()) {
+            gpxMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+        }
+    }
+
+    updateDashboard(data.tracks);
+}
+
+function updateDashboard(tracks) {
+    let allPoints = [];
+    tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
+    if (!allPoints.length) return;
+
+    let totalDist = 0;
+    let ascent = 0;
+    let cumDist = 0;
+    const elevationData = [];
+    let startTime = null;
+    let endTime = null;
+
+    for (let i = 0; i < allPoints.length; i++) {
+        if (i > 0) {
+            const prev = allPoints[i - 1];
+            const pt = allPoints[i];
+            const d = haversine(prev.lat, prev.lon, pt.lat, pt.lon);
+            totalDist += d;
+            cumDist += d;
+            if (prev.ele !== null && pt.ele !== null && pt.ele > prev.ele) {
+                ascent += pt.ele - prev.ele;
+            }
+        }
+        if (allPoints[i].time) {
+            if (!startTime || allPoints[i].time < startTime) startTime = allPoints[i].time;
+            if (!endTime || allPoints[i].time > endTime) endTime = allPoints[i].time;
+        }
+        if (allPoints[i].ele !== null) {
+            elevationData.push({
+                dist: cumDist,
+                ele: allPoints[i].ele,
+                lat: allPoints[i].lat,
+                lon: allPoints[i].lon
+            });
+        }
+    }
+
+    document.getElementById('distVal').textContent =
+        totalDist > 1000 ? (totalDist / 1000).toFixed(2) + ' км' : totalDist.toFixed(0) + ' м';
+    document.getElementById('ascentVal').textContent =
+        ascent > 0 ? '+' + ascent.toFixed(0) + ' м' : '—';
+
+    if (startTime && endTime) {
+        const durationSec = (endTime - startTime) / 1000;
+        const h = Math.floor(durationSec / 3600);
+        const m = Math.floor((durationSec % 3600) / 60);
+        document.getElementById('timeVal').textContent = h ? `${h}ч ${m}м` : `${m}м`;
+        const speedKmh = totalDist > 0 ? ((totalDist / 1000) / (durationSec / 3600)).toFixed(1) : '—';
+        document.getElementById('speedVal').textContent = speedKmh !== '—' ? speedKmh + ' км/ч' : '—';
+    } else {
+        document.getElementById('timeVal').textContent = '—';
+        document.getElementById('speedVal').textContent = '—';
+    }
+
+    if (elevationData.length > 1) {
+        const ctx = document.getElementById('elevationChart').getContext('2d');
+        elevationChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: elevationData.map(p => (p.dist / 1000).toFixed(1)),
+                datasets: [{
+                    data: elevationData.map(p => p.ele),
+                    borderColor: '#4ecdc4',
+                    backgroundColor: 'rgba(78,205,196,0.2)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { title: { display: true, text: 'км', color: '#888' }, ticks: { color: '#888' } },
+                    y: { title: { display: true, text: 'м', color: '#888' }, ticks: { color: '#888' } }
+                },
+                onHover: (event, elements) => {
+                    if (elements.length > 0 && gpxMap) {
+                        const point = elevationData[elements[0].index];
+                        if (point && point.lat) {
+                            if (!hoverMarker) {
+                                hoverMarker = L.circleMarker([point.lat, point.lon], {
+                                    radius: 8,
+                                    color: '#ff6b6b',
+                                    fillColor: '#ff6b6b',
+                                    fillOpacity: 0.8
+                                }).addTo(gpxMap);
+                            } else {
+                                hoverMarker.setLatLng([point.lat, point.lon]);
+                            }
+                        }
+                    } else {
+                        if (hoverMarker) {
+                            gpxMap.removeLayer(hoverMarker);
+                            hoverMarker = null;
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+function showAIReview(data) {
+    const box = document.getElementById('aiReview');
+    const text = document.getElementById('aiReviewText');
+    if (!box || !text) return;
+
+    let allPoints = [];
+    data.tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
+    let totalDist = 0;
+    for (let i = 1; i < allPoints.length; i++) {
+        totalDist += haversine(allPoints[i - 1].lat, allPoints[i - 1].lon, allPoints[i].lat, allPoints[i].lon);
+    }
+
+    text.textContent = `Отличная прогулка! Вы проехали ${(totalDist / 1000).toFixed(1)} км.`;
+    box.style.display = 'flex';
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Предпросмотр GPX перед сохранением (показ статистики и запрос подтверждения)
+function previewGpxBeforeSave(content) {
+    const parsed = parseGPX(content);
+    let allPoints = [];
+    parsed.tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
+    let totalDist = 0;
+    for (let i = 1; i < allPoints.length; i++) {
+        totalDist += haversine(allPoints[i-1].lat, allPoints[i-1].lon, allPoints[i].lat, allPoints[i].lon);
+    }
+    const msg = `Найдено треков: ${parsed.tracks.length}, точек: ${allPoints.length}, дистанция: ${(totalDist/1000).toFixed(1)} км. Опубликовать?`;
+    if (confirm(msg)) {
+        document.getElementById('gpxNameModal').style.display = 'flex';
+        document.getElementById('gpxNameModal').classList.add('active');
+    } else {
+        // отменить сохранение, скрыть кнопку
+        currentGpxContent = null;
+        document.getElementById('saveGpxBtn').style.display = 'none';
+    }
+}
+
+// Копирование ссылки на GPX (вызывается из карточек)
+function copyGpxLink(fileId) {
+    const url = `${window.location.origin}/gpx?id=${fileId}`;
+    navigator.clipboard.writeText(url).then(() => showToast('🔗 Ссылка на маршрут скопирована'));
+}
+
+// Загрузка GPX по ID (используется при прямом переходе или клике на карточку)
+async function viewGpxRoute(fileId) {
+    const { data } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
+    if (!data || !data.content) return showToast('Не удалось загрузить маршрут');
+    navigateTo(`/gpx?id=${fileId}`);
+    // После перехода страница перерендерится, initGPX вызовется и отобразит трек
+}
+
+// Обработка прямого перехода по ссылке /gpx?id=... 
+// (вызывается из router после активации страницы)
+function loadGpxByIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const gpxId = params.get('id');
+    if (gpxId) {
+        viewGpxRoute(gpxId);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const gpxPage = document.getElementById('page-gpx');
+    if (gpxPage) {
+        const observer = new MutationObserver(() => {
+            if (gpxPage.classList.contains('active')) {
+                initGPX();
+                loadGpxByIdFromUrl();
+            }
+        });
+        observer.observe(gpxPage, { attributes: true, attributeFilter: ['class'] });
+        if (gpxPage.classList.contains('active')) {
+            initGPX();
+            loadGpxByIdFromUrl();
+        }
+    }
+});
