@@ -1,4 +1,8 @@
-let gpxMap, gpxLayerGroup, elevationChart, currentGpxContent = null, hoverMarker = null;
+let gpxMap = null;
+let gpxLayerGroup = null;
+let elevationChart = null;
+let currentGpxContent = null;
+let hoverMarker = null;
 
 function initGPX() {
     if (typeof L === 'undefined' || !document.getElementById('gpx-map')) return;
@@ -8,7 +12,8 @@ function initGPX() {
     const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 
     gpxMap = L.map('gpx-map', {
-        center: [55.751244, 37.618423], zoom: 10,
+        center: [55.751244, 37.618423],
+        zoom: 10,
         layers: [satelliteLayer],
         zoomControl: true
     });
@@ -45,7 +50,7 @@ function initGPX() {
                 currentGpxContent = ev.target.result;
                 document.getElementById('saveGpxBtn').style.display = 'inline-flex';
                 showAIReview(data);
-                previewGpxBeforeSave(ev.target.result);
+                if (typeof previewGpxBeforeSave === 'function') previewGpxBeforeSave(ev.target.result);
             } catch (err) { showToast('Ошибка: ' + err.message); }
         };
         reader.readAsText(file);
@@ -65,7 +70,9 @@ function initGPX() {
         document.getElementById('saveGpxBtn').style.display = 'none';
     });
 
-    if (document.getElementById('page-gpx').classList.contains('active')) setTimeout(() => gpxMap.invalidateSize(), 100);
+    if (document.getElementById('page-gpx').classList.contains('active')) {
+        setTimeout(() => gpxMap.invalidateSize(), 100);
+    }
 }
 
 function parseGPX(xmlString) {
@@ -89,7 +96,8 @@ function parseGPX(xmlString) {
 }
 
 function displayGPX(data) {
-    gpxLayerGroup.clearLayers(); if (elevationChart) { elevationChart.destroy(); elevationChart = null; }
+    gpxLayerGroup.clearLayers();
+    if (elevationChart) { elevationChart.destroy(); elevationChart = null; }
     data.tracks.forEach(track => {
         track.segments.forEach(seg => {
             L.polyline(seg.map(p => [p.lat, p.lon]), { color: '#4ecdc4', weight: 5, opacity: 0.9 }).addTo(gpxLayerGroup);
@@ -150,8 +158,6 @@ function haversine(lat1,lon1,lat2,lon2) {
     const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
-function previewGpxBeforeSave(content) { /* ... используется из wall */ }
 
 document.addEventListener('DOMContentLoaded', () => {
     const gpxPage = document.getElementById('page-gpx');
