@@ -90,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/';
     });
 
-    // Кнопка наверх
     const scrollBtn = document.createElement('button');
     scrollBtn.id = 'scrollToTopBtn';
     scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
