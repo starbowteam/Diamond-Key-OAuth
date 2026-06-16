@@ -1,3 +1,4 @@
+// ========== ОБЪЯВЛЕНИЕ ==========
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
     if (!body) return;
@@ -20,6 +21,7 @@ async function loadAnnouncement() {
     }
 }
 
+// ========== РЕАКЦИИ (общие функции) ==========
 function renderReactions(reactionsObj, postId) {
     const reactions = reactionsObj || {};
     const types = { heart: '❤️', like: '👍', fire: '🔥' };
@@ -78,113 +80,79 @@ async function toggleReaction(postId, type, btn) {
     }
 }
 
-// Скелет для профиля другого пользователя
-function getUserProfileSkeletonHTML(login) {
-    return `
-        <div class="breadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
-        <div class="profile-header" style="display:flex; align-items:center; gap:24px; margin-bottom:32px;">
-            <div style="width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center;">
-                <i class="fas fa-user" style="font-size:40px; color:var(--text-muted);"></i>
+// ========== НОВАЯ СИСТЕМА ПРОФИЛЕЙ ==========
+function buildWallHTML(posts) {
+    if (!posts || posts.length === 0) return '<p class="text-muted">Записей пока нет</p>';
+    return posts.map(p => `
+        <div class="wall-post glass-panel" data-post-id="${p.id}">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
+                <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
             </div>
-            <div style="flex:1;">
-                <div style="height:24px; width:200px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:10px;"></div>
-                <div style="height:16px; width:140px; background:rgba(255,255,255,0.05); border-radius:8px;"></div>
-            </div>
+            <p>${escapeHtml(p.content)}</p>
+            <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
         </div>
-        <div style="display:flex; justify-content:center; padding:40px;">
-            <i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i>
-        </div>
-    `;
+    `).join('');
 }
 
-// Полная отрисовка данных профиля
-function renderUserProfileDataHTML(login, profile, gpxFiles, wallPosts) {
-    const avatarHTML = profile.avatar 
-        ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
-        : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-    
-    let gpxHTML = '';
-    if (gpxFiles && gpxFiles.length) {
-        const grouped = {};
-        gpxFiles.forEach(f => {
-            const d = new Date(f.created_at);
-            const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
-            if (!grouped[key]) grouped[key] = [];
-            grouped[key].push(f);
+function buildGpxHTML(files) {
+    if (!files || files.length === 0) return '<p class="text-muted">Нет поездок</p>';
+    const grouped = {};
+    files.forEach(f => {
+        const d = new Date(f.created_at);
+        const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(f);
+    });
+    let html = '';
+    for (const [month, files] of Object.entries(grouped)) {
+        const [year, mon] = month.split('-');
+        const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
+        html += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
+        files.forEach(f => {
+            html += `
+            <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
+                <i class="fas fa-map-marker-alt"></i>
+                <h4>${escapeHtml(f.name)}</h4>
+                <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
+            </div>`;
         });
-        for (const [month, files] of Object.entries(grouped)) {
-            const [year, mon] = month.split('-');
-            const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
-            gpxHTML += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
-            files.forEach(f => {
-                gpxHTML += `
-                <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <h4>${escapeHtml(f.name)}</h4>
-                    <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                    <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
-                </div>`;
-            });
-            gpxHTML += '</div></div>';
-        }
-    } else {
-        gpxHTML = '<p class="text-muted">Нет поездок</p>';
+        html += '</div></div>';
     }
-
-    let wallHTML = '';
-    if (wallPosts && wallPosts.length) {
-        wallHTML = wallPosts.map(p => `
-            <div class="wall-post glass-panel" data-post-id="${p.id}">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                    ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
-                    <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
-                    <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
-                </div>
-                <p>${escapeHtml(p.content)}</p>
-                <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
-            </div>
-        `).join('');
-    } else {
-        wallHTML = '<p class="text-muted">Записей пока нет</p>';
-    }
-
-    return `
-        <div class="breadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
-        <div class="profile-header">
-            <div class="avatar-wrapper">${avatarHTML}</div>
-            <div class="profile-info">
-                <h2>${escapeHtml(profile.name || login)}</h2>
-                <p class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
-                <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
-            </div>
-        </div>
-        <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
-        <div class="profile-gpx"><h3>Поездки с Diamond GPX</h3><div id="userGpxFiles">${gpxHTML}</div></div>
-        <div class="profile-wall">
-            <div class="wall-input">
-                <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
-                <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
-            </div>
-            <div id="userWallPosts">${wallHTML}</div>
-        </div>
-    `;
+    return html;
 }
 
-// Функция, которая мгновенно показывает скелет, а потом загружает данные
-async function showUserProfileSkeleton(login) {
-    const usersPanel = document.getElementById('usersPanel');
-    const userView = document.getElementById('userProfileView');
-    if (usersPanel) usersPanel.style.display = 'none';
-    if (!userView) {
-        console.error('[DiamKey] Контейнер userProfileView не найден!');
-        return;
-    }
-    userView.style.display = 'block';
-    userView.innerHTML = getUserProfileSkeletonHTML(login);
+function attachReactionListeners(container) {
+    if (!container) return;
+    container.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const postId = this.closest('.wall-post').dataset.postId;
+            toggleReaction(postId, this.dataset.type, this);
+        });
+    });
+}
 
-    // Асинхронная загрузка данных
+// Полное построение секции пользователей при переходе на чей-то профиль
+async function renderUserSection(login) {
+    const pageUsers = document.getElementById('page-users');
+    if (!pageUsers) return;
+
+    // Мгновенный скелет
+    pageUsers.innerHTML = `
+        <div class="glass-panel" style="text-align:center; padding:40px;">
+            <div class="breadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
+            <div style="margin-top:30px;">
+                <i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i>
+                <p class="text-muted" style="margin-top:12px;">Загрузка профиля...</p>
+            </div>
+        </div>
+    `;
+
     try {
-        const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
+        const [profileRes, gpxRes, wallRes] = await Promise.all([
             _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
             _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
             _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
@@ -192,28 +160,53 @@ async function showUserProfileSkeleton(login) {
 
         const profile = profileRes.data;
         if (!profile) {
-            userView.innerHTML = `<div style="padding:40px;text-align:center;"><p class="text-muted">Пользователь не найден</p><button class="btn" onclick="goBackToUsersList()">← Назад</button></div>`;
+            pageUsers.innerHTML = `
+                <div class="glass-panel" style="text-align:center; padding:40px;">
+                    <p class="text-muted">Пользователь не найден</p>
+                    <button class="btn" onclick="navigateTo('/users')"><i class="fas fa-arrow-left"></i> Назад</button>
+                </div>
+            `;
             return;
         }
 
-        const gpxFiles = gpxFilesRes.data || [];
+        const gpxFiles = gpxRes.data || [];
         const wallPosts = wallRes.data || [];
+        const avatarHTML = profile.avatar 
+            ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
+            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
 
-        userView.innerHTML = renderUserProfileDataHTML(login, profile, gpxFiles, wallPosts);
+        pageUsers.innerHTML = `
+            <div class="glass-panel profile-top">
+                <div class="breadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
+                <div class="profile-header">
+                    <div class="avatar-wrapper">${avatarHTML}</div>
+                    <div class="profile-info">
+                        <h2>${escapeHtml(profile.name || login)}</h2>
+                        <p class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
+                        <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                    </div>
+                </div>
+                <button class="btn btn-icon" onclick="navigateTo('/users')"><i class="fas fa-arrow-left"></i></button>
+            </div>
+            <div class="glass-panel profile-gpx">
+                <h3>Поездки с Diamond GPX</h3>
+                ${buildGpxHTML(gpxFiles)}
+            </div>
+            <div class="glass-panel profile-wall">
+                <div class="wall-input">
+                    <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                    <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <div id="userWallPosts">${buildWallHTML(wallPosts)}</div>
+            </div>
+        `;
 
-        // Обработчики реакций
-        userView.querySelectorAll('.reaction-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const postId = this.closest('.wall-post').dataset.postId;
-                toggleReaction(postId, this.dataset.type, this);
-            });
-        });
-
-        // Автосаджест
-        const wallInput = userView.querySelector('.wall-input');
-        if (wallInput && currentUser) {
-            if (!wallInput.querySelector('.wall-author-preview')) {
+        // Вешаем обработчики
+        attachReactionListeners(pageUsers);
+        
+        if (currentUser) {
+            const wallInput = pageUsers.querySelector('.wall-input');
+            if (wallInput && !wallInput.querySelector('.wall-author-preview')) {
                 const preview = document.createElement('div');
                 preview.className = 'wall-author-preview';
                 preview.innerHTML = `<img src="${currentUser.avatar || ''}" style="width:28px;height:28px;border-radius:50%;" onerror="this.style.display='none'"><span>${currentUser.name || currentUser.login}</span>`;
@@ -221,11 +214,10 @@ async function showUserProfileSkeleton(login) {
             }
         }
 
-        // Отправка сообщения
-        const postBtn = userView.querySelector('#postUserWallBtn');
+        const postBtn = pageUsers.querySelector('#postUserWallBtn');
         if (postBtn) {
             postBtn.onclick = async () => {
-                const msg = userView.querySelector('#userWallMessage')?.value.trim();
+                const msg = pageUsers.querySelector('#userWallMessage')?.value.trim();
                 if (!msg || !currentUser) return;
                 await _supabase.from('profile_wall').insert([{ 
                     user_login: currentUser.login, 
@@ -236,125 +228,37 @@ async function showUserProfileSkeleton(login) {
                     reactions: {}
                 }]);
                 showToast('Запись добавлена');
-                showUserProfileSkeleton(login);
+                // перезагружаем секцию с профилем, чтобы обновить стену
+                renderUserSection(login);
             };
         }
+
     } catch (e) {
         console.error('[DiamKey] Ошибка загрузки профиля:', e);
-        userView.innerHTML = `<div style="padding:40px;text-align:center;"><p class="text-muted">Ошибка загрузки</p><button class="btn" onclick="goBackToUsersList()">← Назад</button></div>`;
+        pageUsers.innerHTML = `
+            <div class="glass-panel" style="text-align:center; padding:40px;">
+                <p class="text-muted">Ошибка загрузки</p>
+                <button class="btn" onclick="navigateTo('/users')"><i class="fas fa-arrow-left"></i> Назад</button>
+            </div>
+        `;
     }
 }
 
-function goBackToUsersList() {
-    document.getElementById('usersPanel').style.display = 'block';
-    const userView = document.getElementById('userProfileView');
-    if (userView) userView.style.display = 'none';
-    navigateTo('/users');
-}
+// Полное построение своего профиля
+async function renderMyProfile() {
+    const pageProfile = document.getElementById('page-profile');
+    if (!pageProfile || !currentUser) return;
 
-// Скелет для своего профиля
-function getMyProfileSkeletonHTML() {
-    return `
-        <div style="display:flex; align-items:center; gap:24px; margin-bottom:32px;">
-            <div style="width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center;">
-                <i class="fas fa-user" style="font-size:40px; color:var(--text-muted);"></i>
-            </div>
-            <div style="flex:1;">
-                <div style="height:24px; width:200px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:10px;"></div>
-                <div style="height:16px; width:140px; background:rgba(255,255,255,0.05); border-radius:8px;"></div>
-            </div>
-        </div>
-        <div style="display:flex; justify-content:center; padding:40px;">
+    pageProfile.innerHTML = `
+        <div class="glass-panel" style="text-align:center; padding:40px;">
             <i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i>
+            <p class="text-muted" style="margin-top:12px;">Загрузка профиля...</p>
         </div>
     `;
-}
 
-function getMyProfileDataHTML(profile, login, gpxFiles, wallPosts) {
-    const avatarHTML = profile.avatar 
-        ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
-        : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-
-    let gpxHTML = '';
-    if (gpxFiles && gpxFiles.length) {
-        const grouped = {};
-        gpxFiles.forEach(f => {
-            const d = new Date(f.created_at);
-            const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
-            if (!grouped[key]) grouped[key] = [];
-            grouped[key].push(f);
-        });
-        for (const [month, files] of Object.entries(grouped)) {
-            const [year, mon] = month.split('-');
-            const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
-            gpxHTML += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
-            files.forEach(f => {
-                gpxHTML += `
-                <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <h4>${escapeHtml(f.name)}</h4>
-                    <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                    <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
-                </div>`;
-            });
-            gpxHTML += '</div></div>';
-        }
-    } else {
-        gpxHTML = '<p class="text-muted">Нет поездок</p>';
-    }
-
-    let wallHTML = '';
-    if (wallPosts && wallPosts.length) {
-        wallHTML = wallPosts.map(p => `
-            <div class="wall-post glass-panel" data-post-id="${p.id}">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                    ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
-                    <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
-                    <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
-                </div>
-                <p>${escapeHtml(p.content)}</p>
-                <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
-            </div>
-        `).join('');
-    } else {
-        wallHTML = '<p class="text-muted">Записей пока нет</p>';
-    }
-
-    return {
-        topHTML: `
-            <div class="profile-header">
-                <div class="avatar-wrapper" id="myAvatarWrapper">${avatarHTML}<div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div></div>
-                <div class="profile-info">
-                    <h2>${escapeHtml(profile.name || login)}</h2>
-                    <p class="editable-text" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i></p>
-                    <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
-                </div>
-            </div>
-        `,
-        gpxHTML: `<h3>Поездки с Diamond GPX</h3><div id="myGpxFiles">${gpxHTML}</div>`,
-        wallHTML: `
-            <div class="wall-input">
-                <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
-                <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
-            </div>
-            <div id="myWallPosts">${wallHTML}</div>
-        `
-    };
-}
-
-async function loadMyProfileSkeleton() {
-    const myTop = document.getElementById('myProfileTop');
-    const myGpx = document.getElementById('myGpxSection');
-    const myWall = document.getElementById('myWallSection');
-    if (!myTop || !myGpx || !myWall) return;
-
-    myTop.innerHTML = getMyProfileSkeletonHTML();
-    myGpx.innerHTML = '';
-    myWall.innerHTML = '';
-
-    const login = currentUser.login;
     try {
-        const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
+        const login = currentUser.login;
+        const [profileRes, gpxRes, wallRes] = await Promise.all([
             _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
             _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
             _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
@@ -362,25 +266,47 @@ async function loadMyProfileSkeleton() {
 
         const profile = profileRes.data;
         if (!profile) {
-            myTop.innerHTML = '<p class="text-muted">Профиль не найден</p>';
+            pageProfile.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Профиль не найден</p></div>';
             return;
         }
 
-        const gpxFiles = gpxFilesRes.data || [];
+        const gpxFiles = gpxRes.data || [];
         const wallPosts = wallRes.data || [];
-        const { topHTML, gpxHTML, wallHTML } = getMyProfileDataHTML(profile, login, gpxFiles, wallPosts);
+        const avatarHTML = profile.avatar 
+            ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
+            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
 
-        myTop.innerHTML = topHTML;
-        myGpx.innerHTML = gpxHTML;
-        myWall.innerHTML = wallHTML;
+        pageProfile.innerHTML = `
+            <div class="glass-panel profile-top">
+                <div class="profile-header">
+                    <div class="avatar-wrapper" id="myAvatarWrapper">${avatarHTML}<div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div></div>
+                    <div class="profile-info">
+                        <h2>${escapeHtml(profile.name || login)}</h2>
+                        <p class="editable-text" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i></p>
+                        <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-panel profile-gpx">
+                <h3>Поездки с Diamond GPX</h3>
+                ${buildGpxHTML(gpxFiles)}
+            </div>
+            <div class="glass-panel profile-wall">
+                <div class="wall-input">
+                    <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                    <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <div id="myWallPosts">${buildWallHTML(wallPosts)}</div>
+            </div>
+        `;
 
-        // Обработчики
+        // Обработчики своего профиля
         document.getElementById('myAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
             input.onchange = async (e) => {
                 const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader();
-                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); loadMyProfileSkeleton(); showToast('Аватар обновлён'); };
+                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); renderMyProfile(); showToast('Аватар обновлён'); };
                 reader.readAsDataURL(file);
             };
             input.click();
@@ -400,13 +326,7 @@ async function loadMyProfileSkeleton() {
             showToast('Описание сохранено');
         };
 
-        myWall.querySelectorAll('.reaction-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const postId = this.closest('.wall-post').dataset.postId;
-                toggleReaction(postId, this.dataset.type, this);
-            });
-        });
+        attachReactionListeners(pageProfile);
 
         document.getElementById('postMyWallBtn').onclick = async () => {
             const msg = document.getElementById('myWallMessage').value.trim();
@@ -421,15 +341,16 @@ async function loadMyProfileSkeleton() {
             }]);
             document.getElementById('myWallMessage').value = '';
             showToast('Запись добавлена');
-            loadMyProfileSkeleton();
+            renderMyProfile();
         };
 
     } catch (e) {
         console.error('[DiamKey] Ошибка загрузки своего профиля:', e);
-        myTop.innerHTML = '<p class="text-muted">Ошибка загрузки</p>';
+        pageProfile.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
     }
 }
 
+// Функции для GPX (используются из карточек)
 function copyGpxLink(fileId) {
     const url = `${window.location.origin}/gpx?id=${fileId}`;
     navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована'));
@@ -458,4 +379,4 @@ function previewGpxBeforeSave(content) {
         currentGpxContent = null;
         document.getElementById('saveGpxBtn').style.display = 'none';
     }
-} //123
+}
