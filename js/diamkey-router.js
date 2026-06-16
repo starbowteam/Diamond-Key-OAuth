@@ -7,75 +7,65 @@ function navigateTo(path) {
 function handleRoute() {
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
-    
-    // Сначала скрываем все страницы с анимацией
+
+    // Скрываем все страницы
     document.querySelectorAll('.page').forEach(p => {
-        if (p.classList.contains('active')) {
-            p.style.opacity = '0';
-            p.style.transform = 'translateY(12px)';
-            setTimeout(() => p.classList.remove('active'), 300);
-        }
+        p.classList.remove('active');
     });
 
     // Сброс вида профиля в users
     const usersPanel = document.getElementById('usersPanel');
     const userProfileView = document.getElementById('userProfileView');
-    if (usersPanel) usersPanel.style.display = 'block';
-    if (userProfileView) userProfileView.style.display = 'none';
     const userGpx = document.getElementById('userGpxSection');
     const userWall = document.getElementById('userWallSection');
+    if (usersPanel) usersPanel.style.display = 'block';
+    if (userProfileView) userProfileView.style.display = 'none';
     if (userGpx) userGpx.style.display = 'none';
     if (userWall) userWall.style.display = 'none';
 
-    // Функция активации страницы с задержкой для анимации
-    function activatePage(pageId) {
-        const page = document.getElementById(pageId);
-        if (!page) return;
-        setTimeout(() => {
-            page.classList.add('active');
-            page.style.opacity = '1';
-            page.style.transform = 'translateY(0)';
-        }, 50);
-    }
-
+    // Показываем нужную страницу
     if (path === '/' || path === '') {
-        activatePage('page-home');
+        document.getElementById('page-home').classList.add('active');
         if (typeof loadHomeData === 'function') loadHomeData();
     } else if (path === '/chats') {
-        activatePage('page-chats');
+        document.getElementById('page-chats').classList.add('active');
     } else if (path === '/gpx') {
-        activatePage('page-gpx');
+        document.getElementById('page-gpx').classList.add('active');
         if (typeof initGPX === 'function') {
             initGPX();
             if (gpxMap) setTimeout(() => gpxMap.invalidateSize(), 100);
         }
-        // Проверка query параметра id для прямого просмотра GPX
         const gpxId = params.get('id');
         if (gpxId) {
+            document.getElementById('loadGpxBtn').style.display = 'none';
+            document.getElementById('saveGpxBtn').style.display = 'none';
             setTimeout(() => viewGpxRoute(gpxId), 200);
+        } else {
+            document.getElementById('loadGpxBtn').style.display = '';
+            document.getElementById('saveGpxBtn').style.display = 'none';
         }
         if (!localStorage.getItem('gpx_info_seen')) {
             const modal = document.getElementById('gpxInfoModal');
             if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
         }
     } else if (path === '/users') {
-        activatePage('page-users');
+        document.getElementById('page-users').classList.add('active');
         if (typeof loadUsers === 'function') loadUsers();
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
-        activatePage('page-users');
+        document.getElementById('page-users').classList.add('active');
         if (typeof showUserProfile === 'function') showUserProfile(login);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
-        activatePage('page-profile');
+        document.getElementById('page-profile').classList.add('active');
         if (typeof loadMyProfile === 'function') loadMyProfile();
     } else {
-        activatePage('page-home');
+        document.getElementById('page-home').classList.add('active');
         if (typeof loadHomeData === 'function') loadHomeData();
     }
 
-    // Подсветка сайдбара
-    document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
+    // Подсветка сайдбара (кроме выхода)
+    document.querySelectorAll('.sidebar-icon:not(#logoutSidebarBtn)').forEach(btn => {
         btn.classList.remove('active');
         const href = btn.getAttribute('href');
         if (href === path || (path.startsWith('/users') && href === '/users') || (path.startsWith('/gpx') && href === '/gpx')) {
