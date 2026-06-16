@@ -87,4 +87,4 @@ function showUserTooltip(event, login, desc, avatar) {
 function hideUserTooltip() {
     const tooltip = document.getElementById('userTooltip');
     if (tooltip) tooltip.style.display = 'none';
-}
+} //67
