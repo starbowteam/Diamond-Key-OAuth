@@ -23,8 +23,10 @@
             <a class="sidebar-icon" href="/profile"><i class="fas fa-user"></i></a>
             <a class="sidebar-icon" href="https://diamond-ai.ru" target="_blank"><img src="assets/diamond-ai.ico" style="width:30px;height:30px;"></a>
             <a class="sidebar-icon" href="https://dirmess.ru" target="_blank"><img src="assets/dirmess.ico" style="width:30px;height:30px;"></a>
-            <a class="sidebar-icon" href="https://discord.gg/diamondshop" target="_blank" id="discordSidebarIcon"><i class="fab fa-discord"></i></a>
-            <button class="sidebar-icon" id="logoutSidebarBtn"><i class="fas fa-sign-out-alt"></i></button>
+            <div class="sidebar-bottom">
+                <a class="sidebar-icon" href="https://discord.gg/diamondshop" target="_blank" id="discordSidebarIcon"><i class="fab fa-discord"></i></a>
+                <button class="sidebar-icon" id="logoutSidebarBtn"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
         </nav>
         <main class="main-content" id="mainContent">
             <section class="page" id="page-home">
@@ -71,13 +73,13 @@
             <section class="page" id="page-gpx">
                 <div class="glass-panel gpx-container">
                     <div class="gpx-toolbar">
-                        <button class="btn" id="gpxBackBtn" onclick="window.history.length>1?window.history.back():navigateTo('/')"><i class="fas fa-arrow-left"></i> Назад</button>
-                        <span><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
-                        <button class="btn" id="uploadGpxBtn" onclick="document.getElementById('gpx-file-input').click()"><i class="fas fa-folder-open"></i> Загрузить GPX</button>
+                        <button class="btn btn-icon" id="gpxBackBtn" onclick="window.history.length>1?window.history.back():navigateTo('/')"><i class="fas fa-arrow-left"></i></button>
+                        <a class="btn btn-icon" href="https://apps.apple.com/app/biketracker/id123456" target="_blank"><i class="fab fa-apple"></i></a>
+                        <a class="btn btn-icon" href="https://play.google.com/store/apps/details?id=com.biketracker" target="_blank"><i class="fab fa-android"></i></a>
+                        <span class="gpx-title"><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
+                        <button class="btn btn-icon" id="uploadGpxBtn" onclick="document.getElementById('gpx-file-input').click()"><i class="fas fa-folder-open"></i></button>
                         <input type="file" id="gpx-file-input" accept=".gpx,.xml" style="display:none">
-                        <button class="btn" id="saveGpxBtn" style="display:none"><i class="fas fa-cloud-upload-alt"></i> Опубликовать</button>
-                        <a class="btn" href="https://apps.apple.com/app/biketracker/id123456" target="_blank"><i class="fab fa-apple"></i> iPhone</a>
-                        <a class="btn" href="https://play.google.com/store/apps/details?id=com.biketracker" target="_blank"><i class="fab fa-android"></i> Android</a>
+                        <button class="btn btn-icon" id="saveGpxBtn" style="display:none"><i class="fas fa-cloud-upload-alt"></i></button>
                     </div>
                     <div id="gpx-map"></div>
                     <div class="gpx-dashboard glass-panel">
@@ -122,7 +124,7 @@
                             <span class="profile-regdate" id="userRegDate"></span>
                         </div>
                     </div>
-                    <button class="btn" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i> Назад к пользователям</button>
+                    <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
                 </div>
                 <div class="glass-panel profile-gpx" id="userGpxSection" style="display:none;">
                     <h3>Поездки с Diamond GPX</h3>
