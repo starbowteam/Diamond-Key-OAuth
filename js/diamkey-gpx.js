@@ -182,4 +182,4 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(gpxPage, { attributes: true, attributeFilter: ['class'] });
         if (gpxPage.classList.contains('active')) initGPX();
     }
-});
+}); //67
