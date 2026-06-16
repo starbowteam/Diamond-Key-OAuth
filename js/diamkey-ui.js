@@ -7,7 +7,6 @@ function updateHeroButton() {
     if (currentUser) {
         btn.innerHTML = '<i class="fas fa-user"></i> Мой профиль';
         btn.onclick = () => { navigateTo('/profile'); };
-        // Показать статистику
         if (statsRow) {
             loadHomeStats().then(stats => {
                 if (stats) {
@@ -34,12 +33,8 @@ function loadHomeData() {
     if (typeof loadAnnouncement === 'function') loadAnnouncement();
 }
 
-// Модалка входа/регистрации с вкладками
+// Модалка входа
 document.addEventListener('DOMContentLoaded', () => {
-    const loginModal = document.getElementById('loginModal');
-    if (!loginModal) return;
-
-    // Переключение вкладок
     document.getElementById('tabLogin')?.addEventListener('click', () => {
         document.getElementById('tabLogin').classList.add('active');
         document.getElementById('tabRegister').classList.remove('active');
@@ -53,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('loginFormBlock').style.display = 'none';
     });
 
-    // Вход
     document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
         const res = await login(
             document.getElementById('loginIdentity').value.trim(),
@@ -64,17 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/';
     });
 
-    // Регистрация с валидацией
     const regLoginInput = document.getElementById('regLoginInput');
     const regStatus = document.getElementById('regLoginStatus');
     let checkTimeout;
     regLoginInput?.addEventListener('input', () => {
         clearTimeout(checkTimeout);
         const val = regLoginInput.value.trim();
-        if (val.length < 3) {
-            regStatus.textContent = '';
-            return;
-        }
+        if (val.length < 3) { regStatus.textContent = ''; return; }
         checkTimeout = setTimeout(async () => {
             const { data } = await _supabase.from('users').select('login').eq('login', val).maybeSingle();
             if (data) {
@@ -98,18 +88,16 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Аккаунт создан! Добро пожаловать.');
         window.location.href = '/';
     });
-});
 
-// Кнопка «Наверх»
-(function() {
-    const btn = document.createElement('button');
-    btn.id = 'scrollToTopBtn';
-    btn.innerHTML = '<i class="fas fa-arrow-up"></i>';
-    document.body.appendChild(btn);
+    // Кнопка «Наверх»
+    const scrollBtn = document.createElement('button');
+    scrollBtn.id = 'scrollToTopBtn';
+    scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+    document.body.appendChild(scrollBtn);
     window.addEventListener('scroll', () => {
-        btn.classList.toggle('visible', window.scrollY > 400);
+        scrollBtn.classList.toggle('visible', window.scrollY > 400);
     });
-    btn.addEventListener('click', () => {
+    scrollBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
-})();
+});
