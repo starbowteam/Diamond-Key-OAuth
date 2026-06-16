@@ -337,6 +337,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
 }
 
 .features-grid {
@@ -372,8 +373,8 @@ body {
 .advantage-item {
     display: flex;
     gap: 24px;
-    align-items: flex-start;
-    padding: 32px;
+    align-items: center;
+    padding: 28px 32px;
 }
 
 .advantage-item i {
@@ -486,10 +487,18 @@ body {
     cursor: pointer;
     transition: all var(--transition);
     position: relative;
-    min-height: 140px;
+    height: 160px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    overflow: hidden;
+}
+
+.gpx-card h4 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 8px 0;
 }
 
 .gpx-card:hover {
@@ -500,7 +509,7 @@ body {
 .gpx-card-date {
     font-size: 13px;
     color: var(--text-muted);
-    margin-top: 10px;
+    margin-top: 4px;
 }
 
 .gpx-card .share-btn {
