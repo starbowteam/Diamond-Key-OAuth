@@ -17,15 +17,6 @@ function handleRoute() {
         }
     });
 
-    const usersPanel = document.getElementById('usersPanel');
-    const userProfileView = document.getElementById('userProfileView');
-    if (usersPanel) usersPanel.style.display = 'block';
-    if (userProfileView) userProfileView.style.display = 'none';
-    const userGpx = document.getElementById('userGpxSection');
-    const userWall = document.getElementById('userWallSection');
-    if (userGpx) userGpx.style.display = 'none';
-    if (userWall) userWall.style.display = 'none';
-
     function activatePage(pageId) {
         const page = document.getElementById(pageId);
         if (!page) return;
@@ -65,13 +56,13 @@ function handleRoute() {
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
         activatePage('page-users');
-        console.log('[DiamKey] Мгновенная отрисовка скелета профиля:', login);
-        if (typeof showUserProfileSkeleton === 'function') showUserProfileSkeleton(login);
+        // Новая функция, которая полностью строит интерфейс пользователей и профиля
+        if (typeof renderUserSection === 'function') renderUserSection(login);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
         activatePage('page-profile');
-        console.log('[DiamKey] Мгновенная отрисовка скелета своего профиля');
-        if (typeof loadMyProfileSkeleton === 'function') loadMyProfileSkeleton();
+        // Новая функция для своего профиля
+        if (typeof renderMyProfile === 'function') renderMyProfile();
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
@@ -110,4 +101,4 @@ document.addEventListener('DOMContentLoaded', () => {
             navigateTo(btn.getAttribute('href'));
         });
     });
-}); //123
+});
