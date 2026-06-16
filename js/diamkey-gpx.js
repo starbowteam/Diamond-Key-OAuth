@@ -18,7 +18,6 @@ function initGPX() {
 
     console.log('[DiamKey] Инициализация карты');
     const satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 });
-    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 
     gpxMap = L.map('gpx-map', {
         center: [55.751244, 37.618423],
@@ -28,26 +27,6 @@ function initGPX() {
     });
     gpxLayerGroup = L.featureGroup().addTo(gpxMap);
     gpxInitialized = true;
-
-    const toolbar = document.querySelector('.gpx-toolbar');
-    if (toolbar && !document.getElementById('layerToggleBtn')) {
-        const layerToggle = document.createElement('button');
-        layerToggle.id = 'layerToggleBtn';
-        layerToggle.className = 'btn layer-toggle';
-        layerToggle.textContent = '🗺 Схема';
-        layerToggle.onclick = () => {
-            if (gpxMap.hasLayer(satelliteLayer)) {
-                gpxMap.removeLayer(satelliteLayer);
-                gpxMap.addLayer(streetLayer);
-                layerToggle.textContent = '🛰 Спутник';
-            } else {
-                gpxMap.removeLayer(streetLayer);
-                gpxMap.addLayer(satelliteLayer);
-                layerToggle.textContent = '🗺 Схема';
-            }
-        };
-        toolbar.appendChild(layerToggle);
-    }
 
     document.getElementById('gpx-file-input').addEventListener('change', function(e) {
         const file = e.target.files[0]; if (!file) return;
