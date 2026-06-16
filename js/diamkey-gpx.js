@@ -5,6 +5,29 @@ let currentGpxContent = null;
 let hoverMarker = null;
 let gpxInitialized = false;
 
+const AI_REVIEWS = [
+    "Отличная поездка! Ты проехал {dist} км. Рекомендую добавить фото к маршруту, чтобы сохранить воспоминания. Поддерживай темп и не забывай про разминку перед стартом.",
+    "Неплохой маршрут! {dist} км — хорошая дистанция. Попробуй в следующий раз увеличить набор высоты для более интенсивной тренировки. Не забудь взять с собой воду!",
+    "Твой заезд на {dist} км впечатляет! Обрати внимание на скорость на спусках — безопасность прежде всего. Используй приложения для отслеживания прогресса.",
+    "Прекрасная прогулка! {dist} км — отличный результат. Анализируй свой график высот, чтобы лучше планировать усилия. Помни, что отдых так же важен, как и нагрузка.",
+    "Маршрут на {dist} км покорён! Как насчёт того, чтобы в следующий раз исследовать новую местность? Открывай для себя интересные места и делись с друзьями.",
+    "Ты проехал {dist} км! Это достойно уважения. Следи за давлением в шинах и состоянием цепи — это влияет на комфорт. Хорошей дороги!",
+    "Шикарный трек! {dist} км позади. Попробуй записывать свои ощущения после каждой поездки — это поможет улучшить форму. И не забывай про защиту!",
+    "Твой путь длиной {dist} км впечатляет. Советую синхронизировать GPX с календарём, чтобы видеть прогресс по неделям. Дисциплина — ключ к успеху.",
+    "Отличная работа! {dist} км — с каждым разом ты становишься сильнее. Включай в маршруты интервальные участки для развития выносливости. Удачи!",
+    "Поздравляю с завершением {dist} км! Помни, что правильное питание после поездки ускоряет восстановление. Банан и протеиновый коктейль — твои друзья.",
+    "Ты проехал {dist} км! Это достижение. Попробуй в следующий раз ехать с другом — вместе веселее и безопаснее. Делись маршрутами в сообществе.",
+    "Маршрут на {dist} км выполнен! Обрати внимание на погоду перед выездом — ветер может сильно повлиять на удовольствие. Будь готов ко всему!",
+    "Твой заезд на {dist} км — круто! Не забывай разминать шею и плечи во время остановок. Здоровье превыше всего. Продолжай в том же духе!",
+    "Поездка на {dist} км удалась! Рекомендую ставить небольшие цели на каждую неделю — это мотивирует. Маленькие шаги ведут к большим результатам.",
+    "Классный маршрут! {dist} км — ты молодец. Проверь настройки GPS перед записью, чтобы трек был максимально точным. Детали имеют значение.",
+    "Твой GPX-файл на {dist} км загружен. Анализируй среднюю скорость и пульс (если есть датчик) для оптимизации тренировок. Данные — сила!",
+    "Поздравляю с завершением {dist} км! Планируй маршруты заранее, чтобы избегать опасных участков. Безопасная поездка — лучшая поездка.",
+    "Отличная дистанция! {dist} км — ты супер. Попробуй разнообразить маршруты: лес, город, горы — каждый тип даёт уникальный опыт. Экспериментируй!",
+    "Твой трек на {dist} км впечатляет. Не забывай заряжать устройства перед поездкой — севший телефон может испортить впечатление. Заряжайся энергией!",
+    "Маршрут пройден! {dist} км — это серьёзно. Делись своими достижениями с сообществом Diamond, чтобы вдохновлять других. Вместе мы сильнее!"
+];
+
 function initGPX() {
     if (typeof L === 'undefined' || !document.getElementById('gpx-map')) {
         console.warn('[DiamKey] Leaflet не загружен или карта отсутствует');
@@ -74,7 +97,7 @@ async function loadGpxFromId(gpxId) {
         setTimeout(() => loadGpxFromId(gpxId), 200);
         return;
     }
-    const { data, error } = await _supabase.from('gpx_files').select('content').eq('id', gpxId).maybeSingle();
+    const { data, error } = await _supabase.from('gpx_files').select('content, name, user_login').eq('id', gpxId).maybeSingle();
     if (error || !data || !data.content) {
         console.error('[DiamKey] Ошибка получения GPX:', error);
         return showToast('Не удалось загрузить маршрут');
@@ -82,8 +105,31 @@ async function loadGpxFromId(gpxId) {
     try {
         const parsed = parseGPX(data.content);
         displayGPX(parsed);
-        showAIReview(parsed);
         gpxMap.invalidateSize();
+        
+        // Показываем владельца, если это чужой GPX
+        if (currentUser && currentUser.login === data.user_login) {
+            // Свой GPX: показываем отзыв ИИ
+            showAIReview(parsed);
+            document.getElementById('gpxOwnerInfo').style.display = 'none';
+        } else {
+            // Чужой GPX: скрываем отзыв, показываем автора
+            document.getElementById('aiReview').style.display = 'none';
+            const ownerInfo = document.getElementById('gpxOwnerInfo');
+            ownerInfo.style.display = 'block';
+            // Получаем аватар автора
+            const { data: owner } = await _supabase.from('users').select('avatar').eq('login', data.user_login).maybeSingle();
+            const avatarHTML = owner?.avatar 
+                ? `<img src="${escapeHtml(owner.avatar)}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">`
+                : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
+            ownerInfo.innerHTML = `
+                <div class="gpx-name">${escapeHtml(data.name)}</div>
+                <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:8px;">
+                    ${avatarHTML}
+                    <span class="owner-name">${escapeHtml(data.user_login)}</span>
+                </div>
+            `;
+        }
     } catch (e) {
         console.error('[DiamKey] Ошибка парсинга GPX:', e);
         showToast('Ошибка обработки маршрута');
@@ -161,11 +207,17 @@ function updateDashboard(tracks) {
 }
 
 function showAIReview(data) {
-    const box = document.getElementById('aiReview'), text = document.getElementById('aiReviewText');
-    if (!box || !text) return;
+    const box = document.getElementById('aiReview');
+    if (!box) return;
     let allPoints = []; data.tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
     let totalDist = 0; for (let i=1; i<allPoints.length; i++) totalDist += haversine(allPoints[i-1].lat, allPoints[i-1].lon, allPoints[i].lat, allPoints[i].lon);
-    text.textContent = `Отличная прогулка! Вы проехали ${(totalDist/1000).toFixed(1)} км.`;
+    const distStr = totalDist > 1000 ? (totalDist/1000).toFixed(1) + ' км' : totalDist.toFixed(0) + ' м';
+    const randomReview = AI_REVIEWS[Math.floor(Math.random() * AI_REVIEWS.length)].replace('{dist}', distStr);
+    
+    box.innerHTML = `
+        <img src="/assets/logo-ai.ico" style="width:56px;height:56px;border-radius:50%;object-fit:cover;">
+        <p>${randomReview}</p>
+    `;
     box.style.display = 'flex';
 }
 
@@ -182,4 +234,4 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(gpxPage, { attributes: true, attributeFilter: ['class'] });
         if (gpxPage.classList.contains('active')) initGPX();
     }
-}); //67
+});
