@@ -47,16 +47,13 @@ function handleRoute() {
         }
         const gpxId = params.get('id');
         if (gpxId) {
-            // Чужой GPX — убираем кнопки загрузки/публикации
             document.getElementById('saveGpxBtn').style.display = 'none';
             const uploadBtn = document.getElementById('uploadGpxBtn');
             if (uploadBtn) uploadBtn.style.display = 'none';
-            // Загружаем маршрут асинхронно
             setTimeout(() => {
                 if (typeof viewGpxRoute === 'function') viewGpxRoute(gpxId);
             }, 300);
         } else {
-            // Свой GPX
             const uploadBtn = document.getElementById('uploadGpxBtn');
             if (currentUser && uploadBtn) uploadBtn.style.display = 'inline-flex';
             else if (uploadBtn) uploadBtn.style.display = 'none';
@@ -94,12 +91,14 @@ window.addEventListener('popstate', handleRoute);
 
 document.addEventListener('DOMContentLoaded', () => {
     handleRoute();
-    if (!currentUser) {
-        document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
-            if (btn.getAttribute('href') !== '/') btn.style.display = 'none';
-        });
-        document.getElementById('logoutSidebarBtn').style.display = 'none';
-    }
+    const isLoggedIn = !!currentUser;
+    document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
+        const href = btn.getAttribute('href');
+        if (href === '/' || href === 'https://discord.gg/diamondshop') return;
+        if (!isLoggedIn) btn.style.display = 'none';
+    });
+    document.getElementById('logoutSidebarBtn').style.display = isLoggedIn ? 'flex' : 'none';
+
     document.getElementById('logoutSidebarBtn').addEventListener('click', () => {
         localStorage.removeItem('diamkey_current');
         window.location.href = '/';
