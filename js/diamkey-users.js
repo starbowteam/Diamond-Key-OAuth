@@ -38,7 +38,7 @@ async function loadUsers() {
             return a.login.localeCompare(b.login);
         });
         container.innerHTML = sorted.map(u => `
-            <div class="user-card glass-panel" onmouseenter="showUserTooltip(event, '${u.login}', '${escapeHtml(u.description||'')}', '${u.avatar||''}')" onmouseleave="hideUserTooltip()" onclick="navigateTo('/users/${u.login}')">
+            <div class="user-card glass-panel" data-login="${u.login}" onmouseenter="showUserTooltip(event, '${u.login}', '${escapeHtml(u.description||'')}', '${u.avatar||''}')" onmouseleave="hideUserTooltip()">
                 ${u.avatar ? `<img src="${u.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:44px;color:var(--text-muted);width:44px;height:44px;display:flex;align-items:center;justify-content:center;"></i>'}
                 <div>
                     <h4>${escapeHtml(u.name || u.login)}</h4>
@@ -46,6 +46,16 @@ async function loadUsers() {
                 </div>
             </div>
         `).join('');
+
+        // Добавляем обработчик клика на каждую карточку
+        container.querySelectorAll('.user-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const login = this.dataset.login;
+                if (login) {
+                    navigateTo('/users/' + login);
+                }
+            });
+        });
     }
 
     sortContainer.querySelectorAll('.sort-btn').forEach(btn => {
@@ -87,4 +97,4 @@ function showUserTooltip(event, login, desc, avatar) {
 function hideUserTooltip() {
     const tooltip = document.getElementById('userTooltip');
     if (tooltip) tooltip.style.display = 'none';
-} //67
+}
