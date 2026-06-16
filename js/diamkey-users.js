@@ -3,7 +3,6 @@ async function loadUsers() {
     const sortContainer = document.getElementById('sortContainer');
     if (!container) return;
 
-    // Прогресс-бар
     container.innerHTML = `
         <div class="loader-container">
             <div class="loader-icon"><i class="fas fa-user-astronaut"></i></div>
@@ -26,7 +25,6 @@ async function loadUsers() {
     document.getElementById('usersLoaderStatus').textContent = 'Готово!';
     await new Promise(r => setTimeout(r, 400));
 
-    // Сортировка
     sortContainer.innerHTML = `
         <span class="text-muted">Сортировка:</span>
         <button class="sort-btn active" data-sort="login">По нику</button>
@@ -73,11 +71,14 @@ async function loadUsers() {
 }
 
 function showUserTooltip(event, login, desc, avatar) {
-    const tooltip = document.getElementById('userTooltip') || document.createElement('div');
-    tooltip.id = 'userTooltip';
-    tooltip.className = 'user-tooltip';
+    let tooltip = document.getElementById('userTooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'userTooltip';
+        tooltip.className = 'user-tooltip';
+        document.body.appendChild(tooltip);
+    }
     tooltip.innerHTML = `<strong>${login}</strong><br><small>${desc||'Нет описания'}</small>`;
-    document.body.appendChild(tooltip);
     tooltip.style.display = 'block';
     tooltip.style.left = event.clientX + 15 + 'px';
     tooltip.style.top = event.clientY + 15 + 'px';
