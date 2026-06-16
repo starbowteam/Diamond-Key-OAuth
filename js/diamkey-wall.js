@@ -23,34 +23,61 @@ async function loadAnnouncement() {
 function renderReactions(reactionsObj) {
     const reactions = reactionsObj || {};
     const types = { heart: '❤️', like: '👍', fire: '🔥' };
-    return Object.entries(types).map(([key, emoji]) => {
+    let html = '';
+    for (const [key, emoji] of Object.entries(types)) {
         const count = reactions[key] || 0;
-        return `<button class="reaction-btn" data-type="${key}">${emoji} <span>${count}</span></button>`;
-    }).join('');
+        html += `<button class="reaction-btn" data-type="${key}">${emoji} <span>${count}</span></button>`;
+    }
+    return html;
 }
 
 async function toggleReaction(postId, type, btn) {
     if (!currentUser) return showToast('Войдите');
     const storageKey = `reacted_${postId}`;
-    if (localStorage.getItem(storageKey)) return showToast('Вы уже реагировали');
-    
+    const previousType = localStorage.getItem(storageKey);
+
     const { data: post, error } = await _supabase.from('profile_wall').select('reactions').eq('id', postId).maybeSingle();
     if (error || !post) {
-        console.error('[DiamKey] Ошибка реакции:', error);
+        console.error('[DiamKey] Ошибка получения поста для реакции:', error);
         return showToast('Ошибка');
     }
     let reactions = post.reactions || {};
-    reactions[type] = (reactions[type] || 0) + 1;
+
+    if (previousType === type) {
+        // убираем реакцию
+        reactions[type] = Math.max((reactions[type] || 0) - 1, 0);
+        localStorage.removeItem(storageKey);
+    } else {
+        if (previousType) {
+            // меняем реакцию
+            reactions[previousType] = Math.max((reactions[previousType] || 0) - 1, 0);
+        }
+        reactions[type] = (reactions[type] || 0) + 1;
+        localStorage.setItem(storageKey, type);
+    }
+
     const { error: updateError } = await _supabase.from('profile_wall').update({ reactions }).eq('id', postId);
     if (updateError) {
         console.error('[DiamKey] Ошибка обновления реакций:', updateError);
         return showToast('Ошибка');
     }
-    localStorage.setItem(storageKey, '1');
-    const span = btn.querySelector('span');
-    if (span) span.textContent = reactions[type];
-    btn.classList.add('active');
-    showToast('Реакция учтена!');
+
+    // обновляем все кнопки в этом посте
+    const postEl = btn.closest('.wall-post');
+    if (postEl) {
+        const footer = postEl.querySelector('.wall-post-footer');
+        if (footer) {
+            footer.innerHTML = renderReactions(reactions);
+            // перепривязываем обработчики
+            footer.querySelectorAll('.reaction-btn').forEach(b => {
+                b.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleReaction(postId, this.dataset.type, this);
+                });
+            });
+        }
+    }
+    // также обновляем другие вкладки, если открыты, но достаточно для текущей.
 }
 
 async function showUserProfile(login) {
@@ -66,21 +93,21 @@ async function showUserProfile(login) {
 
     document.getElementById('userBreadcrumbs').innerHTML = `<a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span>`;
 
-    const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
-        _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
-        _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
-        _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
-    ]);
+    try {
+        const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
+            _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
+            _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
+            _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
+        ]);
 
-    const profile = profileRes.data;
-    if (!profile) {
-        console.warn('[DiamKey] Профиль не найден:', login);
-        showToast('Пользователь не найден');
-        goBackToUsersList();
-        return;
-    }
+        const profile = profileRes.data;
+        if (!profile) {
+            console.warn('[DiamKey] Профиль не найден:', login);
+            showToast('Пользователь не найден');
+            goBackToUsersList();
+            return;
+        }
 
-    requestAnimationFrame(() => {
         document.getElementById('userName').textContent = profile.name || login;
         const avatarEl = document.getElementById('userAvatar');
         if (profile.avatar) {
@@ -125,7 +152,8 @@ async function showUserProfile(login) {
         }
 
         const wallPosts = wallRes.data || [];
-        document.getElementById('userWallPosts').innerHTML = wallPosts.length ? wallPosts.map(p => `
+        const wallContainer = document.getElementById('userWallPosts');
+        wallContainer.innerHTML = wallPosts.length ? wallPosts.map(p => `
             <div class="wall-post glass-panel" data-post-id="${p.id}">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                     ${p.user_avatar ? `<img src="${p.user_avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
@@ -137,12 +165,11 @@ async function showUserProfile(login) {
             </div>
         `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
-        document.querySelectorAll('#userWallPosts .reaction-btn').forEach(btn => {
+        wallContainer.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const postId = this.closest('.wall-post').dataset.postId;
-                const type = this.dataset.type;
-                toggleReaction(postId, type, this);
+                toggleReaction(postId, this.dataset.type, this);
             });
         });
 
@@ -171,7 +198,11 @@ async function showUserProfile(login) {
             showToast('Запись добавлена');
             showUserProfile(login);
         };
-    });
+
+    } catch (e) {
+        console.error('[DiamKey] Ошибка загрузки профиля:', e);
+        showToast('Ошибка загрузки профиля');
+    }
 }
 
 function goBackToUsersList() {
@@ -185,16 +216,16 @@ function goBackToUsersList() {
 async function loadMyProfile() {
     const login = currentUser.login;
     console.log('[DiamKey] Загрузка своего профиля:', login);
-    const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
-        _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
-        _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
-        _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
-    ]);
+    try {
+        const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
+            _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
+            _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
+            _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
+        ]);
 
-    const profile = profileRes.data;
-    if (!profile) return;
+        const profile = profileRes.data;
+        if (!profile) return;
 
-    requestAnimationFrame(() => {
         document.getElementById('myName').textContent = profile.name || login;
         const avatarEl = document.getElementById('myAvatar');
         if (profile.avatar) {
@@ -267,7 +298,8 @@ async function loadMyProfile() {
         }
 
         const wallPosts = wallRes.data || [];
-        document.getElementById('myWallPosts').innerHTML = wallPosts.length ? wallPosts.map(p => `
+        const wallContainer = document.getElementById('myWallPosts');
+        wallContainer.innerHTML = wallPosts.length ? wallPosts.map(p => `
             <div class="wall-post glass-panel" data-post-id="${p.id}">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                     ${p.user_avatar ? `<img src="${p.user_avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
@@ -279,12 +311,11 @@ async function loadMyProfile() {
             </div>
         `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
-        document.querySelectorAll('#myWallPosts .reaction-btn').forEach(btn => {
+        wallContainer.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const postId = this.closest('.wall-post').dataset.postId;
-                const type = this.dataset.type;
-                toggleReaction(postId, type, this);
+                toggleReaction(postId, this.dataset.type, this);
             });
         });
 
@@ -303,7 +334,9 @@ async function loadMyProfile() {
             showToast('Запись добавлена');
             loadMyProfile();
         };
-    });
+    } catch (e) {
+        console.error('[DiamKey] Ошибка загрузки своего профиля:', e);
+    }
 }
 
 function copyGpxLink(fileId) {
