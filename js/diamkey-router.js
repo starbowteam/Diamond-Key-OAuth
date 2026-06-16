@@ -7,65 +7,80 @@ function navigateTo(path) {
 function handleRoute() {
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
-
-    // Скрываем все страницы
+    
     document.querySelectorAll('.page').forEach(p => {
-        p.classList.remove('active');
+        if (p.classList.contains('active')) {
+            p.style.opacity = '0';
+            p.style.transform = 'translateY(16px)';
+            setTimeout(() => p.classList.remove('active'), 300);
+        }
     });
 
     // Сброс вида профиля в users
     const usersPanel = document.getElementById('usersPanel');
     const userProfileView = document.getElementById('userProfileView');
-    const userGpx = document.getElementById('userGpxSection');
-    const userWall = document.getElementById('userWallSection');
     if (usersPanel) usersPanel.style.display = 'block';
     if (userProfileView) userProfileView.style.display = 'none';
+    const userGpx = document.getElementById('userGpxSection');
+    const userWall = document.getElementById('userWallSection');
     if (userGpx) userGpx.style.display = 'none';
     if (userWall) userWall.style.display = 'none';
 
-    // Показываем нужную страницу
+    function activatePage(pageId) {
+        const page = document.getElementById(pageId);
+        if (!page) return;
+        setTimeout(() => {
+            page.classList.add('active');
+            page.style.opacity = '1';
+            page.style.transform = 'translateY(0)';
+        }, 60);
+    }
+
     if (path === '/' || path === '') {
-        document.getElementById('page-home').classList.add('active');
+        activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
     } else if (path === '/chats') {
-        document.getElementById('page-chats').classList.add('active');
+        activatePage('page-chats');
     } else if (path === '/gpx') {
-        document.getElementById('page-gpx').classList.add('active');
+        activatePage('page-gpx');
         if (typeof initGPX === 'function') {
             initGPX();
-            if (gpxMap) setTimeout(() => gpxMap.invalidateSize(), 100);
+            if (gpxMap) setTimeout(() => gpxMap.invalidateSize(), 150);
         }
         const gpxId = params.get('id');
         if (gpxId) {
-            document.getElementById('loadGpxBtn').style.display = 'none';
+            // Загрузка чужого GPX — убираем кнопку "Опубликовать" и загрузки
             document.getElementById('saveGpxBtn').style.display = 'none';
-            setTimeout(() => viewGpxRoute(gpxId), 200);
+            document.getElementById('uploadGpxBtn').style.display = 'none';
+            setTimeout(() => viewGpxRoute(gpxId), 250);
         } else {
-            document.getElementById('loadGpxBtn').style.display = '';
-            document.getElementById('saveGpxBtn').style.display = 'none';
+            // Своя страница — показываем кнопку загрузки, если авторизованы
+            if (currentUser) {
+                document.getElementById('uploadGpxBtn').style.display = 'inline-flex';
+            }
         }
         if (!localStorage.getItem('gpx_info_seen')) {
             const modal = document.getElementById('gpxInfoModal');
             if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
         }
     } else if (path === '/users') {
-        document.getElementById('page-users').classList.add('active');
+        activatePage('page-users');
         if (typeof loadUsers === 'function') loadUsers();
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
-        document.getElementById('page-users').classList.add('active');
+        activatePage('page-users');
         if (typeof showUserProfile === 'function') showUserProfile(login);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
-        document.getElementById('page-profile').classList.add('active');
+        activatePage('page-profile');
         if (typeof loadMyProfile === 'function') loadMyProfile();
     } else {
-        document.getElementById('page-home').classList.add('active');
+        activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
     }
 
     // Подсветка сайдбара (кроме выхода)
-    document.querySelectorAll('.sidebar-icon:not(#logoutSidebarBtn)').forEach(btn => {
+    document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.classList.remove('active');
         const href = btn.getAttribute('href');
         if (href === path || (path.startsWith('/users') && href === '/users') || (path.startsWith('/gpx') && href === '/gpx')) {
