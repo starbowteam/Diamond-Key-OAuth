@@ -2,7 +2,7 @@ function navigateTo(path) {
     history.pushState(null, null, path);
     handleRoute();
 }
-
+//67 
 function handleRoute() {
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
@@ -109,4 +109,4 @@ document.addEventListener('DOMContentLoaded', () => {
             navigateTo(btn.getAttribute('href'));
         });
     });
-}); // 67
+});
