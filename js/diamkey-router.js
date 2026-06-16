@@ -56,12 +56,12 @@ function handleRoute() {
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
         activatePage('page-users');
-        // Новая функция, которая полностью строит интерфейс пользователей и профиля
-        if (typeof renderUserSection === 'function') renderUserSection(login);
+        // Единая точка входа для чужого профиля
+        if (typeof openUserProfile === 'function') openUserProfile(login);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
         activatePage('page-profile');
-        // Новая функция для своего профиля
+        // Свой профиль
         if (typeof renderMyProfile === 'function') renderMyProfile();
     } else {
         activatePage('page-home');
