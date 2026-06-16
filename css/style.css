@@ -78,9 +78,14 @@ body {
 }
 
 .sidebar-icon.active,
-.sidebar-icon:hover:not(#logoutSidebarBtn) {
+.sidebar-icon:hover:not(#logoutSidebarBtn):not(#discordSidebarIcon) {
     background: rgba(255, 255, 255, 0.08);
     color: var(--text-primary);
+}
+
+#discordSidebarIcon:hover {
+    color: #7289da;
+    background: transparent;
 }
 
 #logoutSidebarBtn {
