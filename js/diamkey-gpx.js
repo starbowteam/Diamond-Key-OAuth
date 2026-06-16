@@ -3,11 +3,20 @@ let gpxLayerGroup = null;
 let elevationChart = null;
 let currentGpxContent = null;
 let hoverMarker = null;
+let gpxInitialized = false;
 
 function initGPX() {
-    if (typeof L === 'undefined' || !document.getElementById('gpx-map')) return;
-    if (gpxMap) { gpxMap.invalidateSize(); return; }
+    if (typeof L === 'undefined' || !document.getElementById('gpx-map')) {
+        console.warn('[DiamKey] Leaflet не загружен или карта отсутствует');
+        return;
+    }
+    if (gpxInitialized) {
+        console.log('[DiamKey] Карта уже инициализирована');
+        if (gpxMap) gpxMap.invalidateSize();
+        return;
+    }
 
+    console.log('[DiamKey] Инициализация карты');
     const satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 });
     const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 
@@ -18,6 +27,7 @@ function initGPX() {
         zoomControl: true
     });
     gpxLayerGroup = L.featureGroup().addTo(gpxMap);
+    gpxInitialized = true;
 
     const toolbar = document.querySelector('.gpx-toolbar');
     if (toolbar && !document.getElementById('layerToggleBtn')) {
@@ -63,7 +73,11 @@ function initGPX() {
     document.getElementById('saveGpxNameBtn').addEventListener('click', async () => {
         const name = document.getElementById('gpxNameInput')?.value?.trim() || 'Без названия';
         if (!currentUser) return showToast('Войдите');
-        await _supabase.from('gpx_files').insert([{ user_login: currentUser.login, name, content: currentGpxContent }]);
+        const { error } = await _supabase.from('gpx_files').insert([{ user_login: currentUser.login, name, content: currentGpxContent }]);
+        if (error) {
+            console.error('[DiamKey] Ошибка сохранения GPX:', error);
+            return showToast('Ошибка сохранения');
+        }
         closeModal('gpxNameModal');
         showToast('Опубликовано!');
         document.getElementById('saveGpxBtn').style.display = 'none';
@@ -71,6 +85,29 @@ function initGPX() {
 
     if (document.getElementById('page-gpx').classList.contains('active')) {
         setTimeout(() => gpxMap.invalidateSize(), 100);
+    }
+}
+
+async function loadGpxFromId(gpxId) {
+    console.log('[DiamKey] Загрузка GPX по ID:', gpxId);
+    if (!gpxMap) {
+        console.warn('[DiamKey] Карта ещё не готова, пробуем позже');
+        setTimeout(() => loadGpxFromId(gpxId), 200);
+        return;
+    }
+    const { data, error } = await _supabase.from('gpx_files').select('content').eq('id', gpxId).maybeSingle();
+    if (error || !data || !data.content) {
+        console.error('[DiamKey] Ошибка получения GPX:', error);
+        return showToast('Не удалось загрузить маршрут');
+    }
+    try {
+        const parsed = parseGPX(data.content);
+        displayGPX(parsed);
+        showAIReview(parsed);
+        gpxMap.invalidateSize();
+    } catch (e) {
+        console.error('[DiamKey] Ошибка парсинга GPX:', e);
+        showToast('Ошибка обработки маршрута');
     }
 }
 
@@ -107,7 +144,7 @@ function displayGPX(data) {
     });
     if (gpxLayerGroup.getLayers().length) { const bounds = gpxLayerGroup.getBounds(); if (bounds.isValid()) gpxMap.fitBounds(bounds, { padding: [40,40], maxZoom:16 }); }
     updateDashboard(data.tracks);
-    if (gpxMap) gpxMap.invalidateSize();
+    gpxMap.invalidateSize();
 }
 
 function updateDashboard(tracks) {
