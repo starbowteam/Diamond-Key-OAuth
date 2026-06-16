@@ -91,7 +91,6 @@ function startCipherEffect() {
 }
 startCipherEffect();
 
-// Кэширование пользователей
 let cachedUsers = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 60000;
@@ -103,7 +102,6 @@ async function getUsers() {
     return cachedUsers;
 }
 
-// Статистика для главной (включая общее количество пользователей)
 async function loadHomeStats() {
     const [gpxRes, wallRes, usersCountRes] = await Promise.all([
         currentUser ? _supabase.from('gpx_files').select('id', { count: 'exact' }).eq('user_login', currentUser.login) : Promise.resolve({ count: 0 }),
