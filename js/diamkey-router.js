@@ -59,10 +59,7 @@ function handleRoute() {
             if (currentUser && uploadBtn) uploadBtn.style.display = 'inline-flex';
             else if (uploadBtn) uploadBtn.style.display = 'none';
         }
-        if (!localStorage.getItem('gpx_info_seen')) {
-            const modal = document.getElementById('gpxInfoModal');
-            if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
-        }
+        // модалка gpxInfoModal больше не нужна
     } else if (path === '/users') {
         activatePage('page-users');
         if (typeof loadUsers === 'function') loadUsers();
