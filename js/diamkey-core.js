@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co'; //67
+const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
@@ -111,16 +111,36 @@ startCipherEffect();
 let cachedUsers = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 60000;
+let usersRequestPromise = null;
+
 async function getUsers() {
     if (cachedUsers && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedUsers;
-    const { data, error } = await _supabase.from('users').select('login, name, avatar, description, created_at').order('login');
-    if (error) {
-        console.error('[DiamKey] Ошибка загрузки пользователей:', error);
-        return [];
-    }
-    cachedUsers = data || [];
-    cacheTimestamp = Date.now();
-    return cachedUsers;
+    // Защита от дублирующихся запросов
+    if (usersRequestPromise) return usersRequestPromise;
+
+    usersRequestPromise = (async () => {
+        try {
+            const { data, error } = await _supabase.from('users').select('login, name, avatar, description, created_at').order('login');
+            if (error) {
+                if (error.code === '20' || error.message?.includes('abort')) {
+                    // AbortError — просто вернём кеш или пустой массив
+                    console.warn('[DiamKey] AbortError при загрузке пользователей, использую кеш');
+                    return cachedUsers || [];
+                }
+                throw error;
+            }
+            cachedUsers = data || [];
+            cacheTimestamp = Date.now();
+            return cachedUsers;
+        } catch (e) {
+            console.error('[DiamKey] Ошибка загрузки пользователей:', e);
+            return [];
+        } finally {
+            usersRequestPromise = null;
+        }
+    })();
+
+    return usersRequestPromise;
 }
 
 async function loadHomeStats() {
