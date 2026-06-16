@@ -109,4 +109,4 @@ document.addEventListener('DOMContentLoaded', () => {
             navigateTo(btn.getAttribute('href'));
         });
     });
-});
+}); // 67
