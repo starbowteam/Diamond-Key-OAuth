@@ -129,18 +129,18 @@ function renderUserProfileHTML(login, profile, gpxFiles, wallPosts) {
     }
 
     return `
-        <div class="breadcrumbs" id="userBreadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
+        <div class="breadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
         <div class="profile-header">
             <div class="avatar-wrapper">${avatarHTML}</div>
             <div class="profile-info">
-                <h2 id="userName">${escapeHtml(profile.name || login)}</h2>
-                <p id="userDescription" class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
-                <span class="profile-regdate" id="userRegDate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                <h2>${escapeHtml(profile.name || login)}</h2>
+                <p class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
+                <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
         </div>
         <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
-        <div class="profile-gpx" id="userGpxSection"><h3>Поездки с Diamond GPX</h3><div id="userGpxFiles">${gpxHTML}</div></div>
-        <div class="profile-wall" id="userWallSection">
+        <div class="profile-gpx"><h3>Поездки с Diamond GPX</h3><div id="userGpxFiles">${gpxHTML}</div></div>
+        <div class="profile-wall">
             <div class="wall-input">
                 <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
                 <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
@@ -155,7 +155,12 @@ async function showUserProfile(login) {
     const usersPanel = document.getElementById('usersPanel');
     const userView = document.getElementById('userProfileView');
     if (usersPanel) usersPanel.style.display = 'none';
-    if (userView) userView.style.display = 'block';
+    if (!userView) {
+        console.error('[DiamKey] Контейнер userProfileView не найден!');
+        showToast('Ошибка: контейнер профиля отсутствует');
+        return;
+    }
+    userView.style.display = 'block';
 
     try {
         const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
@@ -177,7 +182,7 @@ async function showUserProfile(login) {
 
         userView.innerHTML = renderUserProfileHTML(login, profile, gpxFiles, wallPosts);
 
-        // Навесить обработчики реакций
+        // Обработчики реакций
         userView.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -187,7 +192,7 @@ async function showUserProfile(login) {
         });
 
         // Автосаджест автора
-        const wallInput = userView.querySelector('#userWallSection .wall-input');
+        const wallInput = userView.querySelector('.wall-input');
         if (wallInput && currentUser) {
             if (!wallInput.querySelector('.wall-author-preview')) {
                 const preview = document.createElement('div');
@@ -261,7 +266,6 @@ async function loadMyProfile() {
             </div>
         `;
 
-        // Обработчик смены аватара
         document.getElementById('myAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
             input.onchange = async (e) => {
@@ -273,7 +277,6 @@ async function loadMyProfile() {
             input.click();
         };
 
-        // Редактирование описания
         document.getElementById('myDescription').onclick = () => {
             document.getElementById('editDescriptionInput').value = profile.description || '';
             document.getElementById('editDescriptionModal').style.display = 'flex';
@@ -288,7 +291,6 @@ async function loadMyProfile() {
             showToast('Описание сохранено');
         };
 
-        // GPX
         let gpxHTML = '';
         const gpxFiles = gpxFilesRes.data || [];
         if (gpxFiles.length) {
@@ -319,7 +321,6 @@ async function loadMyProfile() {
         }
         myGpx.innerHTML = `<h3>Поездки с Diamond GPX</h3><div id="myGpxFiles">${gpxHTML}</div>`;
 
-        // Стена
         let wallHTML = '';
         const wallPosts = wallRes.data || [];
         if (wallPosts.length) {
@@ -345,7 +346,6 @@ async function loadMyProfile() {
             <div id="myWallPosts">${wallHTML}</div>
         `;
 
-        // Реакции на своей стене
         myWall.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -354,7 +354,6 @@ async function loadMyProfile() {
             });
         });
 
-        // Отправка на своей стене
         document.getElementById('postMyWallBtn').onclick = async () => {
             const msg = document.getElementById('myWallMessage').value.trim();
             if (!msg) return;
@@ -404,4 +403,6 @@ function previewGpxBeforeSave(content) {
         currentGpxContent = null;
         document.getElementById('saveGpxBtn').style.display = 'none';
     }
-}
+} 
+
+//67676767
