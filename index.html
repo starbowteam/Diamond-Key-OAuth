@@ -111,59 +111,15 @@
                         </div>
                     </div>
                 </div>
-                <div class="glass-panel profile-top" id="userProfileView" style="display:none;">
-                    <div class="breadcrumbs" id="userBreadcrumbs"></div>
-                    <div class="profile-header">
-                        <div class="avatar-wrapper" id="userAvatarWrapper">
-                            <img id="userAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
-                            <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
-                        </div>
-                        <div class="profile-info">
-                            <h2 id="userName"></h2>
-                            <p id="userDescription" class="editable-text"></p>
-                            <span class="profile-regdate" id="userRegDate"></span>
-                        </div>
-                    </div>
-                    <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
-                </div>
-                <div class="glass-panel profile-gpx" id="userGpxSection" style="display:none;">
-                    <h3>Поездки с Diamond GPX</h3>
-                    <div id="userGpxFiles"></div>
-                </div>
-                <div class="glass-panel profile-wall" id="userWallSection" style="display:none;">
-                    <div class="wall-input">
-                        <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
-                        <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                    <div id="userWallPosts"></div>
-                </div>
+                <div class="glass-panel profile-top" id="userProfileView" style="display:none;"></div>
+                <div class="glass-panel profile-gpx" id="userGpxSection" style="display:none;"></div>
+                <div class="glass-panel profile-wall" id="userWallSection" style="display:none;"></div>
             </section>
 
             <section class="page" id="page-profile">
-                <div class="glass-panel profile-top" id="myProfileTop">
-                    <div class="profile-header">
-                        <div class="avatar-wrapper" id="myAvatarWrapper">
-                            <img id="myAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
-                            <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
-                        </div>
-                        <div class="profile-info">
-                            <h2 id="myName"></h2>
-                            <p id="myDescription" class="editable-text">Нажмите, чтобы добавить описание</p>
-                            <span class="profile-regdate" id="myRegDate"></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="glass-panel profile-gpx" id="myGpxSection">
-                    <h3>Поездки с Diamond GPX</h3>
-                    <div id="myGpxFiles"></div>
-                </div>
-                <div class="glass-panel profile-wall" id="myWallSection">
-                    <div class="wall-input">
-                        <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
-                        <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                    <div id="myWallPosts"></div>
-                </div>
+                <div class="glass-panel profile-top" id="myProfileTop"></div>
+                <div class="glass-panel profile-gpx" id="myGpxSection"></div>
+                <div class="glass-panel profile-wall" id="myWallSection"></div>
             </section>
         </main>
     </div>
