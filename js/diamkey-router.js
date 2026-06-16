@@ -1,4 +1,3 @@
-// ========== DIAMKEY ROUTER ==========
 function navigateTo(path) {
     history.pushState(null, null, path);
     handleRoute();
@@ -16,7 +15,6 @@ function handleRoute() {
         }
     });
 
-    // Сброс вида профиля в users
     const usersPanel = document.getElementById('usersPanel');
     const userProfileView = document.getElementById('userProfileView');
     if (usersPanel) usersPanel.style.display = 'block';
@@ -49,15 +47,19 @@ function handleRoute() {
         }
         const gpxId = params.get('id');
         if (gpxId) {
-            // Загрузка чужого GPX — убираем кнопку "Опубликовать" и загрузки
+            // Чужой GPX — убираем кнопки загрузки/публикации
             document.getElementById('saveGpxBtn').style.display = 'none';
-            document.getElementById('uploadGpxBtn').style.display = 'none';
-            setTimeout(() => viewGpxRoute(gpxId), 250);
+            const uploadBtn = document.getElementById('uploadGpxBtn');
+            if (uploadBtn) uploadBtn.style.display = 'none';
+            // Загружаем маршрут асинхронно
+            setTimeout(() => {
+                if (typeof viewGpxRoute === 'function') viewGpxRoute(gpxId);
+            }, 300);
         } else {
-            // Своя страница — показываем кнопку загрузки, если авторизованы
-            if (currentUser) {
-                document.getElementById('uploadGpxBtn').style.display = 'inline-flex';
-            }
+            // Свой GPX
+            const uploadBtn = document.getElementById('uploadGpxBtn');
+            if (currentUser && uploadBtn) uploadBtn.style.display = 'inline-flex';
+            else if (uploadBtn) uploadBtn.style.display = 'none';
         }
         if (!localStorage.getItem('gpx_info_seen')) {
             const modal = document.getElementById('gpxInfoModal');
@@ -79,7 +81,6 @@ function handleRoute() {
         if (typeof loadHomeData === 'function') loadHomeData();
     }
 
-    // Подсветка сайдбара (кроме выхода)
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.classList.remove('active');
         const href = btn.getAttribute('href');
