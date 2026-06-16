@@ -1,259 +1,945 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>DiamKey · Социальная экосистема</title>
-    <link rel="icon" href="assets/favicon.ico">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="css/style.css?v=12">
-</head>
-<body>
-    <div class="dot-bg"></div>
-    <div class="app-shell" id="appShell">
-        <nav class="sidebar" id="sidebar">
-            <a class="sidebar-icon" href="/"><i class="fas fa-home"></i></a>
-            <a class="sidebar-icon" href="/chats"><i class="fas fa-comments"></i></a>
-            <a class="sidebar-icon" href="/gpx"><i class="fas fa-map-marker-alt"></i></a>
-            <a class="sidebar-icon" href="/users"><i class="fas fa-users"></i></a>
-            <a class="sidebar-icon" href="/profile"><i class="fas fa-user"></i></a>
-            <a class="sidebar-icon" href="https://diamond-ai.ru" target="_blank"><img src="assets/diamond-ai.ico" style="width:30px;height:30px;"></a>
-            <button class="sidebar-icon" id="logoutSidebarBtn"><i class="fas fa-sign-out-alt"></i></button>
-        </nav>
-        <main class="main-content" id="mainContent">
-            <!-- Главная -->
-            <section class="page" id="page-home">
-                <div class="glass-panel hero">
-                    <img src="assets/favicon.ico" class="hero-logo" alt="DiamKey">
-                    <h1 id="cipherTitle">DIAMKEY</h1>
-                    <p class="hero-subtitle">Единая учётная запись для всей экосистемы Diamond</p>
-                    <div class="hero-description">
-                        <p>DiamKey — это ваш ключ ко всем сервисам Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ GPS-треков и маршрутов) и будущему мессенджеру <strong>.drm</strong>.</p>
-                        <p>Присоединяйтесь к сообществу Diamond уже сегодня и получите полный контроль над своими данными, синхронизацию между устройствами и настоящую приватность.</p>
-                    </div>
-                    <!-- Строка со статистикой пользователя (появляется после входа) -->
-                    <div class="user-stats-row" id="homeStatsRow" style="display:none;"></div>
-                    <div id="heroActionArea">
-                        <button class="btn btn-primary" id="heroActionBtn"><i class="fas fa-user-plus"></i> Войти / Создать DiamKey</button>
-                    </div>
-                </div>
+/* ========== ОСНОВНЫЕ ПЕРЕМЕННЫЕ ========== */
+:root {
+    --bg-primary: #0a0a0f;
+    --bg-glass: rgba(20, 20, 28, 0.75);
+    --border-glass: rgba(255, 255, 255, 0.1);
+    --text-primary: #f0f0f0;
+    --text-muted: #9ca3af;
+    --accent: #a0a0b0;
+    --accent-glow: rgba(160, 160, 176, 0.2);
+    --radius-lg: 24px;
+    --transition: 0.25s ease;
+}
 
-                <div class="glass-panel accent-glass announcement-card" id="announcementCard">
-                    <div class="announcement-header"><i class="fas fa-bullhorn"></i> Объявление от создателя</div>
-                    <div class="announcement-body" id="announcementBody">
-                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
-                    </div>
-                </div>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
 
-                <div class="features-grid">
-                    <div class="feature-card glass-panel"><i class="fas fa-robot"></i><h3>Diamond AI</h3><p>Интеллектуальный помощник с синхронизацией чатов, папок и поддержкой LaTeX.</p></div>
-                    <div class="feature-card glass-panel"><i class="fas fa-map-marker-alt"></i><h3>Diamond GPX</h3><p>Загружайте GPS-треки, анализируйте маршруты и делитесь прогулками с друзьями.</p></div>
-                    <div class="feature-card glass-panel"><i class="fas fa-comments"></i><h3>.drm Messenger</h3><p>Скоро: быстрый и безопасный мессенджер для экосистемы Diamond.</p></div>
-                </div>
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
 
-                <div class="glass-panel">
-                    <h2><i class="fas fa-star"></i> Почему DiamKey?</h2>
-                    <div class="advantage-list">
-                        <div class="advantage-item"><i class="fas fa-fingerprint"></i><div><h3>Один аккаунт для всего</h3><p>Регистрируйтесь один раз и входите во все сервисы экосистемы Diamond без повторной авторизации.</p></div></div>
-                        <div class="advantage-item"><i class="fas fa-shield-alt"></i><div><h3>Полная приватность</h3><p>Ваши данные хранятся в зашифрованном виде в облаке Supabase. Никаких утечек и слежки.</p></div></div>
-                        <div class="advantage-item"><i class="fas fa-sync-alt"></i><div><h3>Мгновенная синхронизация</h3><p>Чаты, файлы, маршруты — всё доступно на любом устройстве, где вы вошли в DiamKey.</p></div></div>
-                        <div class="advantage-item"><i class="fas fa-code"></i><div><h3>Создано с душой</h3><p>Проект с открытым исходным кодом, разработанный командой Diamond во главе с viktorshopa.</p></div></div>
-                    </div>
-                </div>
+/* Точки фона — теперь заметнее */
+.dot-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle, rgba(200, 200, 220, 0.25) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+}
 
-                <div class="glass-panel ai-preview">
-                    <div class="ai-review-header"><img src="assets/logo-ai.ico" style="width:28px;height:28px;border-radius:50%;"><span>Diamond AI</span></div>
-                    <p>Привет! Я — Diamond AI, твой персональный помощник. Я могу отвечать на вопросы, помогать с кодом, решать задачи и просто болтать. Мои ответы всегда чёткие и по делу. Попробуй спросить меня о чём-нибудь!</p>
-                    <p style="font-size:0.9rem; color:var(--text-muted);">Это пример сообщения от ИИ. В реальном чате ответы генерируются мгновенно.</p>
-                </div>
-            </section>
+/* ========== ОБОЛОЧКА И САЙДБАР ========== */
+.app-shell {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 100vh;
+}
 
-            <!-- Мессенджер .drm (заглушка) -->
-            <section class="page" id="page-chats">
-                <div class="glass-panel" style="text-align: center; padding: 60px 40px;">
-                    <i class="fas fa-comments" style="font-size: 4rem; color: var(--accent); margin-bottom: 20px;"></i>
-                    <h2>.drm Messenger</h2>
-                    <p class="text-muted" style="font-size: 1.2rem; max-width: 500px; margin: 0 auto 20px;">Быстрый и безопасный мессенджер от Diamond.</p>
-                    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                        <div style="text-align: center;">
-                            <i class="fas fa-shield-alt" style="font-size: 2rem; color: var(--accent); margin-bottom: 8px;"></i>
-                            <p>Сквозное шифрование</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <i class="fas fa-bolt" style="font-size: 2rem; color: var(--accent); margin-bottom: 8px;"></i>
-                            <p>Мгновенная доставка</p>
-                        </div>
-                        <div style="text-align: center;">
-                            <i class="fas fa-sync-alt" style="font-size: 2rem; color: var(--accent); margin-bottom: 8px;"></i>
-                            <p>Синхронизация с DiamKey</p>
-                        </div>
-                    </div>
-                    <p class="text-muted" style="margin-top: 30px; font-size: 0.9rem;">Мы уже работаем над запуском. Ожидайте!</p>
-                </div>
-            </section>
+.sidebar {
+    width: 72px;
+    background: rgba(15, 15, 20, 0.9);
+    backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 0;
+    gap: 18px;
+    border-right: 1px solid var(--border-glass);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+}
 
-            <!-- GPX -->
-            <section class="page" id="page-gpx">
-                <div class="glass-panel gpx-container">
-                    <div class="gpx-toolbar">
-                        <span><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
-                        <button class="btn" onclick="document.getElementById('gpx-file-input').click()"><i class="fas fa-folder-open"></i> Загрузить GPX</button>
-                        <input type="file" id="gpx-file-input" accept=".gpx,.xml" style="display:none">
-                        <button class="btn" id="saveGpxBtn" style="display:none"><i class="fas fa-cloud-upload-alt"></i> Опубликовать</button>
-                    </div>
-                    <div id="gpx-map"></div>
-                    <div class="gpx-dashboard glass-panel">
-                        <div class="chart-wrap"><canvas id="elevationChart"></canvas></div>
-                        <div class="gpx-stats-grid">
-                            <div class="gpx-stat-card"><i class="fas fa-ruler"></i><span class="stat-label">Дистанция</span><span id="distVal">—</span></div>
-                            <div class="gpx-stat-card"><i class="fas fa-mountain"></i><span class="stat-label">Набор</span><span id="ascentVal">—</span></div>
-                            <div class="gpx-stat-card"><i class="fas fa-clock"></i><span class="stat-label">Время</span><span id="timeVal">—</span></div>
-                            <div class="gpx-stat-card"><i class="fas fa-tachometer-alt"></i><span class="stat-label">Скорость</span><span id="speedVal">—</span></div>
-                        </div>
-                    </div>
-                    <div id="aiReview" class="ai-review glass-panel" style="display:none;">
-                        <div class="ai-review-header"><img src="assets/logo-ai.ico" style="width:24px;height:24px;border-radius:50%;"><span>Diamond AI</span></div>
-                        <p id="aiReviewText"></p>
-                    </div>
-                </div>
-            </section>
+.sidebar-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    color: var(--text-muted);
+    font-size: 22px;
+    transition: all var(--transition);
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
 
-            <!-- Пользователи -->
-            <section class="page" id="page-users">
-                <div class="glass-panel" id="usersPanel">
-                    <h2><i class="fas fa-users"></i> Пользователи</h2>
-                    <input type="text" id="userSearch" placeholder="Поиск по нику..." style="margin-bottom:16px;">
-                    <div id="usersList"><div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div></div>
-                </div>
-                <!-- Профиль пользователя внутри users -->
-                <div class="glass-panel profile-top" id="userProfileView" style="display:none;">
-                    <div class="profile-header">
-                        <div class="avatar-wrapper" id="userAvatarWrapper">
-                            <img id="userAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
-                            <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
-                        </div>
-                        <div class="profile-info">
-                            <h2 id="userName"></h2>
-                            <p id="userDescription" class="editable-text"></p>
-                            <span class="profile-regdate" id="userRegDate"></span>
-                        </div>
-                    </div>
-                    <button class="btn btn-back" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i> Назад к пользователям</button>
-                </div>
-                <div class="glass-panel profile-gpx" id="userGpxSection" style="display:none;">
-                    <h3>Поездки с Diamond GPX</h3>
-                    <div id="userGpxFiles"></div>
-                </div>
-                <div class="glass-panel profile-wall" id="userWallSection" style="display:none;">
-                    <h3>Стена</h3>
-                    <div class="wall-input">
-                        <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
-                        <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                    <div id="userWallPosts"></div>
-                </div>
-            </section>
+/* Активная/ховер — только для ссылок, кроме кнопки выхода */
+.sidebar-icon:not(#logoutSidebarBtn).active,
+.sidebar-icon:not(#logoutSidebarBtn):hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
 
-            <!-- Профиль -->
-            <section class="page" id="page-profile">
-                <div class="glass-panel profile-top" id="myProfileTop">
-                    <div class="profile-header">
-                        <div class="avatar-wrapper" id="myAvatarWrapper">
-                            <img id="myAvatar" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
-                            <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
-                        </div>
-                        <div class="profile-info">
-                            <h2 id="myName"></h2>
-                            <p id="myDescription" class="editable-text">Нажмите, чтобы добавить описание</p>
-                            <span class="profile-regdate" id="myRegDate"></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="glass-panel profile-gpx" id="myGpxSection">
-                    <h3>Поездки с Diamond GPX</h3>
-                    <div id="myGpxFiles"></div>
-                </div>
-                <div class="glass-panel profile-wall" id="myWallSection">
-                    <h3>Стена</h3>
-                    <div class="wall-input">
-                        <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
-                        <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                    <div id="myWallPosts"></div>
-                </div>
-            </section>
-        </main>
-    </div>
+/* Кнопка выхода — не должна подсвечиваться */
+#logoutSidebarBtn {
+    color: var(--text-muted);
+}
+#logoutSidebarBtn:hover {
+    background: transparent;
+    color: var(--text-muted);
+}
 
-    <!-- Модалка входа/регистрации (обновлённая с вкладками) -->
-    <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
-        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:420px;">
-            <img src="assets/favicon.ico" class="modal-logo" style="width:60px;height:60px;animation:float 3s ease-in-out infinite;">
-            <div class="auth-tabs">
-                <button class="auth-tab active" id="tabLogin">Вход</button>
-                <button class="auth-tab" id="tabRegister">Регистрация</button>
-            </div>
-            <div id="loginFormBlock">
-                <input id="loginIdentity" placeholder="Логин">
-                <input id="loginPassword" type="password" placeholder="Пароль">
-                <button class="btn btn-primary" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
-            </div>
-            <div id="registerFormBlock" style="display:none;">
-                <input id="regLoginInput" placeholder="Придумайте логин">
-                <div class="login-status" id="regLoginStatus"></div>
-                <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)">
-                <input id="regPasswordConfirm" type="password" placeholder="Повторите пароль">
-                <button class="btn btn-primary" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
-            </div>
-        </div>
-    </div>
+.sidebar-icon img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+}
 
-    <!-- Остальные модалки без изменений -->
-    <div class="modal" id="gpxInfoModal" onclick="if(event.target===this) closeModal('gpxInfoModal')">
-        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
-            <h3><i class="fas fa-map-marker-alt"></i> Что такое GPX?</h3>
-            <p>GPX — формат для хранения GPS-треков (велопрогулки, походы). Загрузите файл, чтобы увидеть маршрут и статистику!</p>
-            <div class="gpx-links">
-                <a href="https://apps.apple.com/app/biketracker/id123456" target="_blank"><i class="fab fa-apple"></i> BikeTracker для iPhone</a>
-                <a href="https://play.google.com/store/apps/details?id=com.biketracker" target="_blank"><i class="fab fa-android"></i> BikeTracker для Android</a>
-            </div>
-            <button class="btn" id="gpxInfoOkBtn"><i class="fas fa-check"></i> Хорошо, я понял(а)</button>
-        </div>
-    </div>
+/* ========== ГЛАВНЫЙ КОНТЕНТ ========== */
+.main-content {
+    margin-left: 72px;
+    flex: 1;
+    padding: 32px;
+    position: relative;
+    min-height: 100vh;
+}
 
-    <div class="modal" id="gpxNameModal" onclick="if(event.target===this) closeModal('gpxNameModal')">
-        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
-            <h3>Название прогулки</h3>
-            <input id="gpxNameInput" placeholder="Например: Утренняя поездка">
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button class="btn" id="saveGpxNameBtn"><i class="fas fa-save"></i> Опубликовать</button>
-                <button class="btn" onclick="closeModal('gpxNameModal')">Отмена</button>
-            </div>
-        </div>
-    </div>
+/* ========== СТРАНИЦЫ С АНИМАЦИЕЙ ========== */
+.page {
+    display: none;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
 
-    <div class="modal" id="editDescriptionModal" onclick="if(event.target===this) closeModal('editDescriptionModal')">
-        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
-            <h3>Редактировать описание</h3>
-            <textarea id="editDescriptionInput" rows="3" placeholder="Расскажите о себе..."></textarea>
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button class="btn" id="saveDescriptionBtn"><i class="fas fa-save"></i> Сохранить</button>
-                <button class="btn" onclick="closeModal('editDescriptionModal')">Отмена</button>
-            </div>
-        </div>
-    </div>
+.page.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    animation: fadeSlideIn 0.35s ease;
+}
 
-    <script src="js/diamkey-core.js?v=12"></script>
-    <script src="js/diamkey-router.js?v=12"></script>
-    <script src="js/diamkey-ui.js?v=12"></script>
-    <script src="js/diamkey-wall.js?v=12"></script>
-    <script src="js/diamkey-gpx.js?v=12"></script>
-    <script src="js/diamkey-users.js?v=12"></script>
-    <script src="js/diamkey-settings.js?v=12"></script>
-</body>
-</html>
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Индикатор загрузки страницы */
+.page-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+    color: var(--text-muted);
+}
+
+.page-loader i {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+
+.page-loader .progress-bar {
+    width: 200px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin-top: 12px;
+    overflow: hidden;
+}
+
+.page-loader .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.3s;
+}
+
+/* ========== СТЕКЛЯННЫЕ ПАНЕЛИ ========== */
+.glass-panel {
+    background: var(--bg-glass);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-bottom: 24px;
+    transition: all var(--transition);
+}
+
+.glass-panel:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ========== HERO (главная) ========== */
+.hero {
+    text-align: center;
+    padding: 56px 32px;
+}
+
+.hero-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.hero h1 {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+.hero-subtitle {
+    font-size: 18px;
+    color: var(--text-muted);
+    max-width: 500px;
+    margin: 0 auto 24px;
+}
+
+.hero-description {
+    font-size: 15px;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto 28px;
+    line-height: 1.6;
+}
+
+/* ========== КНОПКИ ========== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #1a1a1a;
+    border: none;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+}
+
+.btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* ========== ОБЪЯВЛЕНИЕ ========== */
+.announcement-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.announcement-header {
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.announcement-body {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.announcement-body img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.announcement-content {
+    flex: 1;
+}
+
+.announcement-footer {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ========== СТАТИСТИКА НА ГЛАВНОЙ ========== */
+.user-stats-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.stat-badge {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    padding: 12px 24px;
+    text-align: center;
+}
+
+.stat-badge .number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.stat-badge .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ========== ФИЧИ ========== */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.feature-card {
+    text-align: center;
+    padding: 36px 24px;
+}
+
+.feature-card i {
+    font-size: 48px;
+    color: var(--accent);
+    margin-bottom: 20px;
+}
+
+.feature-card h3 {
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+.feature-card p {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* ========== ПРЕИМУЩЕСТВА ========== */
+.advantage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.advantage-item {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.advantage-item i {
+    font-size: 32px;
+    color: var(--accent);
+    width: 40px;
+    text-align: center;
+}
+
+.advantage-item h3 {
+    font-size: 18px;
+    margin-bottom: 6px;
+}
+
+.advantage-item p {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* ========== AI ПРЕВЬЮ (на главной и в GPX) ========== */
+.ai-preview {
+    border-left: 3px solid var(--accent);
+}
+
+.ai-review {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+.ai-review-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.ai-review-header img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--accent);
+}
+
+.ai-review p {
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* ========== ПРОФИЛЬ ========== */
+.profile-header {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.avatar-wrapper {
+    position: relative;
+    cursor: pointer;
+    width: 80px;
+    height: 80px;
+}
+
+.avatar-wrapper img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: 0.2s;
+    color: white;
+    font-size: 24px;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+    opacity: 1;
+}
+
+.profile-info h2 {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.editable-text {
+    cursor: pointer;
+    color: var(--text-muted);
+    margin: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.edit-icon {
+    font-size: 14px;
+    opacity: 0;
+    transition: 0.2s;
+    color: var(--accent);
+}
+
+.editable-text:hover .edit-icon {
+    opacity: 1;
+}
+
+/* ========== GPX КАРТОЧКИ (увеличенная высота) ========== */
+.gpx-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.gpx-card {
+    padding: 20px;
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.gpx-card:hover {
+    transform: translateY(-2px);
+}
+
+.gpx-card i {
+    font-size: 28px;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+
+.gpx-card h4 {
+    margin-bottom: 6px;
+}
+
+.gpx-card-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.gpx-card .share-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    font-size: 14px;
+}
+
+.gpx-card .share-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+}
+
+/* ========== ГРУППИРОВКА GPX ПО МЕСЯЦАМ ========== */
+.gpx-month-group {
+    margin-bottom: 24px;
+}
+
+.gpx-month-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 6px;
+}
+
+/* ========== СТЕНА ========== */
+.wall-input {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+}
+
+.wall-input textarea {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    resize: none;
+    font-size: 14px;
+}
+
+.wall-author-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.wall-author-preview img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Пост на стене */
+.wall-post {
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.wall-post-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.wall-post-header img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.wall-post-header i {
+    font-size: 32px;
+    color: var(--text-muted);
+}
+
+.wall-post-header strong {
+    font-size: 14px;
+}
+
+.wall-post-time {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.wall-post p {
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.wall-post-footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.reaction-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.reaction-btn:hover {
+    color: var(--accent);
+}
+
+.reaction-btn.liked {
+    color: #e05d5d;
+}
+
+/* ========== КАРТА ========== */
+.gpx-container {
+    padding: 20px;
+}
+
+.gpx-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+#gpx-map {
+    height: 400px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.layer-toggle {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s;
+    color: var(--text-muted);
+}
+
+.layer-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ========== ДАШБОРД GPX ========== */
+.gpx-dashboard {
+    margin-bottom: 16px;
+}
+
+.chart-wrap {
+    width: 100%;
+    height: 200px;
+    margin-bottom: 16px;
+}
+
+.gpx-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.gpx-stat-card {
+    text-align: center;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+}
+
+.gpx-stat-card i {
+    font-size: 20px;
+    margin-bottom: 6px;
+    color: var(--accent);
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ========== ПОЛЬЗОВАТЕЛИ ========== */
+.user-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all var(--transition);
+    border-radius: 16px;
+}
+
+.user-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.user-card img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-card i {
+    font-size: 48px;
+    color: var(--text-muted);
+}
+
+.user-card h4 {
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+
+.user-card span {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ========== СОРТИРОВКА ========== */
+.sort-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.sort-btn.active {
+    background: var(--accent);
+    color: #1a1a1a;
+}
+
+/* ========== ТУЛТИП ========== */
+.user-tooltip {
+    position: fixed;
+    background: rgba(20, 20, 25, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    padding: 12px 16px;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 300;
+    display: none;
+}
+
+/* ========== МОДАЛКИ ========== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    max-width: 420px;
+    width: 90%;
+    padding: 32px;
+    text-align: center;
+}
+
+.modal-content h3 {
+    margin-bottom: 20px;
+}
+
+.modal-content input,
+.modal-content textarea {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-glass);
+    border-radius: 14px;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-logo {
+    margin-bottom: 20px;
+}
+
+/* Вкладки */
+.auth-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 8px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.auth-tab.active {
+    background: var(--accent);
+    color: #1a1a1a;
+    border-color: transparent;
+}
+
+.login-status {
+    font-size: 12px;
+    margin-top: -6px;
+    margin-bottom: 8px;
+    text-align: left;
+    padding-left: 4px;
+}
+
+.login-status.valid { color: #2ecc71; }
+.login-status.invalid { color: #e05d5d; }
+
+/* ========== КНОПКА НАВЕРХ ========== */
+#scrollToTopBtn {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg-glass);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    color: var(--text-primary);
+    font-size: 22px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 200;
+    transition: opacity 0.3s;
+}
+
+#scrollToTopBtn.visible {
+    display: flex;
+}
+
+/* ========== CHATS (заглушка) ========== */
+.chats-placeholder {
+    text-align: center;
+    padding: 60px 40px;
+}
+
+.chats-placeholder i {
+    font-size: 4rem;
+    color: var(--accent);
+    margin-bottom: 20px;
+}
+
+.chats-placeholder h2 {
+    margin-bottom: 12px;
+}
+
+/* ========== АДАПТИВНОСТЬ ========== */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding: 16px;
+    }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: fixed;
+        bottom: 0;
+        flex-direction: row;
+        justify-content: space-around;
+        padding: 8px 0;
+        border-right: none;
+        border-top: 1px solid var(--border-glass);
+        background: rgba(15, 15, 20, 0.95);
+    }
+    .page {
+        padding-bottom: 80px;
+    }
+    .gpx-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
