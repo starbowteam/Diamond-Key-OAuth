@@ -2,7 +2,7 @@ function navigateTo(path) {
     history.pushState(null, null, path);
     handleRoute();
 }
-//67 
+
 function handleRoute() {
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
@@ -65,12 +65,13 @@ function handleRoute() {
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
         activatePage('page-users');
-        console.log('[DiamKey] Открытие профиля пользователя:', login);
-        if (typeof showUserProfile === 'function') showUserProfile(login);
+        console.log('[DiamKey] Мгновенная отрисовка скелета профиля:', login);
+        if (typeof showUserProfileSkeleton === 'function') showUserProfileSkeleton(login);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
         activatePage('page-profile');
-        if (typeof loadMyProfile === 'function') loadMyProfile();
+        console.log('[DiamKey] Мгновенная отрисовка скелета своего профиля');
+        if (typeof loadMyProfileSkeleton === 'function') loadMyProfileSkeleton();
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
@@ -109,4 +110,4 @@ document.addEventListener('DOMContentLoaded', () => {
             navigateTo(btn.getAttribute('href'));
         });
     });
-});
+}); //123
