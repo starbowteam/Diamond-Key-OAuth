@@ -7,6 +7,8 @@ function handleRoute() {
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
     
+    console.log('[DiamKey] Маршрут:', path);
+
     document.querySelectorAll('.page').forEach(p => {
         if (p.classList.contains('active')) {
             p.style.opacity = '0';
@@ -37,8 +39,6 @@ function handleRoute() {
     if (path === '/' || path === '') {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
-    } else if (path === '/chats') {
-        activatePage('page-chats');
     } else if (path === '/gpx') {
         activatePage('page-gpx');
         if (typeof initGPX === 'function') {
@@ -50,9 +50,10 @@ function handleRoute() {
             document.getElementById('saveGpxBtn').style.display = 'none';
             const uploadBtn = document.getElementById('uploadGpxBtn');
             if (uploadBtn) uploadBtn.style.display = 'none';
+            console.log('[DiamKey] Загрузка GPX по ID из URL:', gpxId);
             setTimeout(() => {
-                if (typeof viewGpxRoute === 'function') viewGpxRoute(gpxId);
-            }, 300);
+                if (typeof loadGpxFromId === 'function') loadGpxFromId(gpxId);
+            }, 400);
         } else {
             const uploadBtn = document.getElementById('uploadGpxBtn');
             if (currentUser && uploadBtn) uploadBtn.style.display = 'inline-flex';
@@ -68,6 +69,7 @@ function handleRoute() {
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
         activatePage('page-users');
+        console.log('[DiamKey] Открытие профиля пользователя:', login);
         if (typeof showUserProfile === 'function') showUserProfile(login);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
@@ -97,9 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (href === '/' || href === 'https://discord.gg/diamondshop') return;
         if (!isLoggedIn) btn.style.display = 'none';
     });
-    document.getElementById('logoutSidebarBtn').style.display = isLoggedIn ? 'flex' : 'none';
+    const logoutBtn = document.getElementById('logoutSidebarBtn');
+    if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'flex' : 'none';
 
-    document.getElementById('logoutSidebarBtn').addEventListener('click', () => {
+    logoutBtn?.addEventListener('click', () => {
         localStorage.removeItem('diamkey_current');
         window.location.href = '/';
     });
