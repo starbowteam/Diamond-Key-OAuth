@@ -9,22 +9,27 @@ function handleRoute() {
     
     console.log('[DiamKey] Маршрут:', path);
 
-    document.querySelectorAll('.page').forEach(p => {
-        if (p.classList.contains('active')) {
-            p.style.opacity = '0';
-            p.style.transform = 'translateY(16px)';
-            setTimeout(() => p.classList.remove('active'), 300);
-        }
+    // Сбрасываем все активные страницы
+    document.querySelectorAll('.page.active').forEach(p => {
+        p.classList.remove('active');
+        p.style.opacity = '0';
+        p.style.transform = 'translateY(16px)';
     });
 
-    function activatePage(pageId) {
+    function activatePage(pageId, instant = false) {
         const page = document.getElementById(pageId);
         if (!page) return;
-        setTimeout(() => {
+        if (instant) {
             page.classList.add('active');
             page.style.opacity = '1';
             page.style.transform = 'translateY(0)';
-        }, 60);
+        } else {
+            setTimeout(() => {
+                page.classList.add('active');
+                page.style.opacity = '1';
+                page.style.transform = 'translateY(0)';
+            }, 60);
+        }
     }
 
     if (path === '/' || path === '') {
@@ -55,19 +60,21 @@ function handleRoute() {
         if (typeof loadUsers === 'function') loadUsers();
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
-        activatePage('page-users');
-        // Единая точка входа для чужого профиля
-        if (typeof openUserProfile === 'function') openUserProfile(login);
+        // Активируем страницу мгновенно, затем загружаем профиль
+        activatePage('page-users', true);
+        if (typeof openUserProfile === 'function') {
+            openUserProfile(login);
+        }
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
-        activatePage('page-profile');
-        // Свой профиль
+        activatePage('page-profile', true);
         if (typeof renderMyProfile === 'function') renderMyProfile();
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
     }
 
+    // Подсветка сайдбара
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.classList.remove('active');
         const href = btn.getAttribute('href');
