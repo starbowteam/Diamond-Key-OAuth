@@ -1,4 +1,3 @@
-// ========== DIAMKEY CORE ==========
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -92,10 +91,10 @@ function startCipherEffect() {
 }
 startCipherEffect();
 
+// Кэширование пользователей
 let cachedUsers = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 60000;
-
 async function getUsers() {
     if (cachedUsers && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedUsers;
     const { data } = await _supabase.from('users').select('login, name, avatar, description, created_at').order('login');
@@ -104,14 +103,16 @@ async function getUsers() {
     return cachedUsers;
 }
 
+// Статистика для главной (включая общее количество пользователей)
 async function loadHomeStats() {
-    if (!currentUser) return null;
-    const [gpxRes, wallRes] = await Promise.all([
-        _supabase.from('gpx_files').select('id', { count: 'exact' }).eq('user_login', currentUser.login),
-        _supabase.from('profile_wall').select('id', { count: 'exact' }).eq('profile_login', currentUser.login)
+    const [gpxRes, wallRes, usersCountRes] = await Promise.all([
+        currentUser ? _supabase.from('gpx_files').select('id', { count: 'exact' }).eq('user_login', currentUser.login) : Promise.resolve({ count: 0 }),
+        currentUser ? _supabase.from('profile_wall').select('id', { count: 'exact' }).eq('profile_login', currentUser.login) : Promise.resolve({ count: 0 }),
+        _supabase.from('users').select('id', { count: 'exact', head: true })
     ]);
     return {
         gpxCount: gpxRes.count || 0,
-        wallCount: wallRes.count || 0
+        wallCount: wallRes.count || 0,
+        totalUsers: usersCountRes.count || 0
     };
 }
