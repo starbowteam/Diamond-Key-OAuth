@@ -78,18 +78,84 @@ async function toggleReaction(postId, type, btn) {
     }
 }
 
+function renderUserProfileHTML(login, profile, gpxFiles, wallPosts) {
+    const avatarHTML = profile.avatar 
+        ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
+        : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
+    
+    let gpxHTML = '';
+    if (gpxFiles && gpxFiles.length) {
+        const grouped = {};
+        gpxFiles.forEach(f => {
+            const d = new Date(f.created_at);
+            const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(f);
+        });
+        for (const [month, files] of Object.entries(grouped)) {
+            const [year, mon] = month.split('-');
+            const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
+            gpxHTML += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
+            files.forEach(f => {
+                gpxHTML += `
+                <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h4>${escapeHtml(f.name)}</h4>
+                    <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                    <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
+                </div>`;
+            });
+            gpxHTML += '</div></div>';
+        }
+    } else {
+        gpxHTML = '<p class="text-muted">Нет поездок</p>';
+    }
+
+    let wallHTML = '';
+    if (wallPosts && wallPosts.length) {
+        wallHTML = wallPosts.map(p => `
+            <div class="wall-post glass-panel" data-post-id="${p.id}">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                    ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                    <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
+                    <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
+                </div>
+                <p>${escapeHtml(p.content)}</p>
+                <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
+            </div>
+        `).join('');
+    } else {
+        wallHTML = '<p class="text-muted">Записей пока нет</p>';
+    }
+
+    return `
+        <div class="breadcrumbs" id="userBreadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
+        <div class="profile-header">
+            <div class="avatar-wrapper">${avatarHTML}</div>
+            <div class="profile-info">
+                <h2 id="userName">${escapeHtml(profile.name || login)}</h2>
+                <p id="userDescription" class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
+                <span class="profile-regdate" id="userRegDate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+            </div>
+        </div>
+        <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
+        <div class="profile-gpx" id="userGpxSection"><h3>Поездки с Diamond GPX</h3><div id="userGpxFiles">${gpxHTML}</div></div>
+        <div class="profile-wall" id="userWallSection">
+            <div class="wall-input">
+                <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            <div id="userWallPosts">${wallHTML}</div>
+        </div>
+    `;
+}
+
 async function showUserProfile(login) {
     console.log('[DiamKey] Загрузка профиля:', login);
     const usersPanel = document.getElementById('usersPanel');
     const userView = document.getElementById('userProfileView');
-    const gpxSection = document.getElementById('userGpxSection');
-    const wallSection = document.getElementById('userWallSection');
     if (usersPanel) usersPanel.style.display = 'none';
     if (userView) userView.style.display = 'block';
-    if (gpxSection) gpxSection.style.display = 'block';
-    if (wallSection) wallSection.style.display = 'block';
-
-    document.getElementById('userBreadcrumbs').innerHTML = `<a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span>`;
 
     try {
         const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
@@ -106,81 +172,22 @@ async function showUserProfile(login) {
             return;
         }
 
-        const nameEl = document.getElementById('userName');
-        if (nameEl) nameEl.textContent = profile.name || login;
-        const avatarEl = document.getElementById('userAvatar');
-        if (avatarEl) {
-            if (profile.avatar) {
-                avatarEl.src = profile.avatar;
-                avatarEl.style.display = '';
-            } else {
-                avatarEl.style.display = 'none';
-                if (avatarEl.parentElement) avatarEl.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-            }
-        }
-        const descEl = document.getElementById('userDescription');
-        if (descEl) descEl.textContent = profile.description || 'Нет описания';
-        const regDateEl = document.getElementById('userRegDate');
-        if (regDateEl) regDateEl.textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
-
         const gpxFiles = gpxFilesRes.data || [];
-        const gpxContainer = document.getElementById('userGpxFiles');
-        if (gpxContainer) {
-            if (gpxFiles.length) {
-                const grouped = {};
-                gpxFiles.forEach(f => {
-                    const d = new Date(f.created_at);
-                    const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
-                    if (!grouped[key]) grouped[key] = [];
-                    grouped[key].push(f);
-                });
-                let html = '';
-                for (const [month, files] of Object.entries(grouped)) {
-                    const [year, mon] = month.split('-');
-                    const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
-                    html += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
-                    files.forEach(f => {
-                        html += `
-                        <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <h4>${escapeHtml(f.name)}</h4>
-                            <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                            <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
-                        </div>`;
-                    });
-                    html += '</div></div>';
-                }
-                gpxContainer.innerHTML = html;
-            } else {
-                gpxContainer.innerHTML = '<p class="text-muted">Нет поездок</p>';
-            }
-        }
-
         const wallPosts = wallRes.data || [];
-        const wallContainer = document.getElementById('userWallPosts');
-        if (wallContainer) {
-            wallContainer.innerHTML = wallPosts.length ? wallPosts.map(p => `
-                <div class="wall-post glass-panel" data-post-id="${p.id}">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                        ${p.user_avatar ? `<img src="${p.user_avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
-                        <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
-                        <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
-                    </div>
-                    <p>${escapeHtml(p.content)}</p>
-                    <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
-                </div>
-            `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
-            wallContainer.querySelectorAll('.reaction-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const postId = this.closest('.wall-post').dataset.postId;
-                    toggleReaction(postId, this.dataset.type, this);
-                });
+        userView.innerHTML = renderUserProfileHTML(login, profile, gpxFiles, wallPosts);
+
+        // Навесить обработчики реакций
+        userView.querySelectorAll('.reaction-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const postId = this.closest('.wall-post').dataset.postId;
+                toggleReaction(postId, this.dataset.type, this);
             });
-        }
+        });
 
-        const wallInput = document.querySelector('#userWallSection .wall-input');
+        // Автосаджест автора
+        const wallInput = userView.querySelector('#userWallSection .wall-input');
         if (wallInput && currentUser) {
             if (!wallInput.querySelector('.wall-author-preview')) {
                 const preview = document.createElement('div');
@@ -190,10 +197,11 @@ async function showUserProfile(login) {
             }
         }
 
-        const postBtn = document.getElementById('postUserWallBtn');
+        // Отправка сообщения на стену
+        const postBtn = userView.querySelector('#postUserWallBtn');
         if (postBtn) {
             postBtn.onclick = async () => {
-                const msg = document.getElementById('userWallMessage')?.value.trim();
+                const msg = userView.querySelector('#userWallMessage')?.value.trim();
                 if (!msg || !currentUser) return;
                 await _supabase.from('profile_wall').insert([{ 
                     user_login: currentUser.login, 
@@ -203,8 +211,6 @@ async function showUserProfile(login) {
                     content: msg,
                     reactions: {}
                 }]);
-                const userWallMessage = document.getElementById('userWallMessage');
-                if (userWallMessage) userWallMessage.value = '';
                 showToast('Запись добавлена');
                 showUserProfile(login);
             };
@@ -217,15 +223,19 @@ async function showUserProfile(login) {
 
 function goBackToUsersList() {
     document.getElementById('usersPanel').style.display = 'block';
-    document.getElementById('userProfileView').style.display = 'none';
-    document.getElementById('userGpxSection').style.display = 'none';
-    document.getElementById('userWallSection').style.display = 'none';
+    const userView = document.getElementById('userProfileView');
+    if (userView) userView.style.display = 'none';
     navigateTo('/users');
 }
 
 async function loadMyProfile() {
     const login = currentUser.login;
     console.log('[DiamKey] Загрузка своего профиля:', login);
+    const myTop = document.getElementById('myProfileTop');
+    const myGpx = document.getElementById('myGpxSection');
+    const myWall = document.getElementById('myWallSection');
+    if (!myTop || !myGpx || !myWall) return;
+
     try {
         const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
             _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
@@ -236,31 +246,22 @@ async function loadMyProfile() {
         const profile = profileRes.data;
         if (!profile) return;
 
-        document.getElementById('myName').textContent = profile.name || login;
-        const avatarEl = document.getElementById('myAvatar');
-        if (avatarEl) {
-            if (profile.avatar) {
-                avatarEl.src = profile.avatar;
-                avatarEl.style.display = '';
-            } else {
-                avatarEl.style.display = 'none';
-                if (avatarEl.parentElement) avatarEl.parentElement.innerHTML = '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-            }
-        }
+        const avatarHTML = profile.avatar 
+            ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
+            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
 
-        const descEl = document.getElementById('myDescription');
-        if (descEl) {
-            descEl.innerHTML = `${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i>`;
-            descEl.onclick = () => {
-                document.getElementById('editDescriptionInput').value = profile.description || '';
-                const modal = document.getElementById('editDescriptionModal');
-                modal.style.display = 'flex';
-                modal.classList.add('active');
-            };
-        }
+        myTop.innerHTML = `
+            <div class="profile-header">
+                <div class="avatar-wrapper" id="myAvatarWrapper">${avatarHTML}<div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div></div>
+                <div class="profile-info">
+                    <h2>${escapeHtml(profile.name || login)}</h2>
+                    <p class="editable-text" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i></p>
+                    <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                </div>
+            </div>
+        `;
 
-        document.getElementById('myRegDate').textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
-
+        // Обработчик смены аватара
         document.getElementById('myAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
             input.onchange = async (e) => {
@@ -272,71 +273,88 @@ async function loadMyProfile() {
             input.click();
         };
 
+        // Редактирование описания
+        document.getElementById('myDescription').onclick = () => {
+            document.getElementById('editDescriptionInput').value = profile.description || '';
+            document.getElementById('editDescriptionModal').style.display = 'flex';
+            document.getElementById('editDescriptionModal').classList.add('active');
+        };
+
         document.getElementById('saveDescriptionBtn').onclick = async () => {
             const desc = document.getElementById('editDescriptionInput').value.trim();
             await updateProfile({ description: desc });
-            if (descEl) descEl.innerHTML = `${escapeHtml(desc || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i>`;
+            document.getElementById('myDescription').innerHTML = `${escapeHtml(desc || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i>`;
             closeModal('editDescriptionModal');
             showToast('Описание сохранено');
         };
 
+        // GPX
+        let gpxHTML = '';
         const gpxFiles = gpxFilesRes.data || [];
-        const gpxContainer = document.getElementById('myGpxFiles');
-        if (gpxContainer) {
-            if (gpxFiles.length) {
-                const grouped = {};
-                gpxFiles.forEach(f => {
-                    const d = new Date(f.created_at);
-                    const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
-                    if (!grouped[key]) grouped[key] = [];
-                    grouped[key].push(f);
+        if (gpxFiles.length) {
+            const grouped = {};
+            gpxFiles.forEach(f => {
+                const d = new Date(f.created_at);
+                const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(f);
+            });
+            for (const [month, files] of Object.entries(grouped)) {
+                const [year, mon] = month.split('-');
+                const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
+                gpxHTML += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
+                files.forEach(f => {
+                    gpxHTML += `
+                    <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h4>${escapeHtml(f.name)}</h4>
+                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                        <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
+                    </div>`;
                 });
-                let html = '';
-                for (const [month, files] of Object.entries(grouped)) {
-                    const [year, mon] = month.split('-');
-                    const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
-                    html += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
-                    files.forEach(f => {
-                        html += `
-                        <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <h4>${escapeHtml(f.name)}</h4>
-                            <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                            <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
-                        </div>`;
-                    });
-                    html += '</div></div>';
-                }
-                gpxContainer.innerHTML = html;
-            } else {
-                gpxContainer.innerHTML = '<p class="text-muted">Нет поездок</p>';
+                gpxHTML += '</div></div>';
             }
+        } else {
+            gpxHTML = '<p class="text-muted">Нет поездок</p>';
         }
+        myGpx.innerHTML = `<h3>Поездки с Diamond GPX</h3><div id="myGpxFiles">${gpxHTML}</div>`;
 
+        // Стена
+        let wallHTML = '';
         const wallPosts = wallRes.data || [];
-        const wallContainer = document.getElementById('myWallPosts');
-        if (wallContainer) {
-            wallContainer.innerHTML = wallPosts.length ? wallPosts.map(p => `
+        if (wallPosts.length) {
+            wallHTML = wallPosts.map(p => `
                 <div class="wall-post glass-panel" data-post-id="${p.id}">
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                        ${p.user_avatar ? `<img src="${p.user_avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                        ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
                         <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
                         <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
                     </div>
                     <p>${escapeHtml(p.content)}</p>
                     <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
                 </div>
-            `).join('') : '<p class="text-muted">Записей пока нет</p>';
-
-            wallContainer.querySelectorAll('.reaction-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const postId = this.closest('.wall-post').dataset.postId;
-                    toggleReaction(postId, this.dataset.type, this);
-                });
-            });
+            `).join('');
+        } else {
+            wallHTML = '<p class="text-muted">Записей пока нет</p>';
         }
+        myWall.innerHTML = `
+            <div class="wall-input">
+                <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            <div id="myWallPosts">${wallHTML}</div>
+        `;
 
+        // Реакции на своей стене
+        myWall.querySelectorAll('.reaction-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const postId = this.closest('.wall-post').dataset.postId;
+                toggleReaction(postId, this.dataset.type, this);
+            });
+        });
+
+        // Отправка на своей стене
         document.getElementById('postMyWallBtn').onclick = async () => {
             const msg = document.getElementById('myWallMessage').value.trim();
             if (!msg) return;
@@ -352,6 +370,7 @@ async function loadMyProfile() {
             showToast('Запись добавлена');
             loadMyProfile();
         };
+
     } catch (e) {
         console.error('[DiamKey] Ошибка загрузки своего профиля:', e);
     }
@@ -385,6 +404,4 @@ function previewGpxBeforeSave(content) {
         currentGpxContent = null;
         document.getElementById('saveGpxBtn').style.display = 'none';
     }
-} 
-
-//67
+}
