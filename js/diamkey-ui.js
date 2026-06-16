@@ -3,7 +3,6 @@ function updateHeroButton() {
     const btn = document.getElementById('heroActionBtn');
     const statsRow = document.getElementById('homeStatsRow');
     if (!btn) return;
-
     if (currentUser) {
         btn.innerHTML = '<i class="fas fa-user"></i> Мой профиль';
         btn.onclick = () => { navigateTo('/profile'); };
@@ -33,8 +32,10 @@ function loadHomeData() {
     if (typeof loadAnnouncement === 'function') loadAnnouncement();
 }
 
-// Модалка входа
 document.addEventListener('DOMContentLoaded', () => {
+    const loginModal = document.getElementById('loginModal');
+    if (!loginModal) return;
+
     document.getElementById('tabLogin')?.addEventListener('click', () => {
         document.getElementById('tabLogin').classList.add('active');
         document.getElementById('tabRegister').classList.remove('active');
@@ -68,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkTimeout = setTimeout(async () => {
             const { data } = await _supabase.from('users').select('login').eq('login', val).maybeSingle();
             if (data) {
-                regStatus.textContent = '✗ Логин занят';
+                regStatus.textContent = '✗ Занят';
                 regStatus.className = 'login-status invalid';
             } else {
                 regStatus.textContent = '✓ Доступен';
@@ -85,11 +86,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await register(loginVal, pass1);
         if (res.error) return showToast(res.error);
         closeModal('loginModal');
-        showToast('Аккаунт создан! Добро пожаловать.');
+        showToast('Аккаунт создан!');
         window.location.href = '/';
     });
 
-    // Кнопка «Наверх»
+    // Кнопка наверх
     const scrollBtn = document.createElement('button');
     scrollBtn.id = 'scrollToTopBtn';
     scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
