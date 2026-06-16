@@ -59,7 +59,6 @@ function handleRoute() {
             if (currentUser && uploadBtn) uploadBtn.style.display = 'inline-flex';
             else if (uploadBtn) uploadBtn.style.display = 'none';
         }
-        // модалка gpxInfoModal больше не нужна
     } else if (path === '/users') {
         activatePage('page-users');
         if (typeof loadUsers === 'function') loadUsers();
