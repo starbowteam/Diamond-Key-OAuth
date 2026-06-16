@@ -53,14 +53,23 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 24px 0;
-    gap: 20px;
+    padding: 24px 0 0 0;
     border-right: 1px solid var(--border-glass);
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
     z-index: 100;
+    gap: 20px;
+}
+
+.sidebar-bottom {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 24px;
 }
 
 .sidebar-icon {
@@ -89,7 +98,6 @@ body {
 }
 
 #logoutSidebarBtn {
-    margin-top: auto;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -277,6 +285,11 @@ body {
     transition: all var(--transition);
     text-decoration: none;
     font-size: 15px;
+}
+
+.btn-icon {
+    padding: 14px;
+    gap: 0;
 }
 
 .btn-primary {
@@ -624,6 +637,7 @@ body {
 
 .reaction-btn.active {
     color: var(--accent);
+    background: rgba(160, 160, 176, 0.2);
     font-weight: bold;
 }
 
@@ -719,27 +733,21 @@ body {
     flex-wrap: wrap;
 }
 
+.gpx-title {
+    font-size: 24px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f5f5f7, #b0b0b0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-right: auto;
+}
+
 #gpx-map {
     height: 420px;
     border-radius: var(--radius-lg);
     overflow: hidden;
     margin-bottom: 20px;
-}
-
-.layer-toggle {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--border-glass);
-    border-radius: 24px;
-    padding: 8px 18px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: 0.3s;
-    color: var(--text-muted);
-}
-
-.layer-toggle:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
 }
 
 .gpx-dashboard {
