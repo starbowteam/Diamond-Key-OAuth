@@ -1,14 +1,28 @@
+// ========== DIAMKEY CORE ==========
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 
-function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m); }
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m);
+}
+
 function showToast(msg) {
     let container = document.querySelector('.toast-container');
-    if (!container) { container = document.createElement('div'); container.className = 'toast-container'; document.body.appendChild(container); }
-    const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = msg;
-    container.appendChild(toast); setTimeout(() => toast.remove(), 3000);
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    toast.style.cssText = 'background:rgba(30,30,35,0.9);color:white;padding:10px 20px;border-radius:20px;margin-bottom:8px;backdrop-filter:blur(12px);';
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
 const saved = localStorage.getItem('diamkey_current');
@@ -22,6 +36,7 @@ async function login(login, password) {
     currentUser = session;
     return { success: true };
 }
+
 async function register(login, password) {
     if (password.length < 6) return { error: 'Пароль минимум 6 символов' };
     const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
@@ -34,11 +49,18 @@ async function register(login, password) {
     currentUser = session;
     return { success: true };
 }
+
 async function loadProfile() {
     if (!currentUser) return;
     const { data } = await _supabase.from('users').select('name, avatar, description, created_at').eq('login', currentUser.login).maybeSingle();
-    if (data) { currentUser.name = data.name || currentUser.login; currentUser.avatar = data.avatar || ''; currentUser.description = data.description || ''; currentUser.created_at = data.created_at; }
+    if (data) {
+        currentUser.name = data.name || currentUser.login;
+        currentUser.avatar = data.avatar || '';
+        currentUser.description = data.description || '';
+        currentUser.created_at = data.created_at;
+    }
 }
+
 async function updateProfile(updates) {
     if (!currentUser) return;
     await _supabase.from('users').update(updates).eq('login', currentUser.login);
@@ -47,12 +69,14 @@ async function updateProfile(updates) {
     if (updates.description) currentUser.description = updates.description;
     localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
 }
+
 function closeModal(id) {
     const modal = document.getElementById(id);
     if (!modal) return;
     modal.classList.remove('active');
     setTimeout(() => { modal.style.display = 'none'; }, 300);
 }
+
 function startCipherEffect() {
     const el = document.getElementById('cipherTitle');
     if (!el) return;
@@ -68,3 +92,29 @@ function startCipherEffect() {
     }, 150);
 }
 startCipherEffect();
+
+// Кэширование списка пользователей (для быстрой загрузки)
+let cachedUsers = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 60000; // 1 минута
+
+async function getUsers() {
+    if (cachedUsers && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedUsers;
+    const { data } = await _supabase.from('users').select('login, name, avatar, description, created_at').order('login');
+    cachedUsers = data || [];
+    cacheTimestamp = Date.now();
+    return cachedUsers;
+}
+
+// Параллельная подгрузка статистики для главной
+async function loadHomeStats() {
+    if (!currentUser) return null;
+    const [gpxRes, wallRes] = await Promise.all([
+        _supabase.from('gpx_files').select('id', { count: 'exact' }).eq('user_login', currentUser.login),
+        _supabase.from('profile_wall').select('id', { count: 'exact' }).eq('profile_login', currentUser.login)
+    ]);
+    return {
+        gpxCount: gpxRes.count || 0,
+        wallCount: wallRes.count || 0
+    };
+}
