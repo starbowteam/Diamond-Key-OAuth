@@ -1,4 +1,3 @@
-// ========== DIAMKEY UI ==========
 function updateHeroButton() {
     const btn = document.getElementById('heroActionBtn');
     const statsRow = document.getElementById('homeStatsRow');
@@ -12,6 +11,7 @@ function updateHeroButton() {
                     statsRow.innerHTML = `
                         <div class="stat-badge"><div class="number">${stats.gpxCount}</div><div class="label">GPX-поездок</div></div>
                         <div class="stat-badge"><div class="number">${stats.wallCount}</div><div class="label">Записей на стене</div></div>
+                        <div class="stat-badge"><div class="number">${stats.totalUsers}</div><div class="label">Пользователей</div></div>
                     `;
                     statsRow.style.display = 'flex';
                 }
