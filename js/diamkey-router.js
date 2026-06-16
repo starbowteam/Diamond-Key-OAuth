@@ -9,7 +9,6 @@ function handleRoute() {
     
     console.log('[DiamKey] Маршрут:', path);
 
-    // Сбрасываем все активные страницы
     document.querySelectorAll('.page.active').forEach(p => {
         p.classList.remove('active');
         p.style.opacity = '0';
@@ -60,21 +59,22 @@ function handleRoute() {
         if (typeof loadUsers === 'function') loadUsers();
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
-        // Активируем страницу мгновенно, затем загружаем профиль
         activatePage('page-users', true);
-        if (typeof openUserProfile === 'function') {
-            openUserProfile(login);
-        }
+        // Даём браузеру кадр на отрисовку перед заполнением
+        setTimeout(() => {
+            if (typeof openUserProfile === 'function') openUserProfile(login);
+        }, 0);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
         activatePage('page-profile', true);
-        if (typeof renderMyProfile === 'function') renderMyProfile();
+        setTimeout(() => {
+            if (typeof renderMyProfile === 'function') renderMyProfile();
+        }, 0);
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
     }
 
-    // Подсветка сайдбара
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.classList.remove('active');
         const href = btn.getAttribute('href');
