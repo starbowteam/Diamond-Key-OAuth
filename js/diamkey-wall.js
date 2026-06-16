@@ -1,4 +1,3 @@
-// ========== ОБЪЯВЛЕНИЕ ==========
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
     if (!body) return;
@@ -21,7 +20,6 @@ async function loadAnnouncement() {
     }
 }
 
-// ========== РЕАКЦИИ ==========
 function renderReactions(reactionsObj, postId) {
     const reactions = reactionsObj || {};
     const types = { heart: '❤️', like: '👍', fire: '🔥' };
@@ -80,17 +78,37 @@ async function toggleReaction(postId, type, btn) {
     }
 }
 
-// ========== ПОСТРОЕНИЕ ПРОФИЛЯ (КОРНЕВАЯ ФУНКЦИЯ) ==========
 async function openUserProfile(login) {
-    console.log('[DiamKey] openUserProfile вызвана для', login);
+    console.log('[DiamKey] openUserProfile для', login);
     const pageUsers = document.getElementById('page-users');
-    if (!pageUsers) return;
+    if (!pageUsers) {
+        console.error('[DiamKey] Контейнер #page-users не найден');
+        return;
+    }
 
-    // Очищаем всё и показываем скелет
+    // Ждём, пока страница станет видимой (на случай задержки стилей)
+    if (!pageUsers.classList.contains('active')) {
+        console.warn('[DiamKey] Страница ещё не active, ждём активации');
+        await new Promise(resolve => {
+            const observer = new MutationObserver(mutations => {
+                if (pageUsers.classList.contains('active')) {
+                    observer.disconnect();
+                    resolve();
+                }
+            });
+            observer.observe(pageUsers, { attributes: true, attributeFilter: ['class'] });
+            // fallback через 500 мс
+            setTimeout(() => {
+                observer.disconnect();
+                resolve();
+            }, 500);
+        });
+    }
+
     pageUsers.innerHTML = `
         <div class="glass-panel" style="text-align:center; padding:40px;">
             <i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i>
-            <p class="text-muted" style="margin-top:12px;">Загрузка профиля ${escapeHtml(login)}...</p>
+            <p class="text-muted">Загрузка профиля ${escapeHtml(login)}...</p>
         </div>
     `;
 
@@ -177,7 +195,6 @@ async function openUserProfile(login) {
             </div>
         `;
 
-        // Навешиваем реакции
         pageUsers.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -186,7 +203,6 @@ async function openUserProfile(login) {
             });
         });
 
-        // Кнопка отправки сообщения
         const postBtn = pageUsers.querySelector('#postUserWallBtn');
         if (postBtn) {
             postBtn.onclick = async () => {
@@ -204,20 +220,16 @@ async function openUserProfile(login) {
                 openUserProfile(login);
             };
         }
-
     } catch (e) {
         console.error('[DiamKey] Ошибка в openUserProfile:', e);
         pageUsers.innerHTML = `<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>`;
     }
 }
 
-// Свой профиль (аналогично)
 async function renderMyProfile() {
     const pageProfile = document.getElementById('page-profile');
     if (!pageProfile || !currentUser) return;
-
     pageProfile.innerHTML = `<div class="glass-panel" style="text-align:center; padding:40px;"><i class="fas fa-circle-notch fa-spin"></i> Загрузка...</div>`;
-
     try {
         const login = currentUser.login;
         const [profileRes, gpxRes, wallRes] = await Promise.all([
@@ -225,19 +237,13 @@ async function renderMyProfile() {
             _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
             _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
         ]);
-
         const profile = profileRes.data;
         if (!profile) return;
-
         const gpxFiles = gpxRes.data || [];
         const wallPosts = wallRes.data || [];
         const avatarHTML = profile.avatar 
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
             : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-
-        let gpxHTML = gpxFiles.length ? buildGpxHTML(gpxFiles) : '<p class="text-muted">Нет поездок</p>';
-        let wallHTML = wallPosts.length ? buildWallHTML(wallPosts) : '<p class="text-muted">Записей пока нет</p>';
-
         pageProfile.innerHTML = `
             <div class="glass-panel">
                 <div class="profile-header" style="display:flex; gap:24px; align-items:center;">
@@ -249,16 +255,15 @@ async function renderMyProfile() {
                     </div>
                 </div>
             </div>
-            <div class="glass-panel"><h3>Поездки с Diamond GPX</h3>${gpxHTML}</div>
+            <div class="glass-panel"><h3>Поездки с Diamond GPX</h3>${buildGpxHTML(gpxFiles)}</div>
             <div class="glass-panel">
                 <div class="wall-input" style="display:flex; gap:12px; margin-bottom:20px;">
                     <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:18px; padding:14px 18px; color:var(--text-primary); resize:none; font-size:15px;"></textarea>
                     <button class="btn" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
                 </div>
-                <div id="myWallPosts">${wallHTML}</div>
+                <div id="myWallPosts">${wallPosts.length ? buildWallHTML(wallPosts) : '<p class="text-muted">Записей пока нет</p>'}</div>
             </div>
         `;
-
         document.getElementById('myAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
             input.onchange = async (e) => {
@@ -269,14 +274,11 @@ async function renderMyProfile() {
             };
             input.click();
         };
-
         document.getElementById('myDescription').onclick = () => {
             document.getElementById('editDescriptionInput').value = profile.description || '';
             document.getElementById('editDescriptionModal').style.display = 'flex';
             document.getElementById('editDescriptionModal').classList.add('active');
         };
-
-        // Реакции и отправка на стене
         attachReactionListeners(pageProfile);
         document.getElementById('postMyWallBtn').onclick = async () => {
             const msg = document.getElementById('myWallMessage').value.trim();
@@ -293,10 +295,7 @@ async function renderMyProfile() {
             showToast('Запись добавлена');
             renderMyProfile();
         };
-
-    } catch (e) {
-        console.error(e);
-    }
+    } catch (e) { console.error(e); }
 }
 
 function buildWallHTML(posts) {
@@ -314,6 +313,7 @@ function buildWallHTML(posts) {
 }
 
 function buildGpxHTML(files) {
+    if (!files.length) return '<p class="text-muted">Нет поездок</p>';
     const grouped = {};
     files.forEach(f => {
         const d = new Date(f.created_at);
@@ -350,7 +350,11 @@ function attachReactionListeners(container) {
     });
 }
 
-function copyGpxLink(fileId) { const url = `${location.origin}/gpx?id=${fileId}`; navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована')); }
+function copyGpxLink(fileId) {
+    const url = `${location.origin}/gpx?id=${fileId}`;
+    navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована'));
+}
+
 async function viewGpxRoute(fileId) {
     const { data } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
     if (!data?.content) return showToast('Не удалось загрузить маршрут');
