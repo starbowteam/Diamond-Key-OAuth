@@ -6,7 +6,16 @@ function navigateTo(path) {
 
 function handleRoute() {
     const path = window.location.pathname;
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const params = new URLSearchParams(window.location.search);
+    
+    // Сначала скрываем все страницы с анимацией
+    document.querySelectorAll('.page').forEach(p => {
+        if (p.classList.contains('active')) {
+            p.style.opacity = '0';
+            p.style.transform = 'translateY(12px)';
+            setTimeout(() => p.classList.remove('active'), 300);
+        }
+    });
 
     // Сброс вида профиля в users
     const usersPanel = document.getElementById('usersPanel');
@@ -18,41 +27,58 @@ function handleRoute() {
     if (userGpx) userGpx.style.display = 'none';
     if (userWall) userWall.style.display = 'none';
 
+    // Функция активации страницы с задержкой для анимации
+    function activatePage(pageId) {
+        const page = document.getElementById(pageId);
+        if (!page) return;
+        setTimeout(() => {
+            page.classList.add('active');
+            page.style.opacity = '1';
+            page.style.transform = 'translateY(0)';
+        }, 50);
+    }
+
     if (path === '/' || path === '') {
-        document.getElementById('page-home').classList.add('active');
+        activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
     } else if (path === '/chats') {
-        document.getElementById('page-chats').classList.add('active');
+        activatePage('page-chats');
     } else if (path === '/gpx') {
-        document.getElementById('page-gpx').classList.add('active');
+        activatePage('page-gpx');
         if (typeof initGPX === 'function') {
             initGPX();
             if (gpxMap) setTimeout(() => gpxMap.invalidateSize(), 100);
+        }
+        // Проверка query параметра id для прямого просмотра GPX
+        const gpxId = params.get('id');
+        if (gpxId) {
+            setTimeout(() => viewGpxRoute(gpxId), 200);
         }
         if (!localStorage.getItem('gpx_info_seen')) {
             const modal = document.getElementById('gpxInfoModal');
             if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
         }
     } else if (path === '/users') {
-        document.getElementById('page-users').classList.add('active');
+        activatePage('page-users');
         if (typeof loadUsers === 'function') loadUsers();
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
-        document.getElementById('page-users').classList.add('active');
+        activatePage('page-users');
         if (typeof showUserProfile === 'function') showUserProfile(login);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/'); return; }
-        document.getElementById('page-profile').classList.add('active');
+        activatePage('page-profile');
         if (typeof loadMyProfile === 'function') loadMyProfile();
     } else {
-        document.getElementById('page-home').classList.add('active');
+        activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
     }
 
     // Подсветка сайдбара
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.classList.remove('active');
-        if (btn.getAttribute('href') === path || (path.startsWith('/users') && btn.getAttribute('href') === '/users')) {
+        const href = btn.getAttribute('href');
+        if (href === path || (path.startsWith('/users') && href === '/users') || (path.startsWith('/gpx') && href === '/gpx')) {
             btn.classList.add('active');
         }
     });
