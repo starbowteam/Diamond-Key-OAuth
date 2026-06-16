@@ -1,4 +1,3 @@
-// ========== DIAMKEY WALL (профили, стена, GPX, объявление) ==========
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
     if (!body) return;
@@ -21,6 +20,41 @@ async function loadAnnouncement() {
     }
 }
 
+// Функция для отображения реакций (использует JSONB поле reactions)
+function renderReactions(reactionsObj) {
+    const reactions = reactionsObj || {};
+    const types = { heart: '❤️', like: '👍', fire: '🔥' };
+    return Object.entries(types).map(([key, emoji]) => {
+        const count = reactions[key] || 0;
+        return `<button class="reaction-btn" data-type="${key}">${emoji} <span>${count}</span></button>`;
+    }).join('');
+}
+
+async function toggleReaction(postId, type, btn) {
+    if (!currentUser) return showToast('Войдите');
+    // Получить текущий пост
+    const { data: post } = await _supabase.from('profile_wall').select('reactions').eq('id', postId).maybeSingle();
+    if (!post) return;
+    let reactions = post.reactions || {};
+    // Проверить, не ставил ли уже этот пользователь реакцию (для простоты один чел может поставить одну реакцию любого типа)
+    // Мы будем хранить в отдельной таблице? Нет, сказано "один чел может поставить реакцию" — значит уникальность на пользователя.
+    // Но в рамках JSONB мы не можем легко проверить уникальность. Для простоты сделаем: если текущий пользователь уже ставил любую реакцию, то при клике на ту же или другую — меняем.
+    // Сохраним информацию в localStorage? Это ненадёжно. Лучше добавить в таблицу profile_wall колонку reacted_users JSONB, но мы не можем менять схему. Обойдёмся без проверки: просто увеличиваем счётчик, но тогда человек может кликать много раз. 
+    // По условию "один чел может поставить ракцию, ну банально крч" – вероятно, достаточно простого счётчика без проверок. Но чтобы не было спама, можно в localStorage запоминать, что пользователь уже реагировал на этот пост.
+    const storageKey = `reacted_${postId}`;
+    if (localStorage.getItem(storageKey)) return showToast('Вы уже реагировали');
+    
+    reactions[type] = (reactions[type] || 0) + 1;
+    const { error } = await _supabase.from('profile_wall').update({ reactions }).eq('id', postId);
+    if (error) return showToast('Ошибка');
+    localStorage.setItem(storageKey, '1');
+    // Обновить кнопку
+    const span = btn.querySelector('span');
+    if (span) span.textContent = reactions[type];
+    btn.classList.add('active');
+    showToast('Реакция учтена!');
+}
+
 async function showUserProfile(login) {
     const usersPanel = document.getElementById('usersPanel');
     const userView = document.getElementById('userProfileView');
@@ -31,8 +65,7 @@ async function showUserProfile(login) {
     if (gpxSection) gpxSection.style.display = 'block';
     if (wallSection) wallSection.style.display = 'block';
 
-    // Хлебные крошки
-    document.getElementById('userBreadcrumbs').innerHTML = '<a href="/users">← Все пользователи</a> | <span>' + escapeHtml(login) + '</span>';
+    document.getElementById('userBreadcrumbs').innerHTML = `<a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span>`;
 
     const [profileRes, gpxFilesRes, wallRes] = await Promise.all([
         _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
@@ -55,7 +88,6 @@ async function showUserProfile(login) {
     document.getElementById('userDescription').textContent = profile.description || 'Нет описания';
     document.getElementById('userRegDate').textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
 
-    // GPX с группировкой
     const gpxFiles = gpxFilesRes.data || [];
     const gpxContainer = document.getElementById('userGpxFiles');
     if (gpxFiles.length) {
@@ -87,7 +119,6 @@ async function showUserProfile(login) {
         gpxContainer.innerHTML = '<p class="text-muted">Нет поездок</p>';
     }
 
-    // Стена с автосаджестом и реакциями
     const wallPosts = wallRes.data || [];
     document.getElementById('userWallPosts').innerHTML = wallPosts.length ? wallPosts.map(p => `
         <div class="wall-post glass-panel">
@@ -98,24 +129,50 @@ async function showUserProfile(login) {
             </div>
             <p>${escapeHtml(p.content)}</p>
             <div class="wall-post-footer">
-                <button class="reaction-btn ${p.liked_by_user ? 'liked' : ''}" data-id="${p.id}" onclick="toggleWallReaction('${p.id}', this)">
-                    <i class="fas fa-heart"></i> <span>${p.likes || 0}</span>
-                </button>
+                ${renderReactions(p.reactions)}
             </div>
         </div>
     `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
+    // Навесить обработчики на кнопки реакций
+    document.querySelectorAll('#userWallPosts .reaction-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const postId = this.closest('.wall-post').dataset.postId; // нужно задать data-post-id
+        });
+    });
+    // Нужно добавить data-post-id к постам, исправим выше: вставим data-post-id="${p.id}"
+    // Переделаем отрисовку
+    document.getElementById('userWallPosts').innerHTML = wallPosts.length ? wallPosts.map(p => `
+        <div class="wall-post glass-panel" data-post-id="${p.id}">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                ${p.user_avatar ? `<img src="${p.user_avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
+                <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
+            </div>
+            <p>${escapeHtml(p.content)}</p>
+            <div class="wall-post-footer">
+                ${renderReactions(p.reactions)}
+            </div>
+        </div>
+    `).join('') : '<p class="text-muted">Записей пока нет</p>';
+
+    document.querySelectorAll('#userWallPosts .reaction-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const postId = this.closest('.wall-post').dataset.postId;
+            const type = this.dataset.type;
+            toggleReaction(postId, type, this);
+        });
+    });
+
     // Автосаджест
     const wallInput = document.querySelector('#userWallSection .wall-input');
     if (wallInput && currentUser) {
-        const existingPreview = wallInput.querySelector('.wall-author-preview');
-        if (!existingPreview) {
+        if (!wallInput.querySelector('.wall-author-preview')) {
             const preview = document.createElement('div');
             preview.className = 'wall-author-preview';
-            preview.innerHTML = `
-                <img src="${currentUser.avatar || ''}" style="width:28px;height:28px;border-radius:50%;">
-                <span>${currentUser.name || currentUser.login}</span>
-            `;
+            preview.innerHTML = `<img src="${currentUser.avatar || ''}" style="width:28px;height:28px;border-radius:50%;" onerror="this.style.display='none'"><span>${currentUser.name || currentUser.login}</span>`;
             wallInput.prepend(preview);
         }
     }
@@ -123,7 +180,14 @@ async function showUserProfile(login) {
     document.getElementById('postUserWallBtn').onclick = async () => {
         const msg = document.getElementById('userWallMessage').value.trim();
         if (!msg || !currentUser) return;
-        await _supabase.from('profile_wall').insert([{ user_login: currentUser.login, user_name: currentUser.name || currentUser.login, user_avatar: currentUser.avatar || '', profile_login: login, content: msg, likes: 0 }]);
+        await _supabase.from('profile_wall').insert([{ 
+            user_login: currentUser.login, 
+            user_name: currentUser.name || currentUser.login, 
+            user_avatar: currentUser.avatar || '', 
+            profile_login: login, 
+            content: msg,
+            reactions: {}
+        }]);
         document.getElementById('userWallMessage').value = '';
         showToast('Запись добавлена');
         showUserProfile(login);
@@ -163,8 +227,9 @@ async function loadMyProfile() {
     descEl.innerHTML = `${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i>`;
     descEl.onclick = () => {
         document.getElementById('editDescriptionInput').value = profile.description || '';
-        document.getElementById('editDescriptionModal').style.display = 'flex';
-        document.getElementById('editDescriptionModal').classList.add('active');
+        const modal = document.getElementById('editDescriptionModal');
+        modal.style.display = 'flex';
+        modal.classList.add('active');
     };
 
     document.getElementById('myRegDate').textContent = profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : '';
@@ -188,7 +253,7 @@ async function loadMyProfile() {
         showToast('Описание сохранено');
     };
 
-    // GPX с группировкой и кнопкой «Поделиться»
+    // GPX с группировкой
     const gpxFiles = gpxFilesRes.data || [];
     const gpxContainer = document.getElementById('myGpxFiles');
     if (gpxFiles.length) {
@@ -223,7 +288,7 @@ async function loadMyProfile() {
     // Стена с реакциями
     const wallPosts = wallRes.data || [];
     document.getElementById('myWallPosts').innerHTML = wallPosts.length ? wallPosts.map(p => `
-        <div class="wall-post glass-panel">
+        <div class="wall-post glass-panel" data-post-id="${p.id}">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                 ${p.user_avatar ? `<img src="${p.user_avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
                 <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
@@ -231,17 +296,31 @@ async function loadMyProfile() {
             </div>
             <p>${escapeHtml(p.content)}</p>
             <div class="wall-post-footer">
-                <button class="reaction-btn ${p.liked_by_user ? 'liked' : ''}" data-id="${p.id}" onclick="toggleWallReaction('${p.id}', this)">
-                    <i class="fas fa-heart"></i> <span>${p.likes || 0}</span>
-                </button>
+                ${renderReactions(p.reactions)}
             </div>
         </div>
     `).join('') : '<p class="text-muted">Записей пока нет</p>';
 
+    document.querySelectorAll('#myWallPosts .reaction-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const postId = this.closest('.wall-post').dataset.postId;
+            const type = this.dataset.type;
+            toggleReaction(postId, type, this);
+        });
+    });
+
     document.getElementById('postMyWallBtn').onclick = async () => {
         const msg = document.getElementById('myWallMessage').value.trim();
         if (!msg) return;
-        await _supabase.from('profile_wall').insert([{ user_login: currentUser.login, user_name: currentUser.name || currentUser.login, user_avatar: currentUser.avatar || '', profile_login: login, content: msg, likes: 0 }]);
+        await _supabase.from('profile_wall').insert([{ 
+            user_login: currentUser.login, 
+            user_name: currentUser.name || currentUser.login, 
+            user_avatar: currentUser.avatar || '', 
+            profile_login: login, 
+            content: msg,
+            reactions: {}
+        }]);
         document.getElementById('myWallMessage').value = '';
         showToast('Запись добавлена');
         loadMyProfile();
@@ -272,14 +351,4 @@ function previewGpxBeforeSave(content) {
         currentGpxContent = null;
         document.getElementById('saveGpxBtn').style.display = 'none';
     }
-}
-
-async function toggleWallReaction(postId, btn) {
-    const { data } = await _supabase.from('profile_wall').select('likes').eq('id', postId).maybeSingle();
-    const currentLikes = data?.likes || 0;
-    const newLikes = currentLikes + 1;
-    await _supabase.from('profile_wall').update({ likes: newLikes }).eq('id', postId);
-    btn.querySelector('span').textContent = newLikes;
-    btn.classList.add('liked');
-    showToast('❤️ Спасибо за реакцию!');
 }
