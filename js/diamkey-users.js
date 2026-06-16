@@ -1,10 +1,16 @@
 async function loadUsers() {
     const container = document.getElementById('usersList');
     if (!container) return;
-    container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    showPageLoader(container);
     const users = await getUsers();
+    updateLoaderProgress(container, 30);
+    let percent = 30;
+    const interval = setInterval(() => {
+        percent += 10;
+        if (percent > 90) percent = 90;
+        updateLoaderProgress(container, percent);
+    }, 100);
 
-    // Элемент сортировки
     const sortContainer = document.createElement('div');
     sortContainer.style.cssText = 'display:flex; gap:12px; margin-bottom:16px; align-items:center;';
     sortContainer.innerHTML = `
@@ -12,25 +18,22 @@ async function loadUsers() {
         <button class="btn sort-btn active" data-sort="login">По нику</button>
         <button class="btn sort-btn" data-sort="created_at">По дате</button>
     `;
+    container.innerHTML = '';
     container.parentElement.insertBefore(sortContainer, container);
 
     let currentSort = 'login';
-
     function render() {
-        const sorted = [...users].sort((a, b) => {
+        const sorted = [...users].sort((a,b) => {
             if (currentSort === 'created_at') return new Date(b.created_at) - new Date(a.created_at);
             return a.login.localeCompare(b.login);
         });
         container.innerHTML = sorted.map(u => `
             <div class="user-card glass-panel" data-login="${u.login}"
-                 onmouseenter="showUserTooltip(event, '${u.login}', '${escapeHtml(u.description || '')}', '${u.avatar || ''}')"
+                 onmouseenter="showUserTooltip(event, '${u.login}', '${escapeHtml(u.description || '')}', '${u.avatar || '')}')"
                  onmouseleave="hideUserTooltip()"
                  onclick="navigateTo('/users/${u.login}')">
-                ${u.avatar ? `<img src="${u.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:44px;color:var(--text-muted);width:44px;height:44px;display:flex;align-items:center;justify-content:center;"></i>'}
-                <div>
-                    <h4>${escapeHtml(u.name || u.login)}</h4>
-                    <span>@${u.login}</span>
-                </div>
+                ${u.avatar ? `<img src="${u.avatar}">` : '<i class="fas fa-user"></i>'}
+                <div><h4>${escapeHtml(u.name || u.login)}</h4><span>@${u.login}</span></div>
             </div>
         `).join('');
     }
@@ -44,32 +47,36 @@ async function loadUsers() {
         });
     });
 
-    render();
+    clearInterval(interval);
+    updateLoaderProgress(container, 100);
+    setTimeout(() => render(), 200);
+
     const searchInput = document.getElementById('userSearch');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             container.querySelectorAll('.user-card').forEach(card => {
-                const login = card.dataset.login.toLowerCase();
-                card.style.display = login.includes(term) ? '' : 'none';
+                card.style.display = card.dataset.login.includes(term) ? '' : 'none';
             });
         });
     }
 }
 
-// Тултип профиля
-function showUserTooltip(event, login, description, avatar) {
-    const tooltip = document.getElementById('userTooltip') || document.createElement('div');
-    tooltip.id = 'userTooltip';
-    tooltip.className = 'user-tooltip';
+function showUserTooltip(event, login, desc, avatar) {
+    let tooltip = document.getElementById('userTooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'userTooltip';
+        tooltip.className = 'user-tooltip';
+        document.body.appendChild(tooltip);
+    }
     tooltip.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;">
             ${avatar ? `<img src="${avatar}" style="width:32px;height:32px;border-radius:50%;">` : ''}
             <strong>${escapeHtml(login)}</strong>
         </div>
-        <p style="margin-top:4px;font-size:12px;">${escapeHtml(description || 'Нет описания')}</p>
+        <p style="margin-top:4px;font-size:12px;">${escapeHtml(desc || 'Нет описания')}</p>
     `;
-    document.body.appendChild(tooltip);
     tooltip.style.display = 'block';
     tooltip.style.left = event.clientX + 15 + 'px';
     tooltip.style.top = event.clientY + 15 + 'px';
