@@ -36,8 +36,10 @@
                         <p>DiamKey — это ваш ключ ко всем сервисам Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ GPS-треков и маршрутов) и будущему мессенджеру <strong>.drm</strong>.</p>
                         <p>Присоединяйтесь к сообществу Diamond уже сегодня и получите полный контроль над своими данными, синхронизацию между устройствами и настоящую приватность.</p>
                     </div>
+                    <!-- Строка со статистикой пользователя (появляется после входа) -->
+                    <div class="user-stats-row" id="homeStatsRow" style="display:none;"></div>
                     <div id="heroActionArea">
-                        <button class="btn btn-primary" id="heroActionBtn"><i class="fas fa-user-plus"></i> Создать DiamKey</button>
+                        <button class="btn btn-primary" id="heroActionBtn"><i class="fas fa-user-plus"></i> Войти / Создать DiamKey</button>
                     </div>
                 </div>
 
@@ -188,18 +190,30 @@
         </main>
     </div>
 
-    <!-- Модалки (без изменений) -->
+    <!-- Модалка входа/регистрации (обновлённая с вкладками) -->
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
-        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:420px;">
             <img src="assets/favicon.ico" class="modal-logo" style="width:60px;height:60px;animation:float 3s ease-in-out infinite;">
-            <h3>Вход в DiamKey</h3>
-            <input id="loginIdentity" placeholder="Логин">
-            <input id="loginPassword" type="password" placeholder="Пароль">
-            <button class="btn" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
-            <button class="btn" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabLogin">Вход</button>
+                <button class="auth-tab" id="tabRegister">Регистрация</button>
+            </div>
+            <div id="loginFormBlock">
+                <input id="loginIdentity" placeholder="Логин">
+                <input id="loginPassword" type="password" placeholder="Пароль">
+                <button class="btn btn-primary" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+            </div>
+            <div id="registerFormBlock" style="display:none;">
+                <input id="regLoginInput" placeholder="Придумайте логин">
+                <div class="login-status" id="regLoginStatus"></div>
+                <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)">
+                <input id="regPasswordConfirm" type="password" placeholder="Повторите пароль">
+                <button class="btn btn-primary" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+            </div>
         </div>
     </div>
 
+    <!-- Остальные модалки без изменений -->
     <div class="modal" id="gpxInfoModal" onclick="if(event.target===this) closeModal('gpxInfoModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <h3><i class="fas fa-map-marker-alt"></i> Что такое GPX?</h3>
