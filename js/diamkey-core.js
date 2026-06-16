@@ -93,10 +93,24 @@ function startCipherEffect() {
 }
 startCipherEffect();
 
-// Кэширование списка пользователей (для быстрой загрузки)
+// Индикатор загрузки
+function showPageLoader(container) {
+    container.innerHTML = `<div class="page-loader">
+        <i class="fas fa-spinner fa-spin"></i>
+        <div style="margin-top:12px;">Загрузка...</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+    </div>`;
+}
+
+function updateLoaderProgress(container, percent) {
+    const fill = container.querySelector('.progress-fill');
+    if (fill) fill.style.width = percent + '%';
+}
+
+// Кэш пользователей
 let cachedUsers = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 60000; // 1 минута
+const CACHE_DURATION = 30000;
 
 async function getUsers() {
     if (cachedUsers && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedUsers;
@@ -106,7 +120,7 @@ async function getUsers() {
     return cachedUsers;
 }
 
-// Параллельная подгрузка статистики для главной
+// Статистика для главной
 async function loadHomeStats() {
     if (!currentUser) return null;
     const [gpxRes, wallRes] = await Promise.all([
