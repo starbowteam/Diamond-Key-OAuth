@@ -14,13 +14,12 @@ function showToast(msg) {
     if (!container) {
         container = document.createElement('div');
         container.className = 'toast-container';
-        container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;';
+        container.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;';
         document.body.appendChild(container);
     }
     const toast = document.createElement('div');
-    toast.className = 'toast';
     toast.textContent = msg;
-    toast.style.cssText = 'background:rgba(30,30,35,0.9);color:white;padding:10px 20px;border-radius:20px;margin-bottom:8px;backdrop-filter:blur(12px);';
+    toast.style.cssText = 'background:rgba(20,20,25,0.95);color:white;padding:12px 24px;border-radius:30px;margin-bottom:10px;backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);';
     container.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
@@ -93,24 +92,9 @@ function startCipherEffect() {
 }
 startCipherEffect();
 
-// Индикатор загрузки
-function showPageLoader(container) {
-    container.innerHTML = `<div class="page-loader">
-        <i class="fas fa-spinner fa-spin"></i>
-        <div style="margin-top:12px;">Загрузка...</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-    </div>`;
-}
-
-function updateLoaderProgress(container, percent) {
-    const fill = container.querySelector('.progress-fill');
-    if (fill) fill.style.width = percent + '%';
-}
-
-// Кэш пользователей
 let cachedUsers = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 30000;
+const CACHE_DURATION = 60000;
 
 async function getUsers() {
     if (cachedUsers && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedUsers;
@@ -120,7 +104,6 @@ async function getUsers() {
     return cachedUsers;
 }
 
-// Статистика для главной
 async function loadHomeStats() {
     if (!currentUser) return null;
     const [gpxRes, wallRes] = await Promise.all([
