@@ -91,10 +91,8 @@
                             <div class="gpx-stat-card"><i class="fas fa-tachometer-alt"></i><span class="stat-label">Скорость</span><span id="speedVal">—</span></div>
                         </div>
                     </div>
-                    <div id="aiReview" class="ai-review glass-panel" style="display:none;">
-                        <div class="ai-review-header"><img src="/assets/logo-ai.ico" style="width:28px;height:28px;border-radius:50%;"><span>Diamond AI</span></div>
-                        <p id="aiReviewText"></p>
-                    </div>
+                    <div id="aiReview" class="ai-review glass-panel" style="display:none;"></div>
+                    <div id="gpxOwnerInfo" class="glass-panel" style="display:none; text-align:center;"></div>
                 </div>
             </section>
 
@@ -124,24 +122,30 @@
         </main>
     </div>
 
+    <!-- Обновлённая модалка входа/регистрации -->
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
-        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
-            <img src="/assets/favicon.ico" class="modal-logo" style="width:60px;height:60px;animation:float 3s ease-in-out infinite;">
-            <div class="auth-tabs">
-                <button class="auth-tab active" id="tabLogin">Вход</button>
-                <button class="auth-tab" id="tabRegister">Регистрация</button>
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:800px; display:flex; overflow:hidden; padding:0;">
+            <div class="login-image" style="flex:1; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0%, transparent 60%); padding:40px;">
+                <img src="/assets/diamond-ai.png" alt="DiamKey" style="width:100%; max-width:300px; animation: float 3s ease-in-out infinite;">
             </div>
-            <div id="loginFormBlock">
-                <input id="loginIdentity" placeholder="Логин">
-                <input id="loginPassword" type="password" placeholder="Пароль">
-                <button class="btn btn-primary" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
-            </div>
-            <div id="registerFormBlock" style="display:none;">
-                <input id="regLoginInput" placeholder="Придумайте логин">
-                <div class="login-status" id="regLoginStatus"></div>
-                <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)">
-                <input id="regPasswordConfirm" type="password" placeholder="Повторите пароль">
-                <button class="btn btn-primary" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+            <div class="login-form" style="flex:1; padding:40px 32px; display:flex; flex-direction:column; justify-content:center;">
+                <h2 id="loginCipherTitle" style="font-size:28px; font-weight:800; letter-spacing:2px; margin-bottom:24px; background:linear-gradient(135deg, #f5f5f7, #b0b0b0); -webkit-background-clip:text; background-clip:text; color:transparent;">DIAMKEY</h2>
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="tabLogin">Вход</button>
+                    <button class="auth-tab" id="tabRegister">Регистрация</button>
+                </div>
+                <div id="loginFormBlock">
+                    <input id="loginIdentity" placeholder="Логин" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <input id="loginPassword" type="password" placeholder="Пароль" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <button class="btn btn-primary" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+                </div>
+                <div id="registerFormBlock" style="display:none;">
+                    <input id="regLoginInput" placeholder="Придумайте логин" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <div class="login-status" id="regLoginStatus"></div>
+                    <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <input id="regPasswordConfirm" type="password" placeholder="Повторите пароль" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <button class="btn btn-primary" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+                </div>
             </div>
         </div>
     </div>
