@@ -19,7 +19,6 @@ function initGPX() {
     });
     gpxLayerGroup = L.featureGroup().addTo(gpxMap);
 
-    // Переключатель слоёв
     const toolbar = document.querySelector('.gpx-toolbar');
     if (toolbar && !document.getElementById('layerToggleBtn')) {
         const layerToggle = document.createElement('button');
@@ -108,6 +107,7 @@ function displayGPX(data) {
     });
     if (gpxLayerGroup.getLayers().length) { const bounds = gpxLayerGroup.getBounds(); if (bounds.isValid()) gpxMap.fitBounds(bounds, { padding: [40,40], maxZoom:16 }); }
     updateDashboard(data.tracks);
+    if (gpxMap) gpxMap.invalidateSize();
 }
 
 function updateDashboard(tracks) {
