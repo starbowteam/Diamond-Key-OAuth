@@ -786,18 +786,50 @@ body {
     margin-bottom: 2px;
 }
 
+/* Отзыв ИИ */
 #aiReview {
     display: none;
-    align-items: center;
-    gap: 16px;
-    padding: 20px 24px;
-    margin-top: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    align-items: flex-start;
+    gap: 20px;
+    padding: 24px;
     border-radius: 24px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
-#aiReview.active {
-    display: flex;
+#aiReview img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+#aiReview p {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+/* Информация о владельце GPX */
+#gpxOwnerInfo {
+    text-align: center;
+    padding: 24px;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+#gpxOwnerInfo .owner-name {
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+#gpxOwnerInfo .gpx-name {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
 }
 
 .modal {
@@ -946,6 +978,8 @@ body {
     .hero h1 {
         font-size: 36px;
     }
-} 
 
-// 67 
+    .modal-content {
+        max-width: 90%;
+    }
+}
