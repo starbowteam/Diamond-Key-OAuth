@@ -24,27 +24,38 @@ function showToast(msg) {
 }
 
 const saved = localStorage.getItem('diamkey_current');
-if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
+if (saved) try { currentUser = JSON.parse(saved); } catch(e) { console.log('[DiamKey] Ошибка парсинга сохранённой сессии'); }
 
 async function login(login, password) {
+    console.log('[DiamKey] Попытка входа:', login);
     const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
-    if (error || !user) return { error: 'Неверный логин или пароль' };
+    if (error) {
+        console.error('[DiamKey] Ошибка входа:', error);
+        return { error: 'Ошибка базы данных' };
+    }
+    if (!user) return { error: 'Неверный логин или пароль' };
     const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'', description: user.description||'', created_at: user.created_at };
     localStorage.setItem('diamkey_current', JSON.stringify(session));
     currentUser = session;
+    console.log('[DiamKey] Вход успешен:', login);
     return { success: true };
 }
 
 async function register(login, password) {
+    console.log('[DiamKey] Регистрация:', login);
     if (password.length < 6) return { error: 'Пароль минимум 6 символов' };
     const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
     if (exist) return { error: 'Логин уже занят' };
     const email = login + '@diamkey.local';
     const { error } = await _supabase.from('users').insert([{ login, email, password, name: '', avatar: '', description: '' }]);
-    if (error) return { error: error.message };
+    if (error) {
+        console.error('[DiamKey] Ошибка регистрации:', error);
+        return { error: error.message };
+    }
     const session = { login, email, name: '', avatar: '', description: '', created_at: new Date().toISOString() };
     localStorage.setItem('diamkey_current', JSON.stringify(session));
     currentUser = session;
+    console.log('[DiamKey] Регистрация успешна:', login);
     return { success: true };
 }
 
@@ -56,12 +67,18 @@ async function loadProfile() {
         currentUser.avatar = data.avatar || '';
         currentUser.description = data.description || '';
         currentUser.created_at = data.created_at;
+    } else {
+        console.warn('[DiamKey] Профиль не найден в базе');
     }
 }
 
 async function updateProfile(updates) {
     if (!currentUser) return;
-    await _supabase.from('users').update(updates).eq('login', currentUser.login);
+    const { error } = await _supabase.from('users').update(updates).eq('login', currentUser.login);
+    if (error) {
+        console.error('[DiamKey] Ошибка обновления профиля:', error);
+        return;
+    }
     if (updates.name) currentUser.name = updates.name;
     if (updates.avatar) currentUser.avatar = updates.avatar;
     if (updates.description) currentUser.description = updates.description;
@@ -96,21 +113,29 @@ let cacheTimestamp = 0;
 const CACHE_DURATION = 60000;
 async function getUsers() {
     if (cachedUsers && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedUsers;
-    const { data } = await _supabase.from('users').select('login, name, avatar, description, created_at').order('login');
+    const { data, error } = await _supabase.from('users').select('login, name, avatar, description, created_at').order('login');
+    if (error) {
+        console.error('[DiamKey] Ошибка загрузки пользователей:', error);
+        return [];
+    }
     cachedUsers = data || [];
     cacheTimestamp = Date.now();
     return cachedUsers;
 }
 
 async function loadHomeStats() {
-    const [gpxRes, wallRes, usersCountRes] = await Promise.all([
-        currentUser ? _supabase.from('gpx_files').select('id', { count: 'exact' }).eq('user_login', currentUser.login) : Promise.resolve({ count: 0 }),
-        currentUser ? _supabase.from('profile_wall').select('id', { count: 'exact' }).eq('profile_login', currentUser.login) : Promise.resolve({ count: 0 }),
-        _supabase.from('users').select('id', { count: 'exact', head: true })
-    ]);
-    return {
-        gpxCount: gpxRes.count || 0,
-        wallCount: wallRes.count || 0,
-        totalUsers: usersCountRes.count || 0
-    };
+    const results = {};
+    try {
+        if (currentUser) {
+            const gpxRes = await _supabase.from('gpx_files').select('id', { count: 'exact' }).eq('user_login', currentUser.login);
+            results.gpxCount = gpxRes.count || 0;
+            const wallRes = await _supabase.from('profile_wall').select('id', { count: 'exact' }).eq('profile_login', currentUser.login);
+            results.wallCount = wallRes.count || 0;
+        }
+        const usersCountRes = await _supabase.from('users').select('id', { count: 'exact', head: true });
+        results.totalUsers = usersCountRes.count || 0;
+    } catch (e) {
+        console.error('[DiamKey] Ошибка загрузки статистики:', e);
+    }
+    return results;
 }
