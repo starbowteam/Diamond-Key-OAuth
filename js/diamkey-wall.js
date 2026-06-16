@@ -21,7 +21,7 @@ async function loadAnnouncement() {
     }
 }
 
-// ========== РЕАКЦИИ (общие функции) ==========
+// ========== РЕАКЦИИ ==========
 function renderReactions(reactionsObj, postId) {
     const reactions = reactionsObj || {};
     const types = { heart: '❤️', like: '👍', fire: '🔥' };
@@ -80,7 +80,7 @@ async function toggleReaction(postId, type, btn) {
     }
 }
 
-// ========== НОВАЯ СИСТЕМА ПРОФИЛЕЙ ==========
+// ========== УНИВЕРСАЛЬНЫЙ БИЛДЕР ПРОФИЛЯ ==========
 function buildWallHTML(posts) {
     if (!posts || posts.length === 0) return '<p class="text-muted">Записей пока нет</p>';
     return posts.map(p => `
@@ -135,8 +135,9 @@ function attachReactionListeners(container) {
     });
 }
 
-// Полное построение секции пользователей при переходе на чей-то профиль
-async function renderUserSection(login) {
+// ЕДИНАЯ ФУНКЦИЯ ОТКРЫТИЯ ПРОФИЛЯ (вызывается отовсюду)
+async function openUserProfile(login) {
+    console.log('[DiamKey] Открытие профиля:', login);
     const pageUsers = document.getElementById('page-users');
     if (!pageUsers) return;
 
@@ -201,7 +202,6 @@ async function renderUserSection(login) {
             </div>
         `;
 
-        // Вешаем обработчики
         attachReactionListeners(pageUsers);
         
         if (currentUser) {
@@ -228,8 +228,7 @@ async function renderUserSection(login) {
                     reactions: {}
                 }]);
                 showToast('Запись добавлена');
-                // перезагружаем секцию с профилем, чтобы обновить стену
-                renderUserSection(login);
+                openUserProfile(login);
             };
         }
 
@@ -244,7 +243,7 @@ async function renderUserSection(login) {
     }
 }
 
-// Полное построение своего профиля
+// Свой профиль
 async function renderMyProfile() {
     const pageProfile = document.getElementById('page-profile');
     if (!pageProfile || !currentUser) return;
@@ -300,7 +299,6 @@ async function renderMyProfile() {
             </div>
         `;
 
-        // Обработчики своего профиля
         document.getElementById('myAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
             input.onchange = async (e) => {
@@ -350,7 +348,7 @@ async function renderMyProfile() {
     }
 }
 
-// Функции для GPX (используются из карточек)
+// Вспомогательные для GPX
 function copyGpxLink(fileId) {
     const url = `${window.location.origin}/gpx?id=${fileId}`;
     navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована'));
