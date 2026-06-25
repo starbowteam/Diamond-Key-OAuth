@@ -78,6 +78,78 @@ async function toggleReaction(postId, type, btn) {
     }
 }
 
+function renderUserProfileHTML(login, profile, gpxFiles, wallPosts) {
+    const avatarHTML = profile.avatar 
+        ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
+        : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
+    
+    let gpxHTML = '';
+    if (gpxFiles && gpxFiles.length) {
+        const grouped = {};
+        gpxFiles.forEach(f => {
+            const d = new Date(f.created_at);
+            const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(f);
+        });
+        for (const [month, files] of Object.entries(grouped)) {
+            const [year, mon] = month.split('-');
+            const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
+            gpxHTML += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
+            files.forEach(f => {
+                gpxHTML += `
+                <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h4>${escapeHtml(f.name)}</h4>
+                    <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                    <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
+                </div>`;
+            });
+            gpxHTML += '</div></div>';
+        }
+    } else {
+        gpxHTML = '<p class="text-muted">Нет поездок</p>';
+    }
+
+    let wallHTML = '';
+    if (wallPosts && wallPosts.length) {
+        wallHTML = wallPosts.map(p => `
+            <div class="wall-post glass-panel" data-post-id="${p.id}">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                    ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                    <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
+                    <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
+                </div>
+                <p>${escapeHtml(p.content)}</p>
+                <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
+            </div>
+        `).join('');
+    } else {
+        wallHTML = '<p class="text-muted">Записей пока нет</p>';
+    }
+
+    return `
+        <div class="breadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
+        <div class="profile-header">
+            <div class="avatar-wrapper">${avatarHTML}</div>
+            <div class="profile-info">
+                <h2>${escapeHtml(profile.name || login)}</h2>
+                <p class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
+                <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+            </div>
+        </div>
+        <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
+        <div class="profile-gpx"><h3>Поездки с Diamond GPX</h3><div id="userGpxFiles">${gpxHTML}</div></div>
+        <div class="profile-wall">
+            <div class="wall-input">
+                <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+                <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            <div id="userWallPosts">${wallHTML}</div>
+        </div>
+    `;
+}
+
 async function openUserProfile(login) {
     console.log('[DiamKey] openUserProfile для', login);
     const pageUsers = document.getElementById('page-users');
@@ -86,7 +158,6 @@ async function openUserProfile(login) {
         return;
     }
 
-    // Ждём, пока страница станет видимой (на случай задержки стилей)
     if (!pageUsers.classList.contains('active')) {
         console.warn('[DiamKey] Страница ещё не active, ждём активации');
         await new Promise(resolve => {
@@ -97,7 +168,6 @@ async function openUserProfile(login) {
                 }
             });
             observer.observe(pageUsers, { attributes: true, attributeFilter: ['class'] });
-            // fallback через 500 мс
             setTimeout(() => {
                 observer.disconnect();
                 resolve();
@@ -127,73 +197,8 @@ async function openUserProfile(login) {
 
         const gpxFiles = gpxRes.data || [];
         const wallPosts = wallRes.data || [];
-        const avatarHTML = profile.avatar 
-            ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
-            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
 
-        let gpxHTML = '';
-        if (gpxFiles.length) {
-            const grouped = {};
-            gpxFiles.forEach(f => {
-                const d = new Date(f.created_at);
-                const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
-                if (!grouped[key]) grouped[key] = [];
-                grouped[key].push(f);
-            });
-            for (const [month, files] of Object.entries(grouped)) {
-                const [year, mon] = month.split('-');
-                const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
-                gpxHTML += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
-                files.forEach(f => {
-                    gpxHTML += `
-                    <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <h4>${escapeHtml(f.name)}</h4>
-                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                        <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
-                    </div>`;
-                });
-                gpxHTML += '</div></div>';
-            }
-        } else {
-            gpxHTML = '<p class="text-muted">Нет поездок</p>';
-        }
-
-        let wallHTML = wallPosts.length 
-            ? wallPosts.map(p => `
-                <div class="wall-post glass-panel" data-post-id="${p.id}">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                        ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
-                        <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
-                        <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
-                    </div>
-                    <p>${escapeHtml(p.content)}</p>
-                    <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
-                </div>
-            `).join('')
-            : '<p class="text-muted">Записей пока нет</p>';
-
-        pageUsers.innerHTML = `
-            <div class="glass-panel">
-                <a href="/users" style="color:var(--accent); text-decoration:none; display:inline-block; margin-bottom:16px;">← Все пользователи</a>
-                <div class="profile-header" style="display:flex; gap:24px; align-items:center;">
-                    <div class="avatar-wrapper">${avatarHTML}</div>
-                    <div>
-                        <h2>${escapeHtml(profile.name || login)}</h2>
-                        <p style="color:var(--text-muted);">${escapeHtml(profile.description || 'Нет описания')}</p>
-                        <small style="color:var(--text-muted);">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</small>
-                    </div>
-                </div>
-            </div>
-            <div class="glass-panel"><h3>Поездки с Diamond GPX</h3>${gpxHTML}</div>
-            <div class="glass-panel">
-                <div class="wall-input" style="display:flex; gap:12px; margin-bottom:20px;">
-                    <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:18px; padding:14px 18px; color:var(--text-primary); resize:none; font-size:15px;"></textarea>
-                    <button class="btn" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
-                </div>
-                <div id="userWallPosts">${wallHTML}</div>
-            </div>
-        `;
+        pageUsers.innerHTML = renderUserProfileHTML(login, profile, gpxFiles, wallPosts);
 
         pageUsers.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
@@ -202,6 +207,16 @@ async function openUserProfile(login) {
                 toggleReaction(postId, this.dataset.type, this);
             });
         });
+
+        const wallInput = pageUsers.querySelector('.wall-input');
+        if (wallInput && currentUser) {
+            if (!wallInput.querySelector('.wall-author-preview')) {
+                const preview = document.createElement('div');
+                preview.className = 'wall-author-preview';
+                preview.innerHTML = `<img src="${currentUser.avatar || ''}" style="width:28px;height:28px;border-radius:50%;" onerror="this.style.display='none'"><span>${currentUser.name || currentUser.login}</span>`;
+                wallInput.prepend(preview);
+            }
+        }
 
         const postBtn = pageUsers.querySelector('#postUserWallBtn');
         if (postBtn) {
@@ -226,10 +241,19 @@ async function openUserProfile(login) {
     }
 }
 
+function goBackToUsersList() {
+    document.getElementById('usersPanel').style.display = 'block';
+    const userView = document.getElementById('userProfileView');
+    if (userView) userView.style.display = 'none';
+    navigateTo('/users');
+}
+
 async function renderMyProfile() {
     const pageProfile = document.getElementById('page-profile');
     if (!pageProfile || !currentUser) return;
-    pageProfile.innerHTML = `<div class="glass-panel" style="text-align:center; padding:40px;"><i class="fas fa-circle-notch fa-spin"></i> Загрузка...</div>`;
+
+    pageProfile.innerHTML = `<div class="glass-panel" style="text-align:center; padding:40px;"><i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i> Загрузка...</div>`;
+
     try {
         const login = currentUser.login;
         const [profileRes, gpxRes, wallRes] = await Promise.all([
@@ -237,49 +261,67 @@ async function renderMyProfile() {
             _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
             _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
         ]);
+
         const profile = profileRes.data;
         if (!profile) return;
+
         const gpxFiles = gpxRes.data || [];
         const wallPosts = wallRes.data || [];
         const avatarHTML = profile.avatar 
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
             : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
+
         pageProfile.innerHTML = `
-            <div class="glass-panel">
-                <div class="profile-header" style="display:flex; gap:24px; align-items:center;">
+            <div class="glass-panel profile-top">
+                <div class="profile-header">
                     <div class="avatar-wrapper" id="myAvatarWrapper">${avatarHTML}<div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div></div>
-                    <div>
+                    <div class="profile-info">
                         <h2>${escapeHtml(profile.name || login)}</h2>
                         <p class="editable-text" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i></p>
-                        <small>${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</small>
+                        <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
                 </div>
             </div>
-            <div class="glass-panel"><h3>Поездки с Diamond GPX</h3>${buildGpxHTML(gpxFiles)}</div>
-            <div class="glass-panel">
-                <div class="wall-input" style="display:flex; gap:12px; margin-bottom:20px;">
+            <div class="glass-panel profile-gpx">
+                <h3>Поездки с Diamond GPX</h3>
+                ${buildGpxHTML(gpxFiles)}
+            </div>
+            <div class="glass-panel profile-wall">
+                <div class="wall-input">
                     <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:18px; padding:14px 18px; color:var(--text-primary); resize:none; font-size:15px;"></textarea>
-                    <button class="btn" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
+                    <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
                 </div>
                 <div id="myWallPosts">${wallPosts.length ? buildWallHTML(wallPosts) : '<p class="text-muted">Записей пока нет</p>'}</div>
             </div>
         `;
+
         document.getElementById('myAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
             input.onchange = async (e) => {
                 const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader();
-                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); renderMyProfile(); };
+                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); renderMyProfile(); showToast('Аватар обновлён'); };
                 reader.readAsDataURL(file);
             };
             input.click();
         };
+
         document.getElementById('myDescription').onclick = () => {
             document.getElementById('editDescriptionInput').value = profile.description || '';
             document.getElementById('editDescriptionModal').style.display = 'flex';
             document.getElementById('editDescriptionModal').classList.add('active');
         };
+
+        document.getElementById('saveDescriptionBtn').onclick = async () => {
+            const desc = document.getElementById('editDescriptionInput').value.trim();
+            await updateProfile({ description: desc });
+            document.getElementById('myDescription').innerHTML = `${escapeHtml(desc || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i>`;
+            closeModal('editDescriptionModal');
+            showToast('Описание сохранено');
+        };
+
         attachReactionListeners(pageProfile);
+
         document.getElementById('postMyWallBtn').onclick = async () => {
             const msg = document.getElementById('myWallMessage').value.trim();
             if (!msg) return;
@@ -295,7 +337,10 @@ async function renderMyProfile() {
             showToast('Запись добавлена');
             renderMyProfile();
         };
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error('[DiamKey] Ошибка загрузки своего профиля:', e);
+        pageProfile.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
+    }
 }
 
 function buildWallHTML(posts) {
@@ -350,13 +395,18 @@ function attachReactionListeners(container) {
     });
 }
 
-function copyGpxLink(fileId) {
-    const url = `${location.origin}/gpx?id=${fileId}`;
-    navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована'));
+// Новые пути для GPX
+async function viewGpxRoute(fileId) {
+    console.log('[DiamKey] Открытие GPX из профиля:', fileId);
+    const { data, error } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
+    if (error || !data || !data.content) {
+        console.error('[DiamKey] Ошибка загрузки GPX:', error);
+        return showToast('Не удалось загрузить маршрут');
+    }
+    navigateTo(`/add/gpx?id=${fileId}`);
 }
 
-async function viewGpxRoute(fileId) {
-    const { data } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
-    if (!data?.content) return showToast('Не удалось загрузить маршрут');
-    navigateTo(`/gpx?id=${fileId}`);
+function copyGpxLink(fileId) {
+    const url = `${location.origin}/add/gpx?id=${fileId}`;
+    navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована'));
 }
