@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>DiamKey · Социальная экосистема</title>
+    <title>DiamKey · Единая экосистема</title>
     <link rel="icon" href="/assets/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -18,7 +18,7 @@
     <div class="app-shell" id="appShell">
         <nav class="sidebar" id="sidebar">
             <a class="sidebar-icon" href="/"><i class="fas fa-home"></i></a>
-            <a class="sidebar-icon" href="/gpx"><i class="fas fa-map-marker-alt"></i></a>
+            <a class="sidebar-icon" href="/add"><i class="fas fa-puzzle-piece"></i></a>
             <a class="sidebar-icon" href="/users"><i class="fas fa-users"></i></a>
             <a class="sidebar-icon" href="/profile"><i class="fas fa-user"></i></a>
             <a class="sidebar-icon" href="https://diamond-ai.ru" target="_blank"><img src="/assets/diamond-ai.ico" style="width:30px;height:30px;"></a>
@@ -29,14 +29,14 @@
             </div>
         </nav>
         <main class="main-content" id="mainContent">
+            <!-- Главная -->
             <section class="page" id="page-home">
                 <div class="glass-panel hero">
                     <img src="/assets/favicon.ico" class="hero-logo" alt="DiamKey">
                     <h1 id="cipherTitle">DIAMKEY</h1>
                     <p class="hero-subtitle">Единая учётная запись для всей экосистемы Diamond</p>
                     <div class="hero-description">
-                        <p>DiamKey — это ваш ключ ко всем сервисам Diamond. Один аккаунт открывает доступ к <strong>Diamond AI</strong> (ваш персональный ИИ-помощник), <strong>Diamond GPX</strong> (анализ GPS-треков и маршрутов) и будущему мессенджеру <strong>.drm</strong>.</p>
-                        <p>Присоединяйтесь к сообществу Diamond уже сегодня и получите полный контроль над своими данными, синхронизацию между устройствами и настоящую приватность.</p>
+                        <p>DiamKey — это ваш универсальный ключ. Один аккаунт открывает доступ к передовому ИИ-помощнику, удобному анализу маршрутов и будущему защищённому мессенджеру. Никакой путаницы с паролями, только чистый комфорт.</p>
                     </div>
                     <div class="user-stats-row" id="homeStatsRow" style="display:none;"></div>
                     <div id="heroActionArea">
@@ -51,29 +51,87 @@
                     </div>
                 </div>
 
-                <div class="features-grid">
-                    <div class="feature-card glass-panel"><i class="fas fa-robot"></i><h3>Diamond AI</h3><p>Интеллектуальный помощник с синхронизацией чатов, папок и поддержкой LaTeX.</p></div>
-                    <div class="feature-card glass-panel"><i class="fas fa-map-marker-alt"></i><h3>Diamond GPX</h3><p>Загружайте GPS-треки, анализируйте маршруты и делитесь прогулками с друзьями.</p></div>
-                    <div class="feature-card glass-panel"><i class="fas fa-comments"></i><h3>.drm Messenger</h3><p>Скоро: быстрый и безопасный мессенджер для экосистемы Diamond.</p></div>
+                <div class="section-title">Почему <span>DiamKey</span>?</div>
+                <div class="benefits-grid">
+                    <div class="benefit-card glass-panel">
+                        <i class="fas fa-fingerprint"></i>
+                        <h3>Один аккаунт — все сервисы</h3>
+                        <p>Зарегистрируйтесь один раз и пользуйтесь Diamond AI, Diamond GPX, Dirmess и будущими проектами без повторного ввода данных.</p>
+                    </div>
+                    <div class="benefit-card glass-panel">
+                        <i class="fas fa-shield-alt"></i>
+                        <h3>Приватность без компромиссов</h3>
+                        <p>Все ваши данные шифруются и хранятся в облаке Supabase. Никакой слежки, никаких утечек — только вы контролируете свою информацию.</p>
+                    </div>
+                    <div class="benefit-card glass-panel">
+                        <i class="fas fa-sync-alt"></i>
+                        <h3>Мгновенная синхронизация</h3>
+                        <p>Чаты, файлы, маршруты — всё подхватывается на любом устройстве, где вы вошли в DiamKey. Продолжайте с того места, где остановились.</p>
+                    </div>
+                    <div class="benefit-card glass-panel">
+                        <i class="fas fa-code"></i>
+                        <h3>Создано с душой</h3>
+                        <p>Проект с открытым исходным кодом, разработанный командой Diamond во главе с viktorshopa. Мы строим экосистему для людей, а не для прибыли.</p>
+                    </div>
                 </div>
 
-                <div class="glass-panel"><h2><i class="fas fa-star"></i> Почему DiamKey?</h2></div>
-                <div class="glass-panel advantage-item"><i class="fas fa-fingerprint"></i><div><h3>Один аккаунт для всего</h3><p>Регистрируйтесь один раз и входите во все сервисы экосистемы Diamond без повторной авторизации.</p></div></div>
-                <div class="glass-panel advantage-item"><i class="fas fa-shield-alt"></i><div><h3>Полная приватность</h3><p>Ваши данные хранятся в зашифрованном виде в облаке Supabase. Никаких утечек и слежки.</p></div></div>
-                <div class="glass-panel advantage-item"><i class="fas fa-sync-alt"></i><div><h3>Мгновенная синхронизация</h3><p>Чаты, файлы, маршруты — всё доступно на любом устройстве, где вы вошли в DiamKey.</p></div></div>
-                <div class="glass-panel advantage-item"><i class="fas fa-code"></i><div><h3>Создано с душой</h3><p>Проект с открытым исходным кодом, разработанный командой Diamond во главе с viktorshopa.</p></div></div>
+                <div class="section-title">Начать <span>легко</span></div>
+                <div class="steps-container">
+                    <div class="step-card glass-panel">
+                        <div class="step-number">1</div>
+                        <h4>Создайте DiamKey</h4>
+                        <p>Нажмите кнопку «Войти / Создать DiamKey» и придумайте уникальный логин. Это займёт не больше минуты.</p>
+                    </div>
+                    <div class="step-card glass-panel">
+                        <div class="step-number">2</div>
+                        <h4>Исследуйте дополнения</h4>
+                        <p>Перейдите в раздел «Дополнения» и подключите нужные сервисы — Diamond AI для интеллектуальной помощи или GPX для анализа маршрутов.</p>
+                    </div>
+                    <div class="step-card glass-panel">
+                        <div class="step-number">3</div>
+                        <h4>Пользуйтесь с удовольствием</h4>
+                        <p>Ваши данные синхронизированы, а сообщество Diamond всегда поддержит. Добро пожаловать в семью!</p>
+                    </div>
+                </div>
 
-                <div class="glass-panel ai-preview">
-                    <div class="ai-review-header"><img src="/assets/logo-ai.ico" style="width:28px;height:28px;border-radius:50%;"><span>Diamond AI</span></div>
-                    <p>Привет! Я — Diamond AI, твой персональный помощник. Я могу отвечать на вопросы, помогать с кодом, решать задачи и просто болтать. Мои ответы всегда чёткие и по делу. Попробуй спросить меня о чём-нибудь!</p>
-                    <p style="font-size:0.9rem; color:var(--text-muted);">Это пример сообщения от ИИ. В реальном чате ответы генерируются мгновенно.</p>
+                <div class="glass-panel cta-box">
+                    <h2>Присоединяйтесь к Diamond сегодня</h2>
+                    <p>Уже более <span id="totalUsersCount">0</span> пользователей доверяют DiamKey. Станьте частью растущей экосистемы и получите доступ к инструментам, которые упрощают жизнь.</p>
+                    <button class="btn btn-primary" id="ctaRegisterBtn"><i class="fas fa-user-plus"></i> Создать аккаунт</button>
                 </div>
             </section>
 
-            <section class="page" id="page-gpx">
+            <!-- Дополнения -->
+            <section class="page" id="page-add">
+                <div class="section-title">Дополнения <span>DiamKey</span></div>
+                <p class="subtitle">Расширьте возможности вашего аккаунта с помощью сервисов экосистемы Diamond</p>
+                <div class="add-services-grid">
+                    <div class="add-service-card glass-panel" onclick="navigateTo('/add/gpx')">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h3>Diamond GPX</h3>
+                        <p>Загружайте GPS-треки, анализируйте маршруты, смотрите статистику и делитесь прогулками с друзьями.</p>
+                        <button class="btn btn-primary">Открыть</button>
+                    </div>
+                    <a class="add-service-card glass-panel" href="https://diamond-ai.ru" target="_blank">
+                        <i class="fas fa-robot"></i>
+                        <h3>Diamond AI</h3>
+                        <p>Персональный ИИ-помощник с синхронизацией чатов, поддержкой LaTeX и папками для организации.</p>
+                        <button class="btn btn-primary">Перейти</button>
+                    </a>
+                    <div class="add-service-card glass-panel">
+                        <i class="fas fa-comments"></i>
+                        <h3>Dirmess</h3>
+                        <p>Защищённый мессенджер с оконечным шифрованием. Пока в разработке, но вы уже можете оценить концепцию.</p>
+                        <button class="btn btn-primary" disabled>Скоро</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GPX (внутри дополнений) -->
+            <section class="page" id="page-add-gpx">
                 <div class="glass-panel gpx-container">
                     <div class="gpx-toolbar">
-                        <button class="btn btn-icon" id="gpxBackBtn" onclick="window.history.length>1?window.history.back():navigateTo('/')"><i class="fas fa-arrow-left"></i></button>
+                        <button class="btn btn-icon" id="gpxBackBtn" onclick="navigateTo('/add')"><i class="fas fa-arrow-left"></i></button>
                         <span class="gpx-title"><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
                         <button class="btn btn-icon" id="uploadGpxBtn" onclick="document.getElementById('gpx-file-input').click()"><i class="fas fa-folder-open"></i></button>
                         <input type="file" id="gpx-file-input" accept=".gpx,.xml" style="display:none">
@@ -96,6 +154,7 @@
                 </div>
             </section>
 
+            <!-- Пользователи -->
             <section class="page" id="page-users">
                 <div class="glass-panel" id="usersPanel">
                     <h2><i class="fas fa-users"></i> Пользователи</h2>
@@ -114,6 +173,7 @@
                 <div class="glass-panel profile-wall" id="userWallSection" style="display:none;"></div>
             </section>
 
+            <!-- Профиль -->
             <section class="page" id="page-profile">
                 <div class="glass-panel profile-top" id="myProfileTop"></div>
                 <div class="glass-panel profile-gpx" id="myGpxSection"></div>
@@ -122,11 +182,10 @@
         </main>
     </div>
 
-    <!-- Обновлённая модалка входа/регистрации -->
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:800px; display:flex; overflow:hidden; padding:0;">
             <div class="login-image" style="flex:1; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0%, transparent 60%); padding:40px;">
-                <img src="/assets/favicon.ico" alt="DiamKey" style="width:100%; max-width:300px; animation: float 3s ease-in-out infinite;">
+                <img src="/assets/diamond-ai.png" alt="DiamKey" style="width:100%; max-width:300px; animation: float 3s ease-in-out infinite;">
             </div>
             <div class="login-form" style="flex:1; padding:40px 32px; display:flex; flex-direction:column; justify-content:center;">
                 <h2 id="loginCipherTitle" style="font-size:28px; font-weight:800; letter-spacing:2px; margin-bottom:24px; background:linear-gradient(135deg, #f5f5f7, #b0b0b0); -webkit-background-clip:text; background-clip:text; color:transparent;">DIAMKEY</h2>
@@ -177,6 +236,7 @@
     <script src="/js/diamkey-ui.js?v=12"></script>
     <script src="/js/diamkey-wall.js?v=12"></script>
     <script src="/js/diamkey-gpx.js?v=12"></script>
+    <script src="/js/diamkey-add.js?v=12"></script>
     <script src="/js/diamkey-users.js?v=12"></script>
     <script src="/js/diamkey-settings.js?v=12"></script>
 </body>
