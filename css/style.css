@@ -353,31 +353,145 @@ body {
     gap: 12px;
 }
 
-.features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 28px;
-    margin-bottom: 32px;
+.section-title {
+    font-size: 36px;
+    font-weight: 700;
+    text-align: center;
+    margin: 48px 0 32px;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #f5f5f7, #b0b0b0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
-.feature-card {
+.subtitle {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 18px;
+    margin-bottom: 40px;
+}
+
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 28px;
+    margin-bottom: 48px;
+}
+
+.benefit-card {
     text-align: center;
     padding: 40px 28px;
     transition: all var(--transition);
 }
 
-.feature-card i {
+.benefit-card i {
     font-size: 48px;
     color: var(--accent);
     margin-bottom: 24px;
 }
 
-.feature-card h3 {
+.benefit-card h3 {
     font-size: 22px;
     margin-bottom: 14px;
 }
 
-.feature-card p {
+.benefit-card p {
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.steps-container {
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+}
+
+.step-card {
+    flex: 1;
+    min-width: 250px;
+    max-width: 350px;
+    text-align: center;
+    padding: 40px 28px;
+}
+
+.step-number {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a4d58, #2a2c34);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    margin: 0 auto 20px;
+}
+
+.step-card h4 {
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+.step-card p {
+    color: var(--text-muted);
+    font-size: 15px;
+}
+
+.cta-box {
+    text-align: center;
+    padding: 48px 28px;
+    background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.04) 0%, transparent 60%);
+}
+
+.cta-box h2 {
+    font-size: 32px;
+    margin-bottom: 16px;
+}
+
+.cta-box p {
+    font-size: 17px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+}
+
+.add-services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 28px;
+    margin-bottom: 32px;
+}
+
+.add-service-card {
+    text-align: center;
+    padding: 40px 28px;
+    transition: all var(--transition);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.add-service-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+}
+
+.add-service-card i {
+    font-size: 56px;
+    color: var(--accent);
+}
+
+.add-service-card h3 {
+    font-size: 24px;
+}
+
+.add-service-card p {
     color: var(--text-muted);
     font-size: 15px;
     line-height: 1.5;
@@ -786,7 +900,6 @@ body {
     margin-bottom: 2px;
 }
 
-/* Отзыв ИИ */
 #aiReview {
     display: none;
     align-items: flex-start;
@@ -811,7 +924,6 @@ body {
     line-height: 1.5;
 }
 
-/* Информация о владельце GPX */
 #gpxOwnerInfo {
     text-align: center;
     padding: 24px;
