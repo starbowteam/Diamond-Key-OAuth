@@ -34,8 +34,10 @@ function handleRoute() {
     if (path === '/' || path === '') {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
-    } else if (path === '/gpx') {
-        activatePage('page-gpx');
+    } else if (path === '/add') {
+        activatePage('page-add');
+    } else if (path === '/add/gpx') {
+        activatePage('page-add-gpx', true);
         if (typeof initGPX === 'function') {
             initGPX();
             if (gpxMap) setTimeout(() => gpxMap.invalidateSize(), 150);
@@ -54,13 +56,16 @@ function handleRoute() {
             if (currentUser && uploadBtn) uploadBtn.style.display = 'inline-flex';
             else if (uploadBtn) uploadBtn.style.display = 'none';
         }
+        if (!localStorage.getItem('gpx_info_seen')) {
+            const modal = document.getElementById('gpxInfoModal');
+            if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
+        }
     } else if (path === '/users') {
         activatePage('page-users');
         if (typeof loadUsers === 'function') loadUsers();
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
         activatePage('page-users', true);
-        // Даём браузеру кадр на отрисовку перед заполнением
         setTimeout(() => {
             if (typeof openUserProfile === 'function') openUserProfile(login);
         }, 0);
@@ -78,7 +83,7 @@ function handleRoute() {
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.classList.remove('active');
         const href = btn.getAttribute('href');
-        if (href === path || (path.startsWith('/users') && href === '/users') || (path.startsWith('/gpx') && href === '/gpx')) {
+        if (href === path || (path.startsWith('/add') && href === '/add') || (path.startsWith('/users') && href === '/users')) {
             btn.classList.add('active');
         }
     });
