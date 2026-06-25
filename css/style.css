@@ -417,13 +417,12 @@ body {
 .step-card {
     flex: 1;
     min-width: 280px;
-    max-width: 350px;
     text-align: center;
     padding: 40px 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 300px;
+    min-height: 320px;
 }
 
 .step-number {
@@ -450,17 +449,16 @@ body {
     font-size: 15px;
 }
 
-/* Страница дополнений */
+/* Дополнения */
 .add-services-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 28px;
+    display: flex;
+    justify-content: center;
     margin-bottom: 32px;
 }
 
 .add-service-card {
     text-align: center;
-    padding: 40px 28px;
+    padding: 40px;
     transition: all var(--transition);
     display: flex;
     flex-direction: column;
@@ -473,36 +471,44 @@ body {
     box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
 }
 
-.add-service-card i {
-    font-size: 56px;
-    color: var(--accent);
-}
-
-.add-service-card h3 {
-    font-size: 24px;
-}
-
-.add-service-card p {
-    color: var(--text-muted);
-    font-size: 15px;
-    line-height: 1.5;
-}
-
-/* Стильный промо-блок для GPX */
+/* Промо-блок GPX */
 .gpx-promo {
     flex-direction: row;
     align-items: center;
-    gap: 32px;
-    padding: 40px;
+    gap: 40px;
+    padding: 48px;
     cursor: pointer;
+    max-width: 800px;
 }
 
 .gpx-promo-left {
     flex: 3;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.gpx-promo-left i {
+    font-size: 48px;
+    color: var(--accent);
+    margin-bottom: 16px;
+}
+
+.gpx-promo-left h3 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent);
+    display: inline-block;
+}
+
+.gpx-promo-left p {
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 28px;
 }
 
 .gpx-promo-right {
@@ -513,12 +519,12 @@ body {
 }
 
 .three-deco {
-    width: 120px;
-    height: 120px;
+    width: 140px;
+    height: 140px;
     background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 70%);
     border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-    box-shadow: 0 0 25px rgba(160,160,176,0.3), inset 0 0 15px rgba(255,255,255,0.1);
-    animation: morph 6s ease-in-out infinite;
+    box-shadow: 0 0 30px rgba(160,160,176,0.4), inset 0 0 20px rgba(255,255,255,0.1);
+    animation: morph 8s ease-in-out infinite;
 }
 
 @keyframes morph {
@@ -526,6 +532,7 @@ body {
     50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
 }
 
+/* Остальное без изменений */
 .advantage-item {
     display: flex;
     gap: 24px;
