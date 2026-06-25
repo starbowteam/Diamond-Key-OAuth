@@ -34,11 +34,30 @@ async function login(login, password) {
         return { error: 'Ошибка базы данных' };
     }
     if (!user) return { error: 'Неверный логин или пароль' };
+    if (!user.secret_word) {
+        const sw = generateFastSecret();
+        await _supabase.from('users').update({ secret_word: sw }).eq('login', user.login);
+        user.secret_word = sw;
+    }
     const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'', description: user.description||'', created_at: user.created_at };
     localStorage.setItem('diamkey_current', JSON.stringify(session));
     currentUser = session;
     console.log('[DiamKey] Вход успешен:', login);
     return { success: true };
+}
+
+function generateFastSecret() {
+    return Math.random().toString(36).substring(2,15) + Math.random().toString(36).substring(2,15);
+}
+
+function generateToken() {
+    const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost'];
+    const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key'];
+    const a = adj[Math.floor(Math.random()*adj.length)];
+    const b = nouns[Math.floor(Math.random()*nouns.length)];
+    const c = nouns[Math.floor(Math.random()*nouns.length)];
+    const num = Math.floor(1000+Math.random()*9000);
+    return `diamkey_${a}_${b}_${c}_${num}`;
 }
 
 async function register(login, password) {
@@ -47,7 +66,18 @@ async function register(login, password) {
     const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
     if (exist) return { error: 'Логин уже занят' };
     const email = login + '@diamkey.local';
-    const { error } = await _supabase.from('users').insert([{ login, email, password, name: '', avatar: '', description: '' }]);
+    const token = generateToken();
+    const secretWord = generateFastSecret();
+    const { error } = await _supabase.from('users').insert([{
+        login,
+        email,
+        password,
+        name: '',
+        avatar: '',
+        description: '',
+        token,
+        secret_word: secretWord
+    }]);
     if (error) {
         console.error('[DiamKey] Ошибка регистрации:', error);
         return { error: error.message };
@@ -115,7 +145,6 @@ let usersRequestPromise = null;
 
 async function getUsers() {
     if (cachedUsers && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedUsers;
-    // Защита от дублирующихся запросов
     if (usersRequestPromise) return usersRequestPromise;
 
     usersRequestPromise = (async () => {
@@ -123,7 +152,6 @@ async function getUsers() {
             const { data, error } = await _supabase.from('users').select('login, name, avatar, description, created_at').order('login');
             if (error) {
                 if (error.code === '20' || error.message?.includes('abort')) {
-                    // AbortError — просто вернём кеш или пустой массив
                     console.warn('[DiamKey] AbortError при загрузке пользователей, использую кеш');
                     return cachedUsers || [];
                 }
