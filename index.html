@@ -29,7 +29,6 @@
             </div>
         </nav>
         <main class="main-content" id="mainContent">
-            <!-- Главная -->
             <section class="page" id="page-home">
                 <div class="glass-panel hero">
                     <img src="/assets/favicon.ico" class="hero-logo" alt="DiamKey">
@@ -93,15 +92,8 @@
                         <p>Ваши данные синхронизированы, а сообщество Diamond всегда поддержит. Добро пожаловать в семью!</p>
                     </div>
                 </div>
-
-                <div class="glass-panel cta-box">
-                    <h2>Присоединяйтесь к Diamond сегодня</h2>
-                    <p>Уже более <span id="totalUsersCount">0</span> пользователей доверяют DiamKey. Станьте частью растущей экосистемы и получите доступ к инструментам, которые упрощают жизнь.</p>
-                    <button class="btn btn-primary" id="ctaRegisterBtn"><i class="fas fa-user-plus"></i> Создать аккаунт</button>
-                </div>
             </section>
 
-            <!-- Дополнения -->
             <section class="page" id="page-add">
                 <div class="section-title">Дополнения <span>DiamKey</span></div>
                 <p class="subtitle">Расширьте возможности вашего аккаунта с помощью сервисов экосистемы Diamond</p>
@@ -112,22 +104,21 @@
                         <p>Загружайте GPS-треки, анализируйте маршруты, смотрите статистику и делитесь прогулками с друзьями.</p>
                         <button class="btn btn-primary">Открыть</button>
                     </div>
-                    <a class="add-service-card glass-panel" href="https://diamond-ai.ru" target="_blank">
-                        <i class="fas fa-robot"></i>
-                        <h3>Diamond AI</h3>
-                        <p>Персональный ИИ-помощник с синхронизацией чатов, поддержкой LaTeX и папками для организации.</p>
-                        <button class="btn btn-primary">Перейти</button>
-                    </a>
                     <div class="add-service-card glass-panel">
-                        <i class="fas fa-comments"></i>
-                        <h3>Dirmess</h3>
-                        <p>Защищённый мессенджер с оконечным шифрованием. Пока в разработке, но вы уже можете оценить концепцию.</p>
+                        <i class="fas fa-hourglass-half"></i>
+                        <h3>Скоро</h3>
+                        <p>Новый сервис появится здесь. Ожидайте анонса в Discord или Telegram.</p>
+                        <button class="btn btn-primary" disabled>Скоро</button>
+                    </div>
+                    <div class="add-service-card glass-panel">
+                        <i class="fas fa-hourglass-half"></i>
+                        <h3>Скоро</h3>
+                        <p>Ещё один проект на подходе. Следите за обновлениями.</p>
                         <button class="btn btn-primary" disabled>Скоро</button>
                     </div>
                 </div>
             </section>
 
-            <!-- GPX (внутри дополнений) -->
             <section class="page" id="page-add-gpx">
                 <div class="glass-panel gpx-container">
                     <div class="gpx-toolbar">
@@ -152,9 +143,17 @@
                     <div id="aiReview" class="ai-review glass-panel" style="display:none;"></div>
                     <div id="gpxOwnerInfo" class="glass-panel" style="display:none; text-align:center;"></div>
                 </div>
+                <div class="gpx-about glass-panel">
+                    <div class="gpx-about-text">
+                        <h2>Что такое Diamond GPX?</h2>
+                        <p>GPX — это формат файлов для хранения GPS-треков. С Diamond GPX вы можете загрузить свой маршрут, проанализировать дистанцию, набор высоты, скорость и получить персональный отзыв от Diamond AI. Делитесь маршрутами с друзьями и вдохновляйтесь поездками сообщества.</p>
+                    </div>
+                    <div class="gpx-about-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                </div>
             </section>
 
-            <!-- Пользователи -->
             <section class="page" id="page-users">
                 <div class="glass-panel" id="usersPanel">
                     <h2><i class="fas fa-users"></i> Пользователи</h2>
@@ -173,7 +172,6 @@
                 <div class="glass-panel profile-wall" id="userWallSection" style="display:none;"></div>
             </section>
 
-            <!-- Профиль -->
             <section class="page" id="page-profile">
                 <div class="glass-panel profile-top" id="myProfileTop"></div>
                 <div class="glass-panel profile-gpx" id="myGpxSection"></div>
