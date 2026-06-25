@@ -194,8 +194,6 @@ body {
     transition: all var(--transition);
 }
 
-.glass-panel:last-child {
-    margin-bottom: 0;
 }
 
 .hero {
