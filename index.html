@@ -29,6 +29,7 @@
             </div>
         </nav>
         <main class="main-content" id="mainContent">
+            <!-- Главная -->
             <section class="page" id="page-home">
                 <div class="glass-panel hero">
                     <img src="/assets/favicon.ico" class="hero-logo" alt="DiamKey">
@@ -70,7 +71,7 @@
                     <div class="benefit-card glass-panel">
                         <i class="fas fa-code"></i>
                         <h3>Создано с душой</h3>
-                        <p>Проект с открытым исходным кодом, разработанный командой Diamond во главе с viktorshopa. Мы строим экосистему для людей, а не для прибыли.</p>
+                        <p>Проект с открытым исходным кодом, разработанный командой Diamond во главе с viktorshopa. Мы строим экосистему для людей.</p>
                     </div>
                 </div>
 
@@ -94,31 +95,38 @@
                 </div>
             </section>
 
+            <!-- Дополнения -->
             <section class="page" id="page-add">
                 <div class="section-title">Дополнения <span>DiamKey</span></div>
                 <p class="subtitle">Расширьте возможности вашего аккаунта с помощью сервисов экосистемы Diamond</p>
                 <div class="add-services-grid">
-                    <div class="add-service-card glass-panel" onclick="navigateTo('/add/gpx')">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <h3>Diamond GPX</h3>
-                        <p>Загружайте GPS-треки, анализируйте маршруты, смотрите статистику и делитесь прогулками с друзьями.</p>
-                        <button class="btn btn-primary">Открыть</button>
+                    <div class="add-service-card glass-panel gpx-promo" onclick="navigateTo('/add/gpx')">
+                        <div class="gpx-promo-left">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <h3>Diamond GPX</h3>
+                            <p>Загружайте GPS-треки, анализируйте маршруты, смотрите статистику и делитесь прогулками с друзьями.</p>
+                            <button class="btn btn-primary">Открыть</button>
+                        </div>
+                        <div class="gpx-promo-right">
+                            <div class="three-deco"></div>
+                        </div>
                     </div>
                     <div class="add-service-card glass-panel">
-                        <i class="fas fa-hourglass-half"></i>
-                        <h3>Скоро</h3>
-                        <p>Новый сервис появится здесь. Ожидайте анонса в Discord или Telegram.</p>
-                        <button class="btn btn-primary" disabled>Скоро</button>
+                        <i class="fas fa-robot"></i>
+                        <h3>Diamond AI</h3>
+                        <p>Персональный ИИ-помощник с синхронизацией чатов, поддержкой LaTeX и папками для организации.</p>
+                        <button class="btn btn-primary" disabled>СКОРО</button>
                     </div>
                     <div class="add-service-card glass-panel">
-                        <i class="fas fa-hourglass-half"></i>
-                        <h3>Скоро</h3>
-                        <p>Ещё один проект на подходе. Следите за обновлениями.</p>
-                        <button class="btn btn-primary" disabled>Скоро</button>
+                        <i class="fas fa-comments"></i>
+                        <h3>Dirmess</h3>
+                        <p>Защищённый мессенджер с оконечным шифрованием. Пока в разработке.</p>
+                        <button class="btn btn-primary" disabled>СКОРО</button>
                     </div>
                 </div>
             </section>
 
+            <!-- GPX (внутри дополнений) -->
             <section class="page" id="page-add-gpx">
                 <div class="glass-panel gpx-container">
                     <div class="gpx-toolbar">
@@ -143,17 +151,9 @@
                     <div id="aiReview" class="ai-review glass-panel" style="display:none;"></div>
                     <div id="gpxOwnerInfo" class="glass-panel" style="display:none; text-align:center;"></div>
                 </div>
-                <div class="gpx-about glass-panel">
-                    <div class="gpx-about-text">
-                        <h2>Что такое Diamond GPX?</h2>
-                        <p>GPX — это формат файлов для хранения GPS-треков. С Diamond GPX вы можете загрузить свой маршрут, проанализировать дистанцию, набор высоты, скорость и получить персональный отзыв от Diamond AI. Делитесь маршрутами с друзьями и вдохновляйтесь поездками сообщества.</p>
-                    </div>
-                    <div class="gpx-about-icon">
-                        <i class="fas fa-map-marked-alt"></i>
-                    </div>
-                </div>
             </section>
 
+            <!-- Пользователи -->
             <section class="page" id="page-users">
                 <div class="glass-panel" id="usersPanel">
                     <h2><i class="fas fa-users"></i> Пользователи</h2>
@@ -172,6 +172,7 @@
                 <div class="glass-panel profile-wall" id="userWallSection" style="display:none;"></div>
             </section>
 
+            <!-- Профиль -->
             <section class="page" id="page-profile">
                 <div class="glass-panel profile-top" id="myProfileTop"></div>
                 <div class="glass-panel profile-gpx" id="myGpxSection"></div>
