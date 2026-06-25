@@ -194,10 +194,7 @@ body {
     transition: all var(--transition);
 }
 
-.glass-panel:last-child {
-    margin-bottom: 0;
-}
-
+/* Убираем глобальную отмену отступа у последнего элемента */
 .hero {
     text-align: center;
     padding: 56px 40px;
@@ -388,6 +385,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
+    margin-bottom: 0; /* убираем лишний отступ */
 }
 
 .benefit-card i {
