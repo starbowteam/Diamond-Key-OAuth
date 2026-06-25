@@ -383,6 +383,10 @@ body {
     text-align: center;
     padding: 40px 28px;
     transition: all var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 320px;
 }
 
 .benefit-card i {
@@ -412,10 +416,14 @@ body {
 
 .step-card {
     flex: 1;
-    min-width: 250px;
+    min-width: 280px;
     max-width: 350px;
     text-align: center;
     padding: 40px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 300px;
 }
 
 .step-number {
@@ -442,26 +450,10 @@ body {
     font-size: 15px;
 }
 
-.cta-box {
-    text-align: center;
-    padding: 48px 28px;
-    background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.04) 0%, transparent 60%);
-}
-
-.cta-box h2 {
-    font-size: 32px;
-    margin-bottom: 16px;
-}
-
-.cta-box p {
-    font-size: 17px;
-    color: var(--text-muted);
-    margin-bottom: 32px;
-}
-
+/* Страница дополнений */
 .add-services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 28px;
     margin-bottom: 32px;
 }
@@ -470,7 +462,6 @@ body {
     text-align: center;
     padding: 40px 28px;
     transition: all var(--transition);
-    cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -495,6 +486,44 @@ body {
     color: var(--text-muted);
     font-size: 15px;
     line-height: 1.5;
+}
+
+/* Стильный промо-блок для GPX */
+.gpx-promo {
+    flex-direction: row;
+    align-items: center;
+    gap: 32px;
+    padding: 40px;
+    cursor: pointer;
+}
+
+.gpx-promo-left {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.gpx-promo-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.three-deco {
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 70%);
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    box-shadow: 0 0 25px rgba(160,160,176,0.3), inset 0 0 15px rgba(255,255,255,0.1);
+    animation: morph 6s ease-in-out infinite;
+}
+
+@keyframes morph {
+    0%, 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+    50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
 }
 
 .advantage-item {
@@ -1093,5 +1122,9 @@ body {
 
     .modal-content {
         max-width: 90%;
+    }
+
+    .gpx-promo {
+        flex-direction: column;
     }
 }
