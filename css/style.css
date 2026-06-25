@@ -194,8 +194,6 @@ body {
     transition: all var(--transition);
 }
 
-}
-
 .hero {
     text-align: center;
     padding: 56px 40px;
