@@ -85,7 +85,7 @@ function initGPX() {
         document.getElementById('saveGpxBtn').style.display = 'none';
     });
 
-    if (document.getElementById('page-gpx').classList.contains('active')) {
+    if (document.getElementById('page-add-gpx') && document.getElementById('page-add-gpx').classList.contains('active')) {
         setTimeout(() => gpxMap.invalidateSize(), 100);
     }
 }
@@ -107,17 +107,13 @@ async function loadGpxFromId(gpxId) {
         displayGPX(parsed);
         gpxMap.invalidateSize();
         
-        // Показываем владельца, если это чужой GPX
         if (currentUser && currentUser.login === data.user_login) {
-            // Свой GPX: показываем отзыв ИИ
             showAIReview(parsed);
             document.getElementById('gpxOwnerInfo').style.display = 'none';
         } else {
-            // Чужой GPX: скрываем отзыв, показываем автора
             document.getElementById('aiReview').style.display = 'none';
             const ownerInfo = document.getElementById('gpxOwnerInfo');
             ownerInfo.style.display = 'block';
-            // Получаем аватар автора
             const { data: owner } = await _supabase.from('users').select('avatar').eq('login', data.user_login).maybeSingle();
             const avatarHTML = owner?.avatar 
                 ? `<img src="${escapeHtml(owner.avatar)}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">`
@@ -228,7 +224,7 @@ function haversine(lat1,lon1,lat2,lon2) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const gpxPage = document.getElementById('page-gpx');
+    const gpxPage = document.getElementById('page-add-gpx');
     if (gpxPage) {
         const observer = new MutationObserver(() => { if (gpxPage.classList.contains('active')) initGPX(); });
         observer.observe(gpxPage, { attributes: true, attributeFilter: ['class'] });
