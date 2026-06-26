@@ -542,58 +542,83 @@ body {
     opacity: 1;
 }
 
-.gpx-cards {
+/* Сетка карточек в разделе Поездки – тянется по ширине */
+.profile-gpx-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 20px;
-    margin-top: 16px;
+    margin-top: 24px;
 }
 
+/* Улучшенная карточка поездки */
 .gpx-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
     padding: 24px 20px;
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all 0.25s ease;
     position: relative;
-    height: 160px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.gpx-card h4 {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin: 8px 0;
+    align-items: center;
+    text-align: center;
 }
 
 .gpx-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
-.gpx-card-date {
+.gpx-card i {
+    font-size: 32px;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+
+.gpx-card h4 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.gpx-card .gpx-card-date {
     font-size: 13px;
     color: var(--text-muted);
-    margin-top: 4px;
+    margin-bottom: 12px;
+}
+
+.gpx-card .gpx-card-stats {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: auto;
 }
 
 .gpx-card .share-btn {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: 12px;
+    right: 12px;
     background: rgba(255, 255, 255, 0.08);
     border: none;
     color: var(--text-muted);
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: 0.2s;
+    font-size: 14px;
 }
 
 .gpx-card .share-btn:hover {
@@ -601,19 +626,35 @@ body {
     color: white;
 }
 
-.gpx-month-group {
-    margin-bottom: 32px;
-}
-
-.gpx-month-title {
-    font-size: 16px;
-    font-weight: 600;
+/* Сообщение о пустом списке поездок */
+.empty-gpx-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
     color: var(--text-muted);
-    margin-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding-bottom: 8px;
 }
 
+.empty-gpx-message i {
+    font-size: 56px;
+    margin-bottom: 20px;
+    opacity: 0.6;
+}
+
+.empty-gpx-message h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.empty-gpx-message p {
+    font-size: 15px;
+}
+
+/* Остальные стили без изменений */
 .profile-wall {
     padding-top: 56px;
 }
