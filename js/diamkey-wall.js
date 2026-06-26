@@ -403,7 +403,6 @@ async function renderProfileGpxView(login) {
                         <h4>${escapeHtml(f.name)}</h4>
                         <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
                         ${statsHTML}
-                        <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share"></i></button>
                     </div>
                 `;
             }).join('');
@@ -448,9 +447,4 @@ async function viewGpxRoute(fileId) {
         return showToast('Не удалось загрузить маршрут');
     }
     navigateTo(`/add/gpx?id=${fileId}`);
-}
-
-function copyGpxLink(fileId) {
-    const url = `${location.origin}/add/gpx?id=${fileId}`;
-    navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована'));
 }
