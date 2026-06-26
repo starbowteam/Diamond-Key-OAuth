@@ -137,6 +137,7 @@ function renderUserProfileHTML(login, profile, gpxFiles, wallPosts) {
                 <p class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
                 <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
+            <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
         </div>
         <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
         <div class="profile-gpx"><h3>Поездки с Diamond GPX</h3><div id="userGpxFiles">${gpxHTML}</div></div>
@@ -280,6 +281,7 @@ async function renderMyProfile() {
                         <p class="editable-text" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i></p>
                         <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
+                    <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Мои GPX-поездки"><i class="fas fa-puzzle-piece"></i></button>
                 </div>
             </div>
             <div class="glass-panel profile-gpx">
@@ -395,7 +397,81 @@ function attachReactionListeners(container) {
     });
 }
 
-// Новые пути для GPX
+// Новая функция: страница GPX-поездок из профиля
+async function renderProfileGpxView(login) {
+    const page = document.getElementById('page-profile-gpx');
+    if (!page) return;
+    
+    const profileBlock = document.getElementById('profileGpxProfile');
+    const gpxBlock = document.getElementById('profileGpxSection');
+    
+    // Показываем профиль, скрываем GPX
+    profileBlock.style.display = 'block';
+    gpxBlock.style.display = 'none';
+    
+    try {
+        const [profileRes, gpxRes] = await Promise.all([
+            _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
+            _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false })
+        ]);
+        
+        const profile = profileRes.data;
+        if (!profile) {
+            page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>';
+            return;
+        }
+        
+        const gpxFiles = gpxRes.data || [];
+        
+        // Заполняем блок профиля
+        const avatarHTML = profile.avatar 
+            ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
+            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
+            
+        profileBlock.innerHTML = `
+            <div class="profile-header">
+                <div class="avatar-wrapper">${avatarHTML}</div>
+                <div class="profile-info">
+                    <h2>${escapeHtml(profile.name || login)}</h2>
+                    <p>${escapeHtml(profile.description || '')}</p>
+                </div>
+                <button class="btn btn-icon puzzle-btn" id="showGpxBlockBtn" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
+            </div>
+            <button class="btn btn-icon" onclick="navigateTo('/profile/${login}')"><i class="fas fa-arrow-left"></i> Назад к профилю</button>
+        `;
+        
+        // Заполняем блок GPX (скрыт изначально)
+        gpxBlock.innerHTML = `
+            <button class="btn btn-icon" id="hideGpxBlockBtn"><i class="fas fa-arrow-left"></i> Назад к профилю</button>
+            <h3><i class="fas fa-map-marker-alt"></i> Поездки ${escapeHtml(profile.name || login)}</h3>
+            <div class="gpx-grid" id="profileGpxGrid">
+                ${gpxFiles.length ? gpxFiles.map(f => `
+                    <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h4>${escapeHtml(f.name)}</h4>
+                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                        <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
+                    </div>
+                `).join('') : '<p class="text-muted">Нет поездок</p>'}
+            </div>
+        `;
+        
+        // Переключение между блоками
+        document.getElementById('showGpxBlockBtn').addEventListener('click', () => {
+            profileBlock.style.display = 'none';
+            gpxBlock.style.display = 'block';
+        });
+        document.getElementById('hideGpxBlockBtn').addEventListener('click', () => {
+            gpxBlock.style.display = 'none';
+            profileBlock.style.display = 'block';
+        });
+        
+    } catch (e) {
+        console.error('[DiamKey] Ошибка загрузки GPX-профиля:', e);
+        page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
+    }
+}
+
 async function viewGpxRoute(fileId) {
     console.log('[DiamKey] Открытие GPX из профиля:', fileId);
     const { data, error } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
