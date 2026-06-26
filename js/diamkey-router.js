@@ -75,6 +75,12 @@ function handleRoute() {
         setTimeout(() => {
             if (typeof renderMyProfile === 'function') renderMyProfile();
         }, 0);
+    } else if (path.startsWith('/profile/') && path.endsWith('/gpxview')) {
+        const login = path.split('/profile/')[1].split('/gpxview')[0];
+        activatePage('page-profile-gpx', true);
+        setTimeout(() => {
+            if (typeof renderProfileGpxView === 'function') renderProfileGpxView(login);
+        }, 0);
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
@@ -83,7 +89,7 @@ function handleRoute() {
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.classList.remove('active');
         const href = btn.getAttribute('href');
-        if (href === path || (path.startsWith('/add') && href === '/add') || (path.startsWith('/users') && href === '/users')) {
+        if (href === path || (path.startsWith('/add') && href === '/add') || (path.startsWith('/users') && href === '/users') || (path.startsWith('/profile') && href === '/profile')) {
             btn.classList.add('active');
         }
     });
