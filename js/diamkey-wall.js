@@ -83,34 +83,6 @@ function renderUserProfileHTML(login, profile, gpxFiles, wallPosts) {
         ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
         : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
     
-    let gpxHTML = '';
-    if (gpxFiles && gpxFiles.length) {
-        const grouped = {};
-        gpxFiles.forEach(f => {
-            const d = new Date(f.created_at);
-            const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
-            if (!grouped[key]) grouped[key] = [];
-            grouped[key].push(f);
-        });
-        for (const [month, files] of Object.entries(grouped)) {
-            const [year, mon] = month.split('-');
-            const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
-            gpxHTML += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
-            files.forEach(f => {
-                gpxHTML += `
-                <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <h4>${escapeHtml(f.name)}</h4>
-                    <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                    <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
-                </div>`;
-            });
-            gpxHTML += '</div></div>';
-        }
-    } else {
-        gpxHTML = '<p class="text-muted">Нет поездок</p>';
-    }
-
     let wallHTML = '';
     if (wallPosts && wallPosts.length) {
         wallHTML = wallPosts.map(p => `
@@ -140,7 +112,6 @@ function renderUserProfileHTML(login, profile, gpxFiles, wallPosts) {
             <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
         </div>
         <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
-        <div class="profile-gpx"><h3>Поездки с Diamond GPX</h3><div id="userGpxFiles">${gpxHTML}</div></div>
         <div class="profile-wall">
             <div class="wall-input">
                 <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
@@ -284,10 +255,6 @@ async function renderMyProfile() {
                     <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Мои GPX-поездки"><i class="fas fa-puzzle-piece"></i></button>
                 </div>
             </div>
-            <div class="glass-panel profile-gpx">
-                <h3>Поездки с Diamond GPX</h3>
-                ${buildGpxHTML(gpxFiles)}
-            </div>
             <div class="glass-panel profile-wall">
                 <div class="wall-input">
                     <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:18px; padding:14px 18px; color:var(--text-primary); resize:none; font-size:15px;"></textarea>
@@ -397,75 +364,53 @@ function attachReactionListeners(container) {
     });
 }
 
-// Новая функция: страница GPX-поездок из профиля
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
-    
-    const profileBlock = document.getElementById('profileGpxProfile');
-    const gpxBlock = document.getElementById('profileGpxSection');
-    
-    // Показываем профиль, скрываем GPX
-    profileBlock.style.display = 'block';
-    gpxBlock.style.display = 'none';
-    
+
     try {
         const [profileRes, gpxRes] = await Promise.all([
-            _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
+            _supabase.from('users').select('name, avatar').eq('login', login).maybeSingle(),
             _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false })
         ]);
-        
+
         const profile = profileRes.data;
         if (!profile) {
             page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>';
             return;
         }
-        
+
         const gpxFiles = gpxRes.data || [];
-        
-        // Заполняем блок профиля
+        const hasRides = gpxFiles.length > 0;
+
         const avatarHTML = profile.avatar 
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
             : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-            
-        profileBlock.innerHTML = `
-            <div class="profile-header">
-                <div class="avatar-wrapper">${avatarHTML}</div>
-                <div class="profile-info">
-                    <h2>${escapeHtml(profile.name || login)}</h2>
-                    <p>${escapeHtml(profile.description || '')}</p>
-                </div>
-                <button class="btn btn-icon puzzle-btn" id="showGpxBlockBtn" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
-            </div>
-            <button class="btn btn-icon" onclick="navigateTo('/profile/${login}')"><i class="fas fa-arrow-left"></i> Назад к профилю</button>
-        `;
-        
-        // Заполняем блок GPX (скрыт изначально)
-        gpxBlock.innerHTML = `
-            <button class="btn btn-icon" id="hideGpxBlockBtn"><i class="fas fa-arrow-left"></i> Назад к профилю</button>
-            <h3><i class="fas fa-map-marker-alt"></i> Поездки ${escapeHtml(profile.name || login)}</h3>
-            <div class="gpx-grid" id="profileGpxGrid">
-                ${gpxFiles.length ? gpxFiles.map(f => `
-                    <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <h4>${escapeHtml(f.name)}</h4>
-                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                        <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
+
+        page.innerHTML = `
+            <div class="glass-panel" id="profileGpxBlock">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                    <div class="profile-header" style="margin-bottom:0;">
+                        <div class="avatar-wrapper">${avatarHTML}</div>
+                        <div class="profile-info">
+                            <h2>${escapeHtml(profile.name || login)}</h2>
+                        </div>
                     </div>
-                `).join('') : '<p class="text-muted">Нет поездок</p>'}
+                    <button class="btn btn-icon" onclick="navigateTo('/profile/${login}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
+                </div>
+                <h3><i class="fas fa-map-marker-alt"></i> Поездки ${escapeHtml(profile.name || login)}</h3>
+                <div class="gpx-grid" id="profileGpxGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:16px; margin-top:20px;">
+                    ${hasRides ? gpxFiles.map(f => `
+                        <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <h4>${escapeHtml(f.name)}</h4>
+                            <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                            <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
+                        </div>
+                    `).join('') : '<p class="text-muted">Пользователь не загружал свои прогулки</p>'}
+                </div>
             </div>
         `;
-        
-        // Переключение между блоками
-        document.getElementById('showGpxBlockBtn').addEventListener('click', () => {
-            profileBlock.style.display = 'none';
-            gpxBlock.style.display = 'block';
-        });
-        document.getElementById('hideGpxBlockBtn').addEventListener('click', () => {
-            gpxBlock.style.display = 'none';
-            profileBlock.style.display = 'block';
-        });
-        
     } catch (e) {
         console.error('[DiamKey] Ошибка загрузки GPX-профиля:', e);
         page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
