@@ -78,7 +78,7 @@ async function toggleReaction(postId, type, btn) {
     }
 }
 
-function renderUserProfileHTML(login, profile, gpxFiles, wallPosts) {
+function renderUserProfileHTML(login, profile, wallPosts) {
     const avatarHTML = profile.avatar 
         ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
         : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
@@ -155,9 +155,8 @@ async function openUserProfile(login) {
     `;
 
     try {
-        const [profileRes, gpxRes, wallRes] = await Promise.all([
+        const [profileRes, wallRes] = await Promise.all([
             _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
-            _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
             _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
         ]);
 
@@ -167,10 +166,9 @@ async function openUserProfile(login) {
             return;
         }
 
-        const gpxFiles = gpxRes.data || [];
         const wallPosts = wallRes.data || [];
 
-        pageUsers.innerHTML = renderUserProfileHTML(login, profile, gpxFiles, wallPosts);
+        pageUsers.innerHTML = renderUserProfileHTML(login, profile, wallPosts);
 
         pageUsers.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
@@ -228,16 +226,14 @@ async function renderMyProfile() {
 
     try {
         const login = currentUser.login;
-        const [profileRes, gpxRes, wallRes] = await Promise.all([
+        const [profileRes, wallRes] = await Promise.all([
             _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
-            _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false }),
             _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
         ]);
 
         const profile = profileRes.data;
         if (!profile) return;
 
-        const gpxFiles = gpxRes.data || [];
         const wallPosts = wallRes.data || [];
         const avatarHTML = profile.avatar 
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
@@ -326,34 +322,6 @@ function buildWallHTML(posts) {
     `).join('');
 }
 
-function buildGpxHTML(files) {
-    if (!files.length) return '<p class="text-muted">Нет поездок</p>';
-    const grouped = {};
-    files.forEach(f => {
-        const d = new Date(f.created_at);
-        const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(f);
-    });
-    let html = '';
-    for (const [month, files] of Object.entries(grouped)) {
-        const [year, mon] = month.split('-');
-        const monthName = new Date(year, mon-1).toLocaleString('ru', { month: 'long', year: 'numeric' });
-        html += `<div class="gpx-month-group"><div class="gpx-month-title">${monthName}</div><div class="gpx-cards">`;
-        files.forEach(f => {
-            html += `
-            <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
-                <i class="fas fa-map-marker-alt"></i>
-                <h4>${escapeHtml(f.name)}</h4>
-                <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
-            </div>`;
-        });
-        html += '</div></div>';
-    }
-    return html;
-}
-
 function attachReactionListeners(container) {
     container.querySelectorAll('.reaction-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
@@ -387,8 +355,28 @@ async function renderProfileGpxView(login) {
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
             : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
 
+        let cardsHTML = '';
+        if (hasRides) {
+            cardsHTML = gpxFiles.map(f => `
+                <div class="gpx-card" onclick="viewGpxRoute('${f.id}')">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h4>${escapeHtml(f.name)}</h4>
+                    <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                    <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
+                </div>
+            `).join('');
+        } else {
+            cardsHTML = `
+                <div class="empty-gpx-message" style="grid-column: 1 / -1;">
+                    <i class="fas fa-map-signs"></i>
+                    <h3>Пользователь не загружал свои прогулки</h3>
+                    <p>Как только появятся GPX-файлы, они отобразятся здесь</p>
+                </div>
+            `;
+        }
+
         page.innerHTML = `
-            <div class="glass-panel" id="profileGpxBlock">
+            <div class="glass-panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
                     <div class="profile-header" style="margin-bottom:0;">
                         <div class="avatar-wrapper">${avatarHTML}</div>
@@ -399,15 +387,8 @@ async function renderProfileGpxView(login) {
                     <button class="btn btn-icon" onclick="navigateTo('/profile/${login}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
                 </div>
                 <h3><i class="fas fa-map-marker-alt"></i> Поездки ${escapeHtml(profile.name || login)}</h3>
-                <div class="gpx-grid" id="profileGpxGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:16px; margin-top:20px;">
-                    ${hasRides ? gpxFiles.map(f => `
-                        <div class="gpx-card glass-panel" onclick="viewGpxRoute('${f.id}')">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <h4>${escapeHtml(f.name)}</h4>
-                            <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                            <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
-                        </div>
-                    `).join('') : '<p class="text-muted">Пользователь не загружал свои прогулки</p>'}
+                <div class="profile-gpx-grid" id="profileGpxGrid">
+                    ${cardsHTML}
                 </div>
             </div>
         `;
