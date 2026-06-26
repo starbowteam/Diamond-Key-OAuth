@@ -332,6 +332,34 @@ function attachReactionListeners(container) {
     });
 }
 
+// Статистика для карточек
+function getGpxStats(content) {
+    try {
+        const parsed = parseGPX(content);
+        let allPoints = [];
+        parsed.tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
+        if (allPoints.length < 2) return { dist: null, ascent: null };
+        let totalDist = 0, ascent = 0;
+        for (let i = 1; i < allPoints.length; i++) {
+            const prev = allPoints[i-1], pt = allPoints[i];
+            const d = haversine(prev.lat, prev.lon, pt.lat, pt.lon);
+            totalDist += d;
+            if (prev.ele !== null && pt.ele !== null && pt.ele > prev.ele) ascent += pt.ele - prev.ele;
+        }
+        return { dist: totalDist, ascent: ascent };
+    } catch (e) {
+        return { dist: null, ascent: null };
+    }
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
@@ -357,14 +385,29 @@ async function renderProfileGpxView(login) {
 
         let cardsHTML = '';
         if (hasRides) {
-            cardsHTML = gpxFiles.map(f => `
-                <div class="gpx-card" onclick="viewGpxRoute('${f.id}')">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <h4>${escapeHtml(f.name)}</h4>
-                    <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                    <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
-                </div>
-            `).join('');
+            cardsHTML = gpxFiles.map(f => {
+                const stats = getGpxStats(f.content);
+                let statsHTML = '';
+                if (stats.dist !== null) {
+                    const distStr = stats.dist > 1000 ? (stats.dist/1000).toFixed(1) + ' км' : Math.round(stats.dist) + ' м';
+                    const ascentStr = stats.ascent > 0 ? '+' + Math.round(stats.ascent) + ' м' : '';
+                    statsHTML = `
+                        <div class="gpx-card-stats">
+                            <span>${distStr}</span>
+                            ${ascentStr ? `<span>↑ ${ascentStr}</span>` : ''}
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="gpx-card" onclick="viewGpxRoute('${f.id}')">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h4>${escapeHtml(f.name)}</h4>
+                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                        ${statsHTML}
+                        <button class="share-btn" onclick="event.stopPropagation(); copyGpxLink('${f.id}')"><i class="fas fa-share-alt"></i></button>
+                    </div>
+                `;
+            }).join('');
         } else {
             cardsHTML = `
                 <div class="empty-gpx-message" style="grid-column: 1 / -1;">
