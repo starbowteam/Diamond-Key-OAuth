@@ -480,59 +480,15 @@ body {
     50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
 }
 
-/* Остальное без изменений */
-.advantage-item {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-    padding: 28px 32px;
-}
-
-.advantage-item i {
-    font-size: 34px;
-    color: var(--accent);
-    width: 44px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.advantage-item h3 {
-    font-size: 19px;
-    margin-bottom: 8px;
-}
-
-.advantage-item p {
-    color: var(--text-muted);
-    font-size: 15px;
-    line-height: 1.5;
-}
-
-.ai-preview {
-    border-left: 3px solid var(--accent);
-    padding: 28px 32px;
-    margin-bottom: 32px;
-}
-
-.ai-review-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 18px;
-    font-weight: 600;
-    font-size: 17px;
-}
-
-.ai-review-header img {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
+/* Профиль */
 .profile-header {
     display: flex;
     gap: 28px;
     align-items: center;
+}
+
+.profile-header .puzzle-btn {
+    margin-left: auto;
 }
 
 .avatar-wrapper {
