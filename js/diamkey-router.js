@@ -4,10 +4,16 @@ function navigateTo(path) {
 }
 
 function handleRoute() {
-    const path = window.location.pathname;
+    let path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
     
     console.log('[DiamKey] Маршрут:', path);
+
+    // Редирект с корня на /home
+    if (path === '/' || path === '') {
+        history.replaceState(null, null, '/home');
+        path = '/home';
+    }
 
     document.querySelectorAll('.page.active').forEach(p => {
         p.classList.remove('active');
@@ -31,7 +37,7 @@ function handleRoute() {
         }
     }
 
-    if (path === '/' || path === '') {
+    if (path === '/home') {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
     } else if (path === '/add') {
@@ -70,7 +76,7 @@ function handleRoute() {
             if (typeof openUserProfile === 'function') openUserProfile(login);
         }, 0);
     } else if (path === '/profile') {
-        if (!currentUser) { navigateTo('/'); return; }
+        if (!currentUser) { navigateTo('/home'); return; }
         activatePage('page-profile', true);
         setTimeout(() => {
             if (typeof renderMyProfile === 'function') renderMyProfile();
@@ -98,11 +104,13 @@ function handleRoute() {
 window.addEventListener('popstate', handleRoute);
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Фиксируем точку входа для корректной работы кнопки «Назад»
+    history.replaceState(null, null, window.location.pathname + window.location.search);
     handleRoute();
     const isLoggedIn = !!currentUser;
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         const href = btn.getAttribute('href');
-        if (href === '/' || href === 'https://discord.gg/diamondshop') return;
+        if (href === '/home' || href === 'https://discord.gg/diamondshop') return;
         if (!isLoggedIn) btn.style.display = 'none';
     });
     const logoutBtn = document.getElementById('logoutSidebarBtn');
@@ -110,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     logoutBtn?.addEventListener('click', () => {
         localStorage.removeItem('diamkey_current');
-        window.location.href = '/';
+        window.location.href = '/home';
     });
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.addEventListener('click', (e) => {
