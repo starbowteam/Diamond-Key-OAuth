@@ -603,7 +603,7 @@ body {
     margin-top: auto;
 }
 
-/* Маленькая кнопка «Поделиться» по центру правого края */
+/* Кнопка «Поделиться» – нормального размера, иконка не жирная */
 .gpx-card .share-btn {
     position: absolute;
     right: 12px;
@@ -612,15 +612,16 @@ body {
     background: rgba(255, 255, 255, 0.08);
     border: none;
     color: var(--text-muted);
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: 0.2s;
-    font-size: 12px;
+    font-size: 15px;
+    font-weight: normal;
 }
 
 .gpx-card .share-btn:hover {
