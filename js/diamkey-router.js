@@ -1,5 +1,9 @@
-function navigateTo(path) {
-    history.pushState(null, null, path);
+function navigateTo(path, replace = false) {
+    if (replace) {
+        history.replaceState(null, null, path);
+    } else {
+        history.pushState(null, null, path);
+    }
     handleRoute();
 }
 
@@ -104,8 +108,6 @@ function handleRoute() {
 window.addEventListener('popstate', handleRoute);
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Фиксируем точку входа для корректной работы кнопки «Назад»
-    history.replaceState(null, null, window.location.pathname + window.location.search);
     handleRoute();
     const isLoggedIn = !!currentUser;
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
