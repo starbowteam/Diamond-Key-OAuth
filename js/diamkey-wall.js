@@ -100,15 +100,12 @@ function renderUserProfileHTML(login, profile, wallPosts) {
         wallHTML = '<p class="text-muted">Записей пока нет</p>';
     }
 
-    // Для чужого профиля кнопка-пазл использует replaceState,
-    // чтобы браузерная кнопка «Назад» сразу возвращала на /users
     const isOwnProfile = (currentUser && currentUser.login === login);
     const navigateAction = isOwnProfile
         ? `navigateTo('/profile/${login}/gpxview')`
         : `navigateTo('/profile/${login}/gpxview', true)`;
 
     return `
-        <div class="breadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
         <div class="profile-header">
             <div class="avatar-wrapper">${avatarHTML}</div>
             <div class="profile-info">
@@ -116,9 +113,11 @@ function renderUserProfileHTML(login, profile, wallPosts) {
                 <p class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
                 <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
-            <button class="btn btn-icon puzzle-btn" onclick="${navigateAction}" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
+            <div class="profile-actions">
+                <button class="btn btn-icon back-to-users-btn" onclick="navigateTo('/users')" title="Назад к пользователям"><i class="fas fa-arrow-left"></i></button>
+                <button class="btn btn-icon puzzle-btn" onclick="${navigateAction}" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
+            </div>
         </div>
-        <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
         <div class="profile-wall">
             <div class="wall-input">
                 <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
@@ -423,8 +422,7 @@ async function renderProfileGpxView(login) {
             `;
         }
 
-        // Кнопка «Назад к профилю» для своего профиля возвращает на /profile, для чужого – на /users
-        const backTarget = (currentUser && currentUser.login === login) ? `/profile` : `/users`;
+        const backTarget = (currentUser && currentUser.login === login) ? '/profile' : `/users/${login}`;
         page.innerHTML = `
             <div class="glass-panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
