@@ -100,6 +100,13 @@ function renderUserProfileHTML(login, profile, wallPosts) {
         wallHTML = '<p class="text-muted">Записей пока нет</p>';
     }
 
+    // Для чужого профиля кнопка-пазл использует replaceState,
+    // чтобы браузерная кнопка «Назад» сразу возвращала на /users
+    const isOwnProfile = (currentUser && currentUser.login === login);
+    const navigateAction = isOwnProfile
+        ? `navigateTo('/profile/${login}/gpxview')`
+        : `navigateTo('/profile/${login}/gpxview', true)`;
+
     return `
         <div class="breadcrumbs"><a href="/users">← Все пользователи</a> | <span>${escapeHtml(login)}</span></div>
         <div class="profile-header">
@@ -109,7 +116,7 @@ function renderUserProfileHTML(login, profile, wallPosts) {
                 <p class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
                 <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
-            <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
+            <button class="btn btn-icon puzzle-btn" onclick="${navigateAction}" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
         </div>
         <button class="btn btn-icon" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i></button>
         <div class="profile-wall">
@@ -416,6 +423,8 @@ async function renderProfileGpxView(login) {
             `;
         }
 
+        // Кнопка «Назад к профилю» для своего профиля возвращает на /profile, для чужого – на /users
+        const backTarget = (currentUser && currentUser.login === login) ? `/profile` : `/users`;
         page.innerHTML = `
             <div class="glass-panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
@@ -425,7 +434,7 @@ async function renderProfileGpxView(login) {
                             <h2>${escapeHtml(profile.name || login)}</h2>
                         </div>
                     </div>
-                    <button class="btn btn-icon" onclick="navigateTo('/profile/${login}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
+                    <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
                 </div>
                 <h3><i class="fas fa-map-marker-alt"></i> Поездки ${escapeHtml(profile.name || login)}</h3>
                 <div class="profile-gpx-grid" id="profileGpxGrid">
