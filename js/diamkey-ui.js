@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         if (res.error) return showToast(res.error);
         closeModal('loginModal');
-        window.location.href = '/';
+        window.location.href = '/home';
     });
 
     const regLoginInput = document.getElementById('regLoginInput');
@@ -86,8 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await register(loginVal, pass1);
         if (res.error) return showToast(res.error);
         closeModal('loginModal');
-        showToast('Аккаунт создан!');
-        window.location.href = '/';
+        window.location.href = '/home';
     });
 
     const scrollBtn = document.createElement('button');
@@ -100,4 +99,4 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
-}); //67
+});
