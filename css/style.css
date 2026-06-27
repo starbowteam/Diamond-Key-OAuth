@@ -1059,3 +1059,39 @@ body {
         flex-direction: column;
     }
 }
+
+.gpx-section-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent);
+    color: var(--text-primary);
+}
+
+/* Сообщение «Записей пока нет» на стене */
+.empty-wall-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.empty-wall-message h3 {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-muted);
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border-glass);
+}
+
+/* Сообщение «Поездок пока нет» (уже есть .empty-gpx-message, обновим его) */
+.empty-gpx-message h3 {
+    font-weight: 500;
+    border-bottom: 2px solid var(--border-glass);
+    padding-bottom: 8px;
+    display: inline-block;
+    margin-bottom: 12px;
+}
