@@ -1122,3 +1122,105 @@ body {
         flex-direction: column;
     }
 }
+
+/* ========== БОТ DIAMOND AI ========== */
+#diamond-bot-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a4d58, #2a2c34);
+    border: 1px solid #a0a8c0;
+    color: white;
+    cursor: pointer;
+    z-index: 250;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+#diamond-bot-btn:hover {
+    transform: scale(1.08);
+}
+
+.diamond-bot-modal {
+    position: fixed;
+    bottom: 96px;
+    right: 24px;
+    width: 350px;
+    height: 420px;
+    z-index: 260;
+    display: none;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.diamond-bot-modal.show {
+    display: flex;
+}
+
+.bot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.bot-messages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 16px;
+}
+
+.bot-msg {
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    max-width: 85%;
+    word-break: break-word;
+}
+
+.bot-msg.user {
+    align-self: flex-end;
+    background: var(--accent);
+    color: white;
+}
+
+.bot-msg.bot {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.1);
+}
+
+.bot-msg.thinking {
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bot-input-area {
+    display: flex;
+    gap: 8px;
+}
+
+.bot-input-area input {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    outline: none;
+}
+
+/* Удалите старые стили уведомлений (notif-*, notification-*) если они есть */
