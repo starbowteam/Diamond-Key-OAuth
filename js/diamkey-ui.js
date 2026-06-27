@@ -36,36 +36,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginModal = document.getElementById('loginModal');
     if (!loginModal) return;
 
-    // Вкладки модалки
-    document.getElementById('tabLogin')?.addEventListener('click', () => {
-        document.getElementById('tabLogin').classList.add('active');
-        document.getElementById('tabRegister').classList.remove('active');
-        document.getElementById('tabQr')?.classList.remove('active');
-        document.getElementById('loginFormBlock').style.display = 'block';
-        document.getElementById('registerFormBlock').style.display = 'none';
-        const qrBlock = document.getElementById('qrFormBlock');
+    const tabLogin = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+    const tabQr = document.getElementById('tabQr');
+    const loginBlock = document.getElementById('loginFormBlock');
+    const registerBlock = document.getElementById('registerFormBlock');
+    const qrBlock = document.getElementById('qrFormBlock');
+    const qrContainer = document.getElementById('qrContainer');
+
+    tabLogin?.addEventListener('click', () => {
+        tabLogin.classList.add('active');
+        tabRegister.classList.remove('active');
+        tabQr?.classList.remove('active');
+        loginBlock.style.display = 'block';
+        registerBlock.style.display = 'none';
         if (qrBlock) qrBlock.style.display = 'none';
+        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); }
     });
 
-    document.getElementById('tabRegister')?.addEventListener('click', () => {
-        document.getElementById('tabRegister').classList.add('active');
-        document.getElementById('tabLogin').classList.remove('active');
-        document.getElementById('tabQr')?.classList.remove('active');
-        document.getElementById('registerFormBlock').style.display = 'block';
-        document.getElementById('loginFormBlock').style.display = 'none';
-        const qrBlock = document.getElementById('qrFormBlock');
+    tabRegister?.addEventListener('click', () => {
+        tabRegister.classList.add('active');
+        tabLogin.classList.remove('active');
+        tabQr?.classList.remove('active');
+        registerBlock.style.display = 'block';
+        loginBlock.style.display = 'none';
         if (qrBlock) qrBlock.style.display = 'none';
+        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); }
     });
 
-    // Кнопка входа через QR
-    document.getElementById('tabQr')?.addEventListener('click', () => {
-        document.getElementById('tabQr').classList.add('active');
-        document.getElementById('tabLogin').classList.remove('active');
-        document.getElementById('tabRegister').classList.remove('active');
-        document.getElementById('loginFormBlock').style.display = 'none';
-        document.getElementById('registerFormBlock').style.display = 'none';
-        const qrBlock = document.getElementById('qrFormBlock');
+    tabQr?.addEventListener('click', () => {
+        tabQr.classList.add('active');
+        tabLogin.classList.remove('active');
+        tabRegister.classList.remove('active');
+        loginBlock.style.display = 'none';
+        registerBlock.style.display = 'none';
         if (qrBlock) qrBlock.style.display = 'block';
+        // Не очищаем qrContainer, чтобы кнопка "Показать QR" осталась
+    });
+
+    document.getElementById('startQrBtn')?.addEventListener('click', () => {
+        startQrLogin();
     });
 
     document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
@@ -106,12 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.error) return showToast(res.error);
         closeModal('loginModal');
         smoothLoginSuccess();
-    });
-
-    // Кнопка генерации QR в модалке
-    document.getElementById('startQrBtn')?.addEventListener('click', () => {
-        closeModal('loginModal');
-        startQrLogin();
     });
 
     const scrollBtn = document.createElement('button');
