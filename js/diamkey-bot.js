@@ -90,6 +90,8 @@ function setupDiamondBot() {
         }
     }
 
+    // 67
+
     sendBtn.addEventListener('click', sendBotMessage);
     input.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') sendBotMessage();
