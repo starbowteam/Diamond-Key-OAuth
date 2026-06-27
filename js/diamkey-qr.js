@@ -1,6 +1,63 @@
 let qrPollingInterval = null;
 let qrGenerated = false;
 
+function drawRoundedQR(dataUrl, size) {
+    // Создаём временный canvas, чтобы извлечь изображение QR
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = size;
+    tempCanvas.height = size;
+    const tempCtx = tempCanvas.getContext('2d');
+    const img = new Image();
+    img.src = dataUrl;
+    return new Promise((resolve) => {
+        img.onload = () => {
+            tempCtx.drawImage(img, 0, 0, size, size);
+            const imageData = tempCtx.getImageData(0, 0, size, size);
+            const data = imageData.data;
+            const moduleCount = Math.floor(size / 8); // примерно определяем размер модуля, QR статичен
+            const moduleSize = size / moduleCount;
+            const radius = moduleSize * 0.25;
+
+            // Создаём новый canvas для закруглённого QR
+            const roundedCanvas = document.createElement('canvas');
+            roundedCanvas.width = size;
+            roundedCanvas.height = size;
+            const ctx = roundedCanvas.getContext('2d');
+            ctx.clearRect(0, 0, size, size);
+
+            // Проходим по пикселям с шагом moduleSize, чтобы найти тёмные модули
+            for (let y = 0; y < size; y += moduleSize) {
+                for (let x = 0; x < size; x += moduleSize) {
+                    // Проверяем центральный пиксель модуля
+                    const pixelIndex = (Math.floor(y + moduleSize/2) * size + Math.floor(x + moduleSize/2)) * 4;
+                    const r = data[pixelIndex];
+                    const g = data[pixelIndex + 1];
+                    const b = data[pixelIndex + 2];
+                    // Белые модули – те, где цвет светлый (в нашем случае тёмный = чёрный? Мы инвертировали: фон прозрачный, модули белые)
+                    // Но библиотека рисует чёрные модули. Мы ищем чёрные (r < 128).
+                    if (r < 128 && g < 128 && b < 128) {
+                        // Рисуем скруглённый квадрат белого цвета
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath();
+                        ctx.moveTo(x + radius, y);
+                        ctx.lineTo(x + moduleSize - radius, y);
+                        ctx.quadraticCurveTo(x + moduleSize, y, x + moduleSize, y + radius);
+                        ctx.lineTo(x + moduleSize, y + moduleSize - radius);
+                        ctx.quadraticCurveTo(x + moduleSize, y + moduleSize, x + moduleSize - radius, y + moduleSize);
+                        ctx.lineTo(x + radius, y + moduleSize);
+                        ctx.quadraticCurveTo(x, y + moduleSize, x, y + moduleSize - radius);
+                        ctx.lineTo(x, y + radius);
+                        ctx.quadraticCurveTo(x, y, x + radius, y);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+            }
+            resolve(roundedCanvas.toDataURL());
+        };
+    });
+}
+
 async function generateQrInModal() {
     const container = document.getElementById('qrContainer');
     if (!container || qrGenerated) return;
@@ -17,32 +74,43 @@ async function generateQrInModal() {
 
     const url = `https://diamkey.ru/qr-confirm?ticket=${ticket}`;
 
-    container.innerHTML = `
-        <div class="qr-rounded-wrapper">
-            <div id="qrCodeCanvas" style="display:flex; justify-content:center;"></div>
-        </div>
-        <p class="text-muted" style="margin-top:12px;">Действует 10 минут</p>
-    `;
+    // Создаём временный canvas для стандартной генерации
+    const tempContainer = document.createElement('div');
+    tempContainer.style.display = 'none';
+    document.body.appendChild(tempContainer);
+    const tempCanvasId = 'tempQrCanvas';
+    tempContainer.innerHTML = `<div id="${tempCanvasId}"></div>`;
 
     if (typeof QRCode !== 'undefined') {
-        new QRCode(document.getElementById('qrCodeCanvas'), {
+        const qr = new QRCode(document.getElementById(tempCanvasId), {
             text: url,
             width: 200,
             height: 200,
-            colorDark: '#ffffff',
-            colorLight: 'transparent',
+            colorDark: '#000000',
+            colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.M
         });
-    } else {
-        document.getElementById('qrCodeCanvas').innerHTML = '<canvas id="qrFallback" width="200" height="200"></canvas>';
-        const canvas = document.getElementById('qrFallback');
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0,0,200,200);
-            ctx.fillStyle = 'white';
-            ctx.font = '12px monospace';
-            ctx.fillText(url, 10, 100);
+
+        // Ждём немного, пока QR отрисуется
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const originalCanvas = document.querySelector(`#${tempCanvasId} canvas`);
+        if (originalCanvas) {
+            const dataUrl = originalCanvas.toDataURL();
+            const roundedDataUrl = await drawRoundedQR(dataUrl, 200);
+            container.innerHTML = `
+                <div class="qr-rounded-wrapper">
+                    <img src="${roundedDataUrl}" style="width:200px;height:200px;display:block;border-radius:24px;" />
+                </div>
+                <p class="text-muted" style="margin-top:12px;">Действует 10 минут</p>
+            `;
+        } else {
+            container.innerHTML = '<p class="text-muted">Не удалось создать QR</p>';
         }
+        tempContainer.remove();
+    } else {
+        container.innerHTML = '<p class="text-muted">Библиотека QR не загружена</p>';
+        return;
     }
 
     qrPollingInterval = setInterval(async () => {
