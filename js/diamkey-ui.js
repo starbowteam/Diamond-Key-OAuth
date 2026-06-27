@@ -46,7 +46,7 @@ async function openNotificationsPanel() {
     if (!panel) return;
     const list = document.getElementById('notificationsList');
     list.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
-    panel.style.display = 'flex';
+    panel.classList.add('show');
     const notifs = await getNotifications();
     if (notifs.length === 0) {
         list.innerHTML = '<p class="text-muted">Нет уведомлений</p>';
@@ -62,13 +62,17 @@ async function openNotificationsPanel() {
     updateNotificationBadge();
 }
 
+function closeNotificationsPanel() {
+    const panel = document.getElementById('notificationsPanel');
+    if (panel) panel.classList.remove('show');
+}
+
 function setupNotifications() {
-    // Создаём колокольчик в сайдбаре, если пользователь авторизован
     if (!currentUser) return;
     const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    if (document.getElementById('notifBell')) return;
+    if (!sidebar || document.getElementById('notifBell')) return;
 
+    // Колокольчик
     const bell = document.createElement('a');
     bell.className = 'sidebar-icon notif-bell';
     bell.id = 'notifBell';
@@ -78,30 +82,28 @@ function setupNotifications() {
         e.preventDefault();
         openNotificationsPanel();
     });
-    // Вставляем перед discord
     const discordBtn = document.getElementById('discordSidebarIcon')?.parentElement;
     if (discordBtn) sidebar.insertBefore(bell, discordBtn);
+    else sidebar.appendChild(bell);
 
-    // Панель уведомлений
+    // Панель
     const panel = document.createElement('div');
     panel.className = 'notifications-panel glass-panel';
     panel.id = 'notificationsPanel';
-    panel.style.display = 'none';
     panel.innerHTML = `
         <div class="notif-header">
             <h3>Уведомления</h3>
-            <button class="btn btn-icon" onclick="document.getElementById('notificationsPanel').style.display='none'"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon" onclick="closeNotificationsPanel()"><i class="fas fa-times"></i></button>
         </div>
         <div class="notif-list" id="notificationsList"></div>
     `;
     document.body.appendChild(panel);
 
-    // Обновляем бейдж раз в 30 секунд
+    // Фоновое обновление бейджа
     setInterval(updateNotificationBadge, 30000);
     updateNotificationBadge();
 }
 
-// Добавляем инициализацию после входа
 document.addEventListener('DOMContentLoaded', () => {
     const loginModal = document.getElementById('loginModal');
     if (!loginModal) return;
