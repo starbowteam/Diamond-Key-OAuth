@@ -138,10 +138,9 @@ function startCipherEffect() {
 }
 startCipherEffect();
 
-// Только in‑memory кеш для списка пользователей
 let cachedUsers = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 60000; // 1 минута
+const CACHE_DURATION = 60000;
 let usersRequestPromise = null;
 
 async function getUsers() {
@@ -172,7 +171,6 @@ async function getUsers() {
     return usersRequestPromise;
 }
 
-// Прямые запросы к Supabase (без кеша)
 async function getProfile(login) {
     const { data } = await _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle();
     return data;
@@ -208,4 +206,97 @@ async function loadHomeStats() {
         console.error('[DiamKey] Ошибка загрузки статистики:', e);
     }
     return results;
+}
+
+// ======== ОНЛАЙН-СТАТУС ========
+async function updatePresence() {
+    if (!currentUser) return;
+    await _supabase.from('user_presence').upsert({ login: currentUser.login, last_seen: new Date().toISOString() }, { onConflict: 'login' });
+}
+
+// Запускаем цикл обновления присутствия раз в 30 секунд
+setInterval(updatePresence, 30000);
+// Первый вызов сразу при загрузке
+if (currentUser) updatePresence();
+
+// Получить список недавно активных (last_seen в пределах 2 минут)
+let onlineCache = {};
+let onlineCacheTimestamp = 0;
+async function getOnlineUsers() {
+    const now = Date.now();
+    if (onlineCacheTimestamp && now - onlineCacheTimestamp < 15000) return onlineCache;
+    const twoMinutesAgo = new Date(now - 120000).toISOString();
+    const { data } = await _supabase.from('user_presence').select('login').gte('last_seen', twoMinutesAgo);
+    const set = new Set(data ? data.map(r => r.login) : []);
+    onlineCache = set;
+    onlineCacheTimestamp = now;
+    return onlineCache;
+}
+
+// ======== УВЕДОМЛЕНИЯ ========
+async function getUnreadNotificationCount() {
+    if (!currentUser) return 0;
+    const { count } = await _supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_login', currentUser.login).eq('read', false);
+    return count || 0;
+}
+
+async function getNotifications() {
+    if (!currentUser) return [];
+    const { data } = await _supabase.from('notifications').select('*').eq('user_login', currentUser.login).order('created_at', { ascending: false }).limit(30);
+    return data || [];
+}
+
+async function markNotificationsRead() {
+    if (!currentUser) return;
+    await _supabase.from('notifications').update({ read: true }).eq('user_login', currentUser.login).eq('read', false);
+}
+
+// ======== РЕАКЦИИ НА GPX (хелперы) ========
+async function getGpxReactions(gpxId) {
+    const { data } = await _supabase.from('gpx_reactions').select('type, user_login').eq('gpx_id', gpxId);
+    return data || [];
+}
+
+async function toggleGpxReaction(gpxId, type) {
+    if (!currentUser) return showToast('Войдите');
+    const { data: existing } = await _supabase.from('gpx_reactions').select('id').eq('gpx_id', gpxId).eq('user_login', currentUser.login).eq('type', type).maybeSingle();
+    if (existing) {
+        await _supabase.from('gpx_reactions').delete().eq('id', existing.id);
+    } else {
+        await _supabase.from('gpx_reactions').insert({ gpx_id: gpxId, user_login: currentUser.login, type });
+        // Уведомление владельцу GPX
+        const { data: gpxOwner } = await _supabase.from('gpx_files').select('user_login').eq('id', gpxId).maybeSingle();
+        if (gpxOwner && gpxOwner.user_login !== currentUser.login) {
+            await _supabase.from('notifications').insert({
+                user_login: gpxOwner.user_login,
+                type: 'gpx_reaction',
+                from_login: currentUser.login,
+                content: `${currentUser.name || currentUser.login} поставил(а) реакцию на вашу поездку`,
+                read: false
+            });
+        }
+    }
+    return await getGpxReactions(gpxId);
+}
+
+// ======== БОТ DIAMOND AI (Mistral API) ========
+async function askDiamondAI(prompt) {
+    // Ключ возьмём из service_config (можно закешировать)
+    const { data } = await _supabase.from('service_config').select('mistral_api_key').eq('id', 1).maybeSingle();
+    if (!data?.mistral_api_key) return 'API-ключ не настроен.';
+    try {
+        const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.mistral_api_key}` },
+            body: JSON.stringify({
+                model: 'mistral-small-latest',
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 300
+            })
+        });
+        const json = await resp.json();
+        return json.choices?.[0]?.message?.content || 'Нет ответа.';
+    } catch (e) {
+        return 'Ошибка связи.';
+    }
 }
