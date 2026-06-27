@@ -1,35 +1,28 @@
 let qrPollingInterval = null;
+let qrGenerated = false; // чтобы не генерировать повторно при переключении туда-сюда
 
-async function startQrLogin() {
-    const modal = document.getElementById('loginModal');
-    if (!modal) return;
+async function generateQrInModal() {
+    const container = document.getElementById('qrContainer');
+    if (!container || qrGenerated) return;
 
-    // Показываем спиннер, пока генерируется тикет
-    const qrContainer = document.getElementById('qrContainer');
-    if (!qrContainer) return;
-    qrContainer.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-circle-notch fa-spin"></i> Создание QR-кода...</div>';
-    qrContainer.style.display = 'block';
+    container.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-circle-notch fa-spin"></i></div>';
+    container.style.display = 'block';
 
     const ticket = 'qr_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
     const { error } = await _supabase.from('qr_tickets').insert({ ticket, status: 'pending' });
     if (error) {
-        showToast('Ошибка создания QR-тикета');
-        qrContainer.innerHTML = '';
+        container.innerHTML = '<p class="text-muted">Ошибка создания тикета</p>';
         return;
     }
 
-    // Генерируем QR-код
     const url = `https://diamkey.ru/qr-accept.html?ticket=${ticket}`;
-    qrContainer.innerHTML = `
+    container.innerHTML = `
         <div class="qr-code-wrapper">
             <div id="qrCodeCanvas" style="display:flex; justify-content:center; margin-bottom:16px;"></div>
-            <p class="text-muted" style="margin-bottom:16px;">Сканируйте код через камеру телефона</p>
-            <p class="text-muted" style="font-size:13px; margin-bottom:8px;">Или откройте ссылку на телефоне</p>
             <button class="btn btn-secondary" id="cancelQrBtn" style="width:100%;">Отмена</button>
         </div>
     `;
 
-    // Рисуем QR-код с помощью библиотеки QRCode (подключена в index.html)
     if (typeof QRCode !== 'undefined') {
         new QRCode(document.getElementById('qrCodeCanvas'), {
             text: url,
@@ -54,19 +47,20 @@ async function startQrLogin() {
 
     document.getElementById('cancelQrBtn').addEventListener('click', () => {
         clearInterval(qrPollingInterval);
-        qrContainer.innerHTML = '';
-        qrContainer.style.display = 'none';
+        container.innerHTML = '';
+        container.style.display = 'none';
+        qrGenerated = false;
     });
 
-    // Опрос статуса тикета
     qrPollingInterval = setInterval(async () => {
         const { data } = await _supabase.from('qr_tickets').select('status, login').eq('ticket', ticket).maybeSingle();
         if (!data) return;
         if (data.status === 'accepted') {
             clearInterval(qrPollingInterval);
             closeModal('loginModal');
-            qrContainer.innerHTML = '';
-            qrContainer.style.display = 'none';
+            container.innerHTML = '';
+            container.style.display = 'none';
+            qrGenerated = false;
             const { data: user } = await _supabase.from('users').select('*').eq('login', data.login).maybeSingle();
             if (user) {
                 currentUser = {
@@ -82,11 +76,14 @@ async function startQrLogin() {
             }
         } else if (data.status === 'rejected') {
             clearInterval(qrPollingInterval);
-            qrContainer.innerHTML = '<p class="text-muted" style="text-align:center;">Вход отклонён. Попробуйте снова.</p>';
+            container.innerHTML = '<p class="text-muted" style="text-align:center;">Вход отклонён</p>';
             setTimeout(() => {
-                qrContainer.innerHTML = '';
-                qrContainer.style.display = 'none';
+                container.innerHTML = '';
+                container.style.display = 'none';
+                qrGenerated = false;
             }, 3000);
         }
     }, 2000);
+
+    qrGenerated = true;
 }
