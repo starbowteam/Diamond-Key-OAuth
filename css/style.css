@@ -24,6 +24,12 @@ body {
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     position: relative;
+    animation: bodyFadeIn 0.6s ease;
+}
+
+@keyframes bodyFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .dot-bg {
@@ -44,6 +50,13 @@ body {
     z-index: 1;
     display: flex;
     min-height: 100vh;
+    opacity: 0;
+    animation: appShellFade 0.8s ease forwards;
+}
+
+@keyframes appShellFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .sidebar {
@@ -142,6 +155,90 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Плавная загрузка после входа */
+.smooth-loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-primary);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.smooth-loader-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.smooth-loader-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 24px;
+    animation: float 2s ease-in-out infinite;
+}
+
+.smooth-loader-spinner {
+    font-size: 28px;
+    color: var(--accent);
+    animation: spin 1s linear infinite, pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; transform: scale(1) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1.1) rotate(180deg); }
+}
+
+/* Модалка входа – плавное появление */
+.modal {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s;
+}
+
+.modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    max-width: 440px;
+    width: 90%;
+    padding: 36px 32px;
+    text-align: center;
+    border-radius: 32px;
+    transform: scale(0.95);
+    transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1);
+}
+
+.modal.active .modal-content {
+    transform: scale(1);
+}
+
+/* Остальное без изменений */
 .loader-container {
     display: flex;
     flex-direction: column;
@@ -281,6 +378,13 @@ body {
     transition: all var(--transition);
     text-decoration: none;
     font-size: 15px;
+    transform: scale(1);
+}
+
+.btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .btn-icon {
@@ -292,12 +396,6 @@ body {
     background: linear-gradient(135deg, #4a4d58, #2a2c34);
     border-color: #a0a8c0;
     color: white;
-}
-
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .btn-primary:hover {
@@ -368,7 +466,6 @@ body {
     margin-bottom: 40px;
 }
 
-/* Уменьшенные преимущества */
 .benefits-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -403,7 +500,6 @@ body {
     line-height: 1.5;
 }
 
-/* Дополнения – карточка GPX */
 .add-services-grid {
     display: flex;
     justify-content: center;
@@ -480,18 +576,14 @@ body {
     50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
 }
 
-/* Профиль */
 .profile-header {
     display: flex;
     gap: 28px;
     align-items: center;
 }
 
-.profile-header .profile-actions {
+.profile-header .puzzle-btn {
     margin-left: auto;
-    display: flex;
-    gap: 10px;
-    align-items: center;
 }
 
 .avatar-wrapper {
@@ -545,7 +637,6 @@ body {
     opacity: 1;
 }
 
-/* Сетка карточек в разделе Поездки – тянется по ширине */
 .profile-gpx-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -553,7 +644,6 @@ body {
     margin-top: 24px;
 }
 
-/* Улучшенная карточка поездки */
 .gpx-card {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border-glass);
@@ -605,7 +695,6 @@ body {
     margin-top: auto;
 }
 
-/* Сообщение о пустом списке поездок */
 .empty-gpx-message {
     display: flex;
     flex-direction: column;
@@ -633,7 +722,6 @@ body {
     font-size: 15px;
 }
 
-/* Остальные стили без изменений */
 .profile-wall {
     padding-top: 56px;
 }
@@ -904,32 +992,6 @@ body {
     margin-bottom: 12px;
 }
 
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-}
-
-.modal.active {
-    display: flex;
-}
-
-.modal-content {
-    max-width: 440px;
-    width: 90%;
-    padding: 36px 32px;
-    text-align: center;
-    border-radius: 32px;
-}
-
 .modal-content h3 {
     margin-bottom: 24px;
     font-size: 22px;
@@ -946,6 +1008,7 @@ body {
     color: var(--text-primary);
     font-size: 15px;
     outline: none;
+    transition: border-color 0.3s;
 }
 
 .modal-content input:focus,
@@ -1058,210 +1121,4 @@ body {
     .gpx-promo {
         flex-direction: column;
     }
-}
-
-.gpx-section-title {
-    text-align: center;
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 24px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid var(--accent);
-    color: var(--text-primary);
-}
-
-/* Сообщение «Записей пока нет» на стене */
-.empty-wall-message {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 40px 20px;
-    text-align: center;
-}
-
-.empty-wall-message h3 {
-    font-size: 18px;
-    font-weight: 500;
-    color: var(--text-muted);
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--border-glass);
-}
-
-/* Сообщение «Поездок пока нет» (уже есть .empty-gpx-message, обновим его) */
-.empty-gpx-message h3 {
-    font-weight: 500;
-    border-bottom: 2px solid var(--border-glass);
-    padding-bottom: 8px;
-    display: inline-block;
-    margin-bottom: 12px;
-}
-
-
-/* Онлайн-точка */
-.online-dot {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #2ecc71;
-    margin-left: 6px;
-    box-shadow: 0 0 6px #2ecc71;
-}
-
-/* Колокольчик */
-.notif-bell {
-    position: relative;
-}
-.notif-bell .badge {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background: #e05d5d;
-    color: white;
-    font-size: 11px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Панель уведомлений */
-.notifications-panel {
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    width: 340px;
-    max-height: 70vh;
-    overflow-y: auto;
-    z-index: 300;
-    padding: 20px;
-}
-.notif-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-.notif-header h3 {
-    margin: 0;
-}
-.notification-item {
-    padding: 12px;
-    border-bottom: 1px solid var(--border-glass);
-}
-.notification-item.unread {
-    background: rgba(255,255,255,0.03);
-}
-.notif-time {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 4px;
-}
-
-/* Реакции на GPX-карточках */
-.gpx-card-reactions {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 8px;
-}
-
-/* Сводка статистики в GPX-вью */
-.gpx-stats-summary {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    margin-bottom: 20px;
-    font-size: 16px;
-    color: var(--text-muted);
-}
-
-/* Кнопка бота */
-#diamond-bot-btn {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #4a4d58, #2a2c34);
-    border: 1px solid #a0a8c0;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    z-index: 250;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: 0.2s;
-}
-#diamond-bot-btn:hover {
-    transform: scale(1.05);
-}
-
-/* Модальное окно бота */
-.diamond-bot-modal {
-    position: fixed;
-    bottom: 90px;
-    right: 24px;
-    width: 340px;
-    height: 400px;
-    z-index: 260;
-    display: none;
-    flex-direction: column;
-}
-.diamond-bot-modal.show {
-    display: flex;
-}
-.bot-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-.bot-messages {
-    flex: 1;
-    overflow-y: auto;
-    margin-bottom: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px;
-}
-.bot-msg {
-    padding: 8px 12px;
-    border-radius: 12px;
-    font-size: 14px;
-    max-width: 85%;
-}
-.bot-msg.user {
-    align-self: flex-end;
-    background: var(--accent);
-    color: white;
-}
-.bot-msg.bot {
-    align-self: flex-start;
-    background: rgba(255,255,255,0.1);
-}
-.bot-input-area {
-    display: flex;
-    gap: 8px;
-}
-.bot-input-area input {
-    flex: 1;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--border-glass);
-    border-radius: 12px;
-    padding: 8px 12px;
-    color: var(--text-primary);
-}
-
-.bot-msg.thinking {
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
