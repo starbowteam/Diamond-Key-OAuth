@@ -1254,3 +1254,15 @@ body {
         flex-direction: column;
     }
 }
+
+
+.qr-rounded-wrapper {
+    border-radius: 24px;
+    overflow: hidden;
+    display: inline-block;
+    background: transparent;
+}
+.qr-rounded-wrapper canvas {
+    display: block;
+    border-radius: 24px;
+}
