@@ -2,9 +2,9 @@ async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
     if (!body) return;
     body.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
-    const { data } = await _supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
+    const data = await getAnnouncement();
     if (data && data.length) {
-        const { data: creator } = await _supabase.from('users').select('avatar').eq('email', 'abugay12@mail.ru').maybeSingle();
+        const creator = await getProfile('viktorshopa'); // создатель
         body.innerHTML = `
             <img src="${creator?.avatar || ''}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--border-glass);">
             <div class="announcement-content">
@@ -119,8 +119,11 @@ function renderUserProfileHTML(login, profile, wallPosts) {
             </div>
         </div>
         <div class="profile-wall">
-            <div class="wall-input">
-                <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..."></textarea>
+            <div class="wall-input" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border-radius:18px; padding:8px 16px;">
+                <div style="width:36px; height:36px; border-radius:50%; overflow:hidden; flex-shrink:0;">
+                    ${currentUser && currentUser.avatar ? `<img src="${escapeHtml(currentUser.avatar)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
+                </div>
+                <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:transparent; border:none; color:var(--text-primary); resize:none; font-size:15px; outline:none; padding:8px 0;"></textarea>
                 <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
             </div>
             <div id="userWallPosts">${wallHTML}</div>
@@ -139,7 +142,6 @@ async function openUserProfile(login) {
     }
 
     if (!pageUsers.classList.contains('active')) {
-        console.warn('[DiamKey] Страница ещё не active, ждём активации');
         await new Promise(resolve => {
             const observer = new MutationObserver(mutations => {
                 if (pageUsers.classList.contains('active')) {
@@ -148,14 +150,10 @@ async function openUserProfile(login) {
                 }
             });
             observer.observe(pageUsers, { attributes: true, attributeFilter: ['class'] });
-            setTimeout(() => {
-                observer.disconnect();
-                resolve();
-            }, 500);
+            setTimeout(() => { observer.disconnect(); resolve(); }, 500);
         });
     }
 
-    // Показываем скелет в userProfileView
     usersPanel.style.display = 'none';
     userView.style.display = 'block';
     userView.innerHTML = `
@@ -166,18 +164,15 @@ async function openUserProfile(login) {
     `;
 
     try {
-        const [profileRes, wallRes] = await Promise.all([
-            _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
-            _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
+        const [profile, wallPosts] = await Promise.all([
+            getProfile(login),
+            getWall(login)
         ]);
 
-        const profile = profileRes.data;
         if (!profile) {
             userView.innerHTML = `<div style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>`;
             return;
         }
-
-        const wallPosts = wallRes.data || [];
 
         userView.innerHTML = renderUserProfileHTML(login, profile, wallPosts);
 
@@ -188,16 +183,6 @@ async function openUserProfile(login) {
                 toggleReaction(postId, this.dataset.type, this);
             });
         });
-
-        const wallInput = userView.querySelector('.wall-input');
-        if (wallInput && currentUser) {
-            if (!wallInput.querySelector('.wall-author-preview')) {
-                const preview = document.createElement('div');
-                preview.className = 'wall-author-preview';
-                preview.innerHTML = `<img src="${currentUser.avatar || ''}" style="width:28px;height:28px;border-radius:50%;" onerror="this.style.display='none'"><span>${currentUser.name || currentUser.login}</span>`;
-                wallInput.prepend(preview);
-            }
-        }
 
         const postBtn = userView.querySelector('#postUserWallBtn');
         if (postBtn) {
@@ -212,6 +197,7 @@ async function openUserProfile(login) {
                     content: msg,
                     reactions: {}
                 }]);
+                cache.del(`wall_${login}`);
                 showToast('Запись добавлена');
                 openUserProfile(login);
             };
@@ -228,7 +214,6 @@ function goBackToUsersList() {
     if (usersPanel) usersPanel.style.display = 'block';
     if (userView) userView.style.display = 'none';
     navigateTo('/users');
-    // Дополнительно вызываем loadUsers для гарантии
     if (typeof loadUsers === 'function') loadUsers();
 }
 
@@ -240,15 +225,13 @@ async function renderMyProfile() {
 
     try {
         const login = currentUser.login;
-        const [profileRes, wallRes] = await Promise.all([
-            _supabase.from('users').select('name, avatar, description, created_at').eq('login', login).maybeSingle(),
-            _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false })
+        const [profile, wallPosts] = await Promise.all([
+            getProfile(login),
+            getWall(login)
         ]);
 
-        const profile = profileRes.data;
         if (!profile) return;
 
-        const wallPosts = wallRes.data || [];
         const avatarHTML = profile.avatar 
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
             : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
@@ -279,7 +262,7 @@ async function renderMyProfile() {
             input.onchange = async (e) => {
                 const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader();
-                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); renderMyProfile(); showToast('Аватар обновлён'); };
+                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); cache.del(`user_${login}`); renderMyProfile(); showToast('Аватар обновлён'); };
                 reader.readAsDataURL(file);
             };
             input.click();
@@ -294,6 +277,7 @@ async function renderMyProfile() {
         document.getElementById('saveDescriptionBtn').onclick = async () => {
             const desc = document.getElementById('editDescriptionInput').value.trim();
             await updateProfile({ description: desc });
+            cache.del(`user_${login}`);
             document.getElementById('myDescription').innerHTML = `${escapeHtml(desc || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i>`;
             closeModal('editDescriptionModal');
             showToast('Описание сохранено');
@@ -312,6 +296,7 @@ async function renderMyProfile() {
                 content: msg,
                 reactions: {}
             }]);
+            cache.del(`wall_${login}`);
             document.getElementById('myWallMessage').value = '';
             showToast('Запись добавлена');
             renderMyProfile();
@@ -378,20 +363,17 @@ async function renderProfileGpxView(login) {
     if (!page) return;
 
     try {
-        const [profileRes, gpxRes] = await Promise.all([
-            _supabase.from('users').select('name, avatar').eq('login', login).maybeSingle(),
-            _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false })
+        const [profile, gpxFiles] = await Promise.all([
+            getProfile(login),
+            getGpxFiles(login)
         ]);
 
-        const profile = profileRes.data;
         if (!profile) {
             page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>';
             return;
         }
 
-        const gpxFiles = gpxRes.data || [];
         const hasRides = gpxFiles.length > 0;
-
         const avatarHTML = profile.avatar 
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
             : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
