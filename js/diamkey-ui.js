@@ -72,7 +72,6 @@ function setupNotifications() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar || document.getElementById('notifBell')) return;
 
-    // Колокольчик
     const bell = document.createElement('a');
     bell.className = 'sidebar-icon notif-bell';
     bell.id = 'notifBell';
@@ -86,7 +85,6 @@ function setupNotifications() {
     if (discordBtn) sidebar.insertBefore(bell, discordBtn);
     else sidebar.appendChild(bell);
 
-    // Панель
     const panel = document.createElement('div');
     panel.className = 'notifications-panel glass-panel';
     panel.id = 'notificationsPanel';
@@ -99,7 +97,13 @@ function setupNotifications() {
     `;
     document.body.appendChild(panel);
 
-    // Фоновое обновление бейджа
+    // Закрытие по клику вне панели
+    document.addEventListener('click', (e) => {
+        if (panel.classList.contains('show') && !panel.contains(e.target) && e.target !== bell && !bell.contains(e.target)) {
+            closeNotificationsPanel();
+        }
+    });
+
     setInterval(updateNotificationBadge, 30000);
     updateNotificationBadge();
 }
