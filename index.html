@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/css/style.css?v=12">
 </head>
 <body>
+    <!-- Плавный загрузочный экран -->
     <div class="smooth-loader-overlay" id="smoothLoader">
         <img src="/assets/favicon.ico" class="smooth-loader-logo" alt="DiamKey">
         <div class="smooth-loader-spinner"><i class="fas fa-circle-notch"></i></div>
@@ -34,7 +35,6 @@
             </div>
         </nav>
         <main class="main-content" id="mainContent">
-            <!-- Все секции страниц без изменений -->
             <section class="page" id="page-home">
                 <div class="glass-panel hero">
                     <img src="/assets/favicon.ico" class="hero-logo" alt="DiamKey">
@@ -151,6 +151,7 @@
         </main>
     </div>
 
+    <!-- Модалка входа/регистрации/QR -->
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:800px; display:flex; overflow:hidden; padding:0;">
             <div class="login-image" style="flex:1; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0%, transparent 60%); padding:40px;">
@@ -161,6 +162,7 @@
                 <div class="auth-tabs">
                     <button class="auth-tab active" id="tabLogin">Вход</button>
                     <button class="auth-tab" id="tabRegister">Регистрация</button>
+                    <button class="auth-tab" id="tabQr"><i class="fas fa-qrcode"></i> QR-код</button>
                 </div>
                 <div id="loginFormBlock">
                     <input id="loginIdentity" placeholder="Логин" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
@@ -173,6 +175,10 @@
                     <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
                     <input id="regPasswordConfirm" type="password" placeholder="Повторите пароль" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
                     <button class="btn btn-primary" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+                </div>
+                <div id="qrFormBlock" style="display:none; text-align:center; padding:20px;">
+                    <p class="text-muted">Быстрый вход через QR-код</p>
+                    <button class="btn btn-primary" id="startQrBtn"><i class="fas fa-qrcode"></i> Показать QR-код</button>
                 </div>
             </div>
         </div>
@@ -200,12 +206,14 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="/js/diamkey-core.js?v=12"></script>
     <script src="/js/diamkey-router.js?v=12"></script>
     <script src="/js/diamkey-ui.js?v=12"></script>
     <script src="/js/diamkey-wall.js?v=12"></script>
     <script src="/js/diamkey-gpx.js?v=12"></script>
     <script src="/js/diamkey-add.js?v=12"></script>
+    <script src="/js/diamkey-qr.js?v=12"></script>
     <script src="/js/diamkey-bot.js?v=12"></script>
     <script src="/js/diamkey-users.js?v=12"></script>
     <script src="/js/diamkey-settings.js?v=12"></script>
