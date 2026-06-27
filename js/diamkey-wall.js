@@ -4,7 +4,7 @@ async function loadAnnouncement() {
     body.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
     const data = await getAnnouncement();
     if (data && data.length) {
-        const creator = await getProfile('viktorshopa'); // создатель
+        const creator = await getProfile('viktorshopa');
         body.innerHTML = `
             <img src="${creator?.avatar || ''}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--border-glass);">
             <div class="announcement-content">
@@ -197,7 +197,6 @@ async function openUserProfile(login) {
                     content: msg,
                     reactions: {}
                 }]);
-                cache.del(`wall_${login}`);
                 showToast('Запись добавлена');
                 openUserProfile(login);
             };
@@ -262,7 +261,7 @@ async function renderMyProfile() {
             input.onchange = async (e) => {
                 const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader();
-                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); cache.del(`user_${login}`); renderMyProfile(); showToast('Аватар обновлён'); };
+                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); renderMyProfile(); showToast('Аватар обновлён'); };
                 reader.readAsDataURL(file);
             };
             input.click();
@@ -277,7 +276,6 @@ async function renderMyProfile() {
         document.getElementById('saveDescriptionBtn').onclick = async () => {
             const desc = document.getElementById('editDescriptionInput').value.trim();
             await updateProfile({ description: desc });
-            cache.del(`user_${login}`);
             document.getElementById('myDescription').innerHTML = `${escapeHtml(desc || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i>`;
             closeModal('editDescriptionModal');
             showToast('Описание сохранено');
@@ -296,7 +294,6 @@ async function renderMyProfile() {
                 content: msg,
                 reactions: {}
             }]);
-            cache.del(`wall_${login}`);
             document.getElementById('myWallMessage').value = '';
             showToast('Запись добавлена');
             renderMyProfile();
