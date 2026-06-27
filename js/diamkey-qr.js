@@ -1,5 +1,5 @@
 let qrPollingInterval = null;
-let qrGenerated = false; // чтобы не генерировать повторно при переключении туда-сюда
+let qrGenerated = false;
 
 async function generateQrInModal() {
     const container = document.getElementById('qrContainer');
@@ -16,20 +16,23 @@ async function generateQrInModal() {
     }
 
     const url = `https://diamkey.ru/qr-accept.html?ticket=${ticket}`;
+
+    // Закруглённый контейнер с прозрачным QR и подписью
     container.innerHTML = `
-        <div class="qr-code-wrapper">
-            <div id="qrCodeCanvas" style="display:flex; justify-content:center; margin-bottom:16px;"></div>
-            <button class="btn btn-secondary" id="cancelQrBtn" style="width:100%;">Отмена</button>
+        <div class="qr-rounded-wrapper">
+            <div id="qrCodeCanvas" style="display:flex; justify-content:center;"></div>
         </div>
+        <p class="text-muted" style="margin-top:12px;">Действует 10 минут</p>
     `;
 
+    // Генерируем QR с прозрачным фоном и белыми точками
     if (typeof QRCode !== 'undefined') {
         new QRCode(document.getElementById('qrCodeCanvas'), {
             text: url,
             width: 200,
             height: 200,
-            colorDark: '#0a0a0f',
-            colorLight: '#ffffff',
+            colorDark: '#ffffff',      // белые точки
+            colorLight: 'transparent', // прозрачный фон
             correctLevel: QRCode.CorrectLevel.M
         });
     } else {
@@ -37,21 +40,14 @@ async function generateQrInModal() {
         const canvas = document.getElementById('qrFallback');
         if (canvas) {
             const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 200, 200);
             ctx.fillStyle = 'white';
-            ctx.fillRect(0,0,200,200);
-            ctx.fillStyle = 'black';
             ctx.font = '12px monospace';
             ctx.fillText(url, 10, 100);
         }
     }
 
-    document.getElementById('cancelQrBtn').addEventListener('click', () => {
-        clearInterval(qrPollingInterval);
-        container.innerHTML = '';
-        container.style.display = 'none';
-        qrGenerated = false;
-    });
-
+    // Опрос статуса тикета
     qrPollingInterval = setInterval(async () => {
         const { data } = await _supabase.from('qr_tickets').select('status, login').eq('ticket', ticket).maybeSingle();
         if (!data) return;
