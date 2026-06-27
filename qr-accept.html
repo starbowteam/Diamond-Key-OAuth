@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>DiamKey – Подтверждение входа</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='white'%3E%3Cpath d='M336 352c97.2 0 176-78.8 176-176S433.2 0 336 0S160 78.8 160 176c0 18.7 2.9 36.8 8.3 53.7L7 391c-4.5 4.5-7 10.6-7 17v80c0 13.3 10.7 24 24 24h80c13.3 0 24-10.7 24-24V448h40c13.3 0 24-10.7 24-24V384h40c6.4 0 12.5-2.5 17-7l33.3-33.3c16.9 5.4 35 8.3 53.7 8.3zM376 96a40 40 0 1 1 0 80 40 40 0 1 1 0-80z'/%3E%3C/svg%3E">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-deep: #0a0a0f;
+            --bg-card: #111116;
+            --border-dim: #1f1f2a;
+            --text-light: #e0e0e0;
+            --text-muted: #9ca3af;
+            --silver: #a8a8b3;
+            --grad-silver: linear-gradient(135deg, #2a2a33, #1a1a22);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg-deep);
+            font-family: 'Inter', sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; color: var(--text-light);
+            touch-action: pan-y;
+        }
+        .oauth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-dim);
+            border-radius: 32px;
+            padding: 40px 32px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .key-icon {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            margin-bottom: 20px;
+            animation: float 2s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        h2 { font-weight: 700; color: var(--text-light); margin-bottom: 8px; }
+        p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px; }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            border: 1px solid var(--border-dim);
+            background: var(--grad-silver);
+            color: white;
+            transition: 0.2s;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn:hover:not(:disabled) { background: #2a2a33; border-color: #4a4a55; }
+        .btn-danger { background: linear-gradient(135deg, #4a2a2a, #2a1a1a); border-color: #a06060; }
+        .btn-success { background: linear-gradient(135deg, #2a4a2a, #1a2a1a); border-color: #60a060; }
+        .error-msg { color: #e05d5d; font-size: 0.9rem; margin-top: 8px; display: none; }
+        .loader { font-size: 2rem; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="oauth-card" id="oauthCard">
+    <img src="https://diamkey.ru/assets/favicon.ico" class="key-icon" alt="DiamKey" onerror="this.outerHTML='<i class=\'fas fa-key\' style=\'font-size:4rem;color:var(--silver);margin-bottom:20px;\'></i>'">
+    <h2>Подтверждение входа</h2>
+    <p id="statusText">Запрос на вход через QR-код</p>
+    <div id="controls" style="display:none;">
+        <div id="userInfo" style="margin-bottom:20px;">
+            <span>Вы вошли как <strong id="currentLogin"></strong></span>
+        </div>
+        <button class="btn btn-success" id="acceptBtn"><i class="fas fa-check-circle"></i> Принять</button>
+        <button class="btn btn-danger" id="rejectBtn"><i class="fas fa-times-circle"></i> Отклонить</button>
+    </div>
+    <div id="loginBlock" style="display:none;">
+        <p>Сначала войдите в DiamKey</p>
+        <button class="btn" id="goLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+    </div>
+    <p class="error-msg" id="errorMsg"></p>
+    <div id="loadingSpinner" style="display:none;"><div class="loader"><i class="fas fa-circle-notch"></i></div></div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const params = new URLSearchParams(window.location.search);
+    const ticket = params.get('ticket');
+    const controls = document.getElementById('controls');
+    const loginBlock = document.getElementById('loginBlock');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorMsg = document.getElementById('errorMsg');
+    const statusText = document.getElementById('statusText');
+
+    if (!ticket) {
+        statusText.textContent = 'Тикет не найден';
+        return;
+    }
+
+    const saved = localStorage.getItem('diamkey_current');
+    let currentUser = null;
+    if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
+
+    if (currentUser && currentUser.login) {
+        document.getElementById('currentLogin').textContent = currentUser.login;
+        controls.style.display = 'block';
+    } else {
+        loginBlock.style.display = 'block';
+    }
+
+    document.getElementById('goLoginBtn').addEventListener('click', () => {
+        window.location.href = 'https://diamkey.ru/home';
+    });
+
+    document.getElementById('acceptBtn').addEventListener('click', async () => {
+        loadingSpinner.style.display = 'block';
+        controls.style.display = 'none';
+        try {
+            const { error } = await _supabase.from('qr_tickets').update({ login: currentUser.login, status: 'accepted' }).eq('ticket', ticket);
+            if (error) throw error;
+            statusText.textContent = 'Вход подтверждён!';
+            setTimeout(() => window.close(), 1500);
+        } catch (e) {
+            console.error(e);
+            errorMsg.textContent = 'Ошибка, попробуйте позже';
+            errorMsg.style.display = 'block';
+            controls.style.display = 'block';
+        } finally {
+            loadingSpinner.style.display = 'none';
+        }
+    });
+
+    document.getElementById('rejectBtn').addEventListener('click', async () => {
+        loadingSpinner.style.display = 'block';
+        controls.style.display = 'none';
+        try {
+            await _supabase.from('qr_tickets').update({ status: 'rejected' }).eq('ticket', ticket);
+            statusText.textContent = 'Вход отклонён';
+            setTimeout(() => window.close(), 1500);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            loadingSpinner.style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>
