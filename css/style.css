@@ -1258,3 +1258,10 @@ body {
     padding: 8px 12px;
     color: var(--text-primary);
 }
+
+.bot-msg.thinking {
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
