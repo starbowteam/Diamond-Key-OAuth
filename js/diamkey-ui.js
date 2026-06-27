@@ -32,32 +32,40 @@ function loadHomeData() {
     if (typeof loadAnnouncement === 'function') loadAnnouncement();
 }
 
-// Плавный переход после успешного входа
-function smoothLoginSuccess() {
-    const loader = document.getElementById('smoothLoader');
-    if (!loader) return;
-    loader.classList.add('show');
-    setTimeout(() => {
-        navigateTo('/home');
-        loader.classList.remove('show');
-    }, 1200);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     const loginModal = document.getElementById('loginModal');
     if (!loginModal) return;
 
+    // Вкладки модалки
     document.getElementById('tabLogin')?.addEventListener('click', () => {
         document.getElementById('tabLogin').classList.add('active');
         document.getElementById('tabRegister').classList.remove('active');
+        document.getElementById('tabQr')?.classList.remove('active');
         document.getElementById('loginFormBlock').style.display = 'block';
         document.getElementById('registerFormBlock').style.display = 'none';
+        const qrBlock = document.getElementById('qrFormBlock');
+        if (qrBlock) qrBlock.style.display = 'none';
     });
+
     document.getElementById('tabRegister')?.addEventListener('click', () => {
         document.getElementById('tabRegister').classList.add('active');
         document.getElementById('tabLogin').classList.remove('active');
+        document.getElementById('tabQr')?.classList.remove('active');
         document.getElementById('registerFormBlock').style.display = 'block';
         document.getElementById('loginFormBlock').style.display = 'none';
+        const qrBlock = document.getElementById('qrFormBlock');
+        if (qrBlock) qrBlock.style.display = 'none';
+    });
+
+    // Кнопка входа через QR
+    document.getElementById('tabQr')?.addEventListener('click', () => {
+        document.getElementById('tabQr').classList.add('active');
+        document.getElementById('tabLogin').classList.remove('active');
+        document.getElementById('tabRegister').classList.remove('active');
+        document.getElementById('loginFormBlock').style.display = 'none';
+        document.getElementById('registerFormBlock').style.display = 'none';
+        const qrBlock = document.getElementById('qrFormBlock');
+        if (qrBlock) qrBlock.style.display = 'block';
     });
 
     document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
@@ -100,6 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
         smoothLoginSuccess();
     });
 
+    // Кнопка генерации QR в модалке
+    document.getElementById('startQrBtn')?.addEventListener('click', () => {
+        closeModal('loginModal');
+        startQrLogin();
+    });
+
     const scrollBtn = document.createElement('button');
     scrollBtn.id = 'scrollToTopBtn';
     scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
@@ -111,3 +125,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 });
+
+function smoothLoginSuccess() {
+    const loader = document.getElementById('smoothLoader');
+    if (!loader) return;
+    loader.classList.add('show');
+    setTimeout(() => {
+        navigateTo('/home');
+        loader.classList.remove('show');
+    }, 1200);
+}
