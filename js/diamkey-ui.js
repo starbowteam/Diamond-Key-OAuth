@@ -46,7 +46,7 @@ async function openNotificationsPanel() {
     if (!panel) return;
     const list = document.getElementById('notificationsList');
     list.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
-    panel.classList.add('show');
+    panel.style.display = 'flex';
     const notifs = await getNotifications();
     if (notifs.length === 0) {
         list.innerHTML = '<p class="text-muted">Нет уведомлений</p>';
@@ -64,7 +64,7 @@ async function openNotificationsPanel() {
 
 function closeNotificationsPanel() {
     const panel = document.getElementById('notificationsPanel');
-    if (panel) panel.classList.remove('show');
+    if (panel) panel.style.display = 'none';
 }
 
 function setupNotifications() {
@@ -88,6 +88,7 @@ function setupNotifications() {
     const panel = document.createElement('div');
     panel.className = 'notifications-panel glass-panel';
     panel.id = 'notificationsPanel';
+    panel.style.display = 'none';
     panel.innerHTML = `
         <div class="notif-header">
             <h3>Уведомления</h3>
@@ -99,7 +100,7 @@ function setupNotifications() {
 
     // Закрытие по клику вне панели
     document.addEventListener('click', (e) => {
-        if (panel.classList.contains('show') && !panel.contains(e.target) && e.target !== bell && !bell.contains(e.target)) {
+        if (panel.style.display === 'flex' && !panel.contains(e.target) && e.target !== bell && !bell.contains(e.target)) {
             closeNotificationsPanel();
         }
     });
