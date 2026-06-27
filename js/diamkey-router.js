@@ -13,7 +13,6 @@ function handleRoute() {
     
     console.log('[DiamKey] Маршрут:', path);
 
-    // Редирект с корня на /home
     if (path === '/' || path === '') {
         history.replaceState(null, null, '/home');
         path = '/home';
@@ -91,6 +90,12 @@ function handleRoute() {
         setTimeout(() => {
             if (typeof renderProfileGpxView === 'function') renderProfileGpxView(login);
         }, 0);
+    } else if (path === '/qr-confirm') {
+        activatePage('page-qr-confirm', true);
+        const ticket = params.get('ticket');
+        if (ticket && typeof renderQrConfirm === 'function') {
+            renderQrConfirm(ticket);
+        }
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
