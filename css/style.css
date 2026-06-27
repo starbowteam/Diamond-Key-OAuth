@@ -1202,6 +1202,14 @@ body {
     outline: none;
 }
 
+/* ========== QR-код в модалке ========== */
+.qr-code-wrapper {
+    background: rgba(255,255,255,0.03);
+    border-radius: 20px;
+    padding: 24px;
+    margin-top: 16px;
+}
+
 @media (max-width: 768px) {
     .main-content {
         margin-left: 0;
