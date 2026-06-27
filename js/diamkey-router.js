@@ -13,6 +13,7 @@ function handleRoute() {
     
     console.log('[DiamKey] Маршрут:', path);
 
+    // Редирект с корня на /home
     if (path === '/' || path === '') {
         history.replaceState(null, null, '/home');
         path = '/home';
