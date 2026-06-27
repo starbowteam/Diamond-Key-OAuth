@@ -82,7 +82,7 @@ function renderUserProfileHTML(login, profile, wallPosts) {
     const avatarHTML = profile.avatar 
         ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
         : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-    
+
     let wallHTML = '';
     if (wallPosts && wallPosts.length) {
         wallHTML = wallPosts.map(p => `
@@ -97,7 +97,7 @@ function renderUserProfileHTML(login, profile, wallPosts) {
             </div>
         `).join('');
     } else {
-        wallHTML = '<p class="text-muted">Записей пока нет</p>';
+        wallHTML = '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
     }
 
     const isOwnProfile = (currentUser && currentUser.login === login);
@@ -235,6 +235,8 @@ async function renderMyProfile() {
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
             : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
 
+        let wallHTML = wallPosts.length ? buildWallHTML(wallPosts) : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
+
         pageProfile.innerHTML = `
             <div class="glass-panel profile-top">
                 <div class="profile-header">
@@ -244,7 +246,9 @@ async function renderMyProfile() {
                         <p class="editable-text" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i></p>
                         <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
-                    <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Мои GPX-поездки"><i class="fas fa-puzzle-piece"></i></button>
+                    <div class="profile-actions">
+                        <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Мои GPX-поездки"><i class="fas fa-puzzle-piece"></i></button>
+                    </div>
                 </div>
             </div>
             <div class="glass-panel profile-wall">
@@ -252,7 +256,7 @@ async function renderMyProfile() {
                     <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:18px; padding:14px 18px; color:var(--text-primary); resize:none; font-size:15px;"></textarea>
                     <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
                 </div>
-                <div id="myWallPosts">${wallPosts.length ? buildWallHTML(wallPosts) : '<p class="text-muted">Записей пока нет</p>'}</div>
+                <div id="myWallPosts">${wallHTML}</div>
             </div>
         `;
 
@@ -400,13 +404,7 @@ async function renderProfileGpxView(login) {
                 `;
             }).join('');
         } else {
-            cardsHTML = `
-                <div class="empty-gpx-message" style="grid-column: 1 / -1;">
-                    <i class="fas fa-map-signs"></i>
-                    <h3>Пользователь не загружал свои прогулки</h3>
-                    <p>Как только появятся GPX-файлы, они отобразятся здесь</p>
-                </div>
-            `;
+            cardsHTML = '<div class="empty-gpx-message"><h3>Поездок пока нет</h3></div>';
         }
 
         const backTarget = (currentUser && currentUser.login === login) ? '/profile' : `/users/${login}`;
@@ -421,7 +419,7 @@ async function renderProfileGpxView(login) {
                     </div>
                     <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
                 </div>
-                <h3><i class="fas fa-map-marker-alt"></i> Поездки ${escapeHtml(profile.name || login)}</h3>
+                <h3 class="gpx-section-title">Поездки ${escapeHtml(profile.name || login)}</h3>
                 <div class="profile-gpx-grid" id="profileGpxGrid">
                     ${cardsHTML}
                 </div>
