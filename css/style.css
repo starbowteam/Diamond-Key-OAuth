@@ -77,12 +77,14 @@ body {
 }
 
 .sidebar-bottom {
-    margin-top: auto;
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    right: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    padding-bottom: 24px;
 }
 
 .sidebar-icon {
@@ -155,7 +157,6 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Плавная загрузка после входа */
 .smooth-loader-overlay {
     position: fixed;
     top: 0;
@@ -201,7 +202,6 @@ body {
     50% { opacity: 1; transform: scale(1.1) rotate(180deg); }
 }
 
-/* Модалка входа – плавное появление */
 .modal {
     display: flex;
     position: fixed;
@@ -238,7 +238,6 @@ body {
     transform: scale(1);
 }
 
-/* Остальное без изменений */
 .loader-container {
     display: flex;
     flex-direction: column;
@@ -1084,52 +1083,13 @@ body {
     display: flex;
 }
 
-@media (max-width: 768px) {
-    .main-content {
-        margin-left: 0;
-        padding: 16px 16px 100px;
-    }
-
-    .sidebar {
-        width: 100%;
-        height: auto;
-        position: fixed;
-        bottom: 0;
-        flex-direction: row;
-        justify-content: space-around;
-        padding: 8px 0;
-        border-right: none;
-        border-top: 1px solid var(--border-glass);
-    }
-
-    .page {
-        padding-bottom: 20px;
-    }
-
-    .gpx-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .hero h1 {
-        font-size: 36px;
-    }
-
-    .modal-content {
-        max-width: 90%;
-    }
-
-    .gpx-promo {
-        flex-direction: column;
-    }
-}
-
 /* ========== БОТ DIAMOND AI ========== */
 #diamond-bot-btn {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: linear-gradient(135deg, #4a4d58, #2a2c34);
     border: 1px solid #a0a8c0;
@@ -1145,6 +1105,13 @@ body {
 
 #diamond-bot-btn:hover {
     transform: scale(1.08);
+}
+
+#diamond-bot-btn img {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    border-radius: 50%;
 }
 
 .diamond-bot-modal {
@@ -1223,4 +1190,47 @@ body {
     outline: none;
 }
 
-/* Удалите старые стили уведомлений (notif-*, notification-*) если они есть */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding: 16px 16px 100px;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: fixed;
+        bottom: 0;
+        flex-direction: row;
+        justify-content: space-around;
+        padding: 8px 0;
+        border-right: none;
+        border-top: 1px solid var(--border-glass);
+    }
+
+    .sidebar-bottom {
+        position: static;
+        flex-direction: row;
+        gap: 8px;
+    }
+
+    .page {
+        padding-bottom: 20px;
+    }
+
+    .gpx-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .hero h1 {
+        font-size: 36px;
+    }
+
+    .modal-content {
+        max-width: 90%;
+    }
+
+    .gpx-promo {
+        flex-direction: column;
+    }
+}
