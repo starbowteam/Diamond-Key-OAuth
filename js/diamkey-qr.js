@@ -15,9 +15,8 @@ async function generateQrInModal() {
         return;
     }
 
-    const url = `https://diamkey.ru/qr-accept.html?ticket=${ticket}`;
+    const url = `https://diamkey.ru/qr-confirm?ticket=${ticket}`;
 
-    // Закруглённый контейнер с прозрачным QR и подписью
     container.innerHTML = `
         <div class="qr-rounded-wrapper">
             <div id="qrCodeCanvas" style="display:flex; justify-content:center;"></div>
@@ -25,14 +24,13 @@ async function generateQrInModal() {
         <p class="text-muted" style="margin-top:12px;">Действует 10 минут</p>
     `;
 
-    // Генерируем QR с прозрачным фоном и белыми точками
     if (typeof QRCode !== 'undefined') {
         new QRCode(document.getElementById('qrCodeCanvas'), {
             text: url,
             width: 200,
             height: 200,
-            colorDark: '#ffffff',      // белые точки
-            colorLight: 'transparent', // прозрачный фон
+            colorDark: '#ffffff',
+            colorLight: 'transparent',
             correctLevel: QRCode.CorrectLevel.M
         });
     } else {
@@ -40,14 +38,13 @@ async function generateQrInModal() {
         const canvas = document.getElementById('qrFallback');
         if (canvas) {
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, 200, 200);
+            ctx.clearRect(0,0,200,200);
             ctx.fillStyle = 'white';
             ctx.font = '12px monospace';
             ctx.fillText(url, 10, 100);
         }
     }
 
-    // Опрос статуса тикета
     qrPollingInterval = setInterval(async () => {
         const { data } = await _supabase.from('qr_tickets').select('status, login').eq('ticket', ticket).maybeSingle();
         if (!data) return;
