@@ -122,6 +122,7 @@
     if (currentUser && currentUser.login) {
         document.getElementById('currentLogin').textContent = currentUser.login;
         controls.style.display = 'block';
+        statusText.textContent = 'Подтвердите вход в DiamKey на компьютере';
     } else {
         loginBlock.style.display = 'block';
     }
