@@ -223,11 +223,62 @@ function haversine(lat1,lon1,lat2,lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// ======== ЭКСПОРТ В ИЗОБРАЖЕНИЕ ========
+function addExportButton() {
+    const toolbar = document.querySelector('.gpx-toolbar');
+    if (!toolbar || document.getElementById('exportGpxBtn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-icon';
+    btn.id = 'exportGpxBtn';
+    btn.innerHTML = '<i class="fas fa-download"></i>';
+    btn.title = 'Сохранить отчёт';
+    btn.addEventListener('click', exportGpxToImage);
+    toolbar.appendChild(btn);
+}
+
+async function exportGpxToImage() {
+    if (!gpxMap) return showToast('Карта не загружена');
+    const container = document.querySelector('.gpx-container');
+    if (!container) return;
+    try {
+        if (!window.html2canvas) {
+            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        }
+        const canvas = await html2canvas(container, { backgroundColor: null });
+        const link = document.createElement('a');
+        link.download = `gpx-report-${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('Отчёт сохранён');
+    } catch (e) {
+        console.error(e);
+        showToast('Ошибка экспорта');
+    }
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const gpxPage = document.getElementById('page-add-gpx');
     if (gpxPage) {
-        const observer = new MutationObserver(() => { if (gpxPage.classList.contains('active')) initGPX(); });
+        const observer = new MutationObserver(() => {
+            if (gpxPage.classList.contains('active')) {
+                initGPX();
+                addExportButton();
+            }
+        });
         observer.observe(gpxPage, { attributes: true, attributeFilter: ['class'] });
-        if (gpxPage.classList.contains('active')) initGPX();
+        if (gpxPage.classList.contains('active')) {
+            initGPX();
+            addExportButton();
+        }
     }
 });
