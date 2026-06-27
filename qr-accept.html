@@ -46,12 +46,18 @@
             margin-bottom: 20px;
             animation: float 2s ease-in-out infinite;
         }
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         h2 { font-weight: 700; color: var(--text-light); margin-bottom: 8px; }
         p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px; }
+        .location-info {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            text-align: left;
+        }
+        .location-info div { margin-bottom: 6px; }
         .btn {
             width: 100%;
             padding: 14px;
@@ -83,6 +89,11 @@
     <img src="https://diamkey.ru/assets/favicon.ico" class="key-icon" alt="DiamKey" onerror="this.outerHTML='<i class=\'fas fa-key\' style=\'font-size:4rem;color:var(--silver);margin-bottom:20px;\'></i>'">
     <h2>Подтверждение входа</h2>
     <p id="statusText">Запрос на вход через QR-код</p>
+    <div class="location-info" id="locationInfo">
+        <div><i class="fas fa-globe"></i> <span id="ipAddress">Загрузка...</span></div>
+        <div><i class="fas fa-city"></i> <span id="cityName">Загрузка...</span></div>
+        <div><i class="fas fa-flag"></i> <span id="countryName">Загрузка...</span></div>
+    </div>
     <div id="controls" style="display:none;">
         <div id="userInfo" style="margin-bottom:20px;">
             <span>Вы вошли как <strong id="currentLogin"></strong></span>
@@ -93,6 +104,7 @@
     <div id="loginBlock" style="display:none;">
         <p>Сначала войдите в DiamKey</p>
         <button class="btn" id="goLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+        <button class="btn" id="goRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
     </div>
     <p class="error-msg" id="errorMsg"></p>
     <div id="loadingSpinner" style="display:none;"><div class="loader"><i class="fas fa-circle-notch"></i></div></div>
@@ -115,6 +127,20 @@
         return;
     }
 
+    // Получаем информацию о местоположении по IP
+    fetch('https://ipapi.co/json/')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('ipAddress').textContent = data.ip || 'Неизвестно';
+            document.getElementById('cityName').textContent = data.city || 'Неизвестно';
+            document.getElementById('countryName').textContent = data.country_name || 'Неизвестно';
+        })
+        .catch(() => {
+            document.getElementById('ipAddress').textContent = 'Не удалось определить';
+            document.getElementById('cityName').textContent = '-';
+            document.getElementById('countryName').textContent = '-';
+        });
+
     const saved = localStorage.getItem('diamkey_current');
     let currentUser = null;
     if (saved) try { currentUser = JSON.parse(saved); } catch(e) {}
@@ -129,6 +155,10 @@
 
     document.getElementById('goLoginBtn').addEventListener('click', () => {
         window.location.href = 'https://diamkey.ru/home';
+    });
+
+    document.getElementById('goRegisterBtn').addEventListener('click', () => {
+        window.location.href = 'https://diamkey.ru/home?register=1';
     });
 
     document.getElementById('acceptBtn').addEventListener('click', async () => {
