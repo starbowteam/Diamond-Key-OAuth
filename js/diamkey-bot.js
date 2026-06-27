@@ -1,22 +1,19 @@
-// ======== DIAMOND AI MINI BOT (только по сайту) ========
 function setupDiamondBot() {
     if (document.getElementById('diamond-bot-btn')) return;
 
-    // Плавающая кнопка с PNG-логотипом
     const btn = document.createElement('button');
     btn.id = 'diamond-bot-btn';
-    btn.innerHTML = '<img src="/assets/logo.png" style="width:32px;height:32px;border-radius:50%;">';
+    btn.innerHTML = '<img src="/assets/logo-ai.ico" style="width:36px;height:36px;object-fit:contain;border-radius:50%;">';
     btn.title = 'Спросить Diamond AI';
     document.body.appendChild(btn);
 
-    // Модальное окно чата
     const modal = document.createElement('div');
     modal.id = 'diamond-bot-modal';
     modal.className = 'diamond-bot-modal glass-panel';
     modal.innerHTML = `
         <div class="bot-header">
             <div style="display:flex; align-items:center; gap:8px;">
-                <img src="/assets/logo.png" style="width:32px;height:32px;border-radius:50%;">
+                <img src="/assets/logo-ai.ico" style="width:32px;height:32px;border-radius:50%;">
                 <span>Diamond AI</span>
             </div>
             <button class="btn btn-icon" id="close-bot-modal"><i class="fas fa-times"></i></button>
@@ -40,8 +37,9 @@ function setupDiamondBot() {
     const input = document.getElementById('bot-input');
     const messages = document.getElementById('bot-messages');
 
-    // Системный промпт – ТОЛЬКО по экосистеме DiamKey
     const SYSTEM_PROMPT = `Ты — Diamond AI, встроенный помощник на сайте DiamKey (diamkey.ru). Твоя единственная задача — помогать пользователям ориентироваться на сайте и объяснять функционал экосистемы Diamond. Ты не должен отвечать на общие вопросы, не связанные с DiamKey. Если вопрос выходит за рамки сайта, вежливо откажись и предложи воспользоваться полной версией Diamond AI.
+
+ВАЖНО: Ты общаешься ТОЛЬКО чистым текстом. Запрещено использовать **жирный**, _курсив_, `код`, маркированные списки с * или -, и любые другие Markdown-символы. Пиши обычными предложениями, без форматирования.
 
 ВОТ ЧТО ТЫ ДОЛЖЕН ЗНАТЬ О САЙТЕ:
 
@@ -67,13 +65,10 @@ function setupDiamondBot() {
 
 ТВОЙ СТИЛЬ: отвечай кратко, по делу, дружелюбно. Если пользователь спрашивает о чём-то, чего нет на сайте (например, прогноз погоды, столица Франции), скажи: «Я помогаю только с сайтом DiamKey. Для общих вопросов открой Diamond AI на diamond-ai.ru.»
 
-ПРИМЕРЫ:
+ПРИМЕРЫ ОТВЕТОВ БЕЗ ФОРМАТИРОВАНИЯ:
 — «Как посмотреть свои поездки?» → «Перейдите в профиль и нажмите на иконку пазла справа от аватара. Там будут все ваши GPX-файлы.»
-— «Что такое DiamKey?» → «DiamKey — единая учётная запись для всех сервисов Diamond. Один аккаунт для AI, GPX и будущего мессенджера.»
+— «Что такое DiamKey?» → «DiamKey — единая учётная запись для всех сервисов Diamond. Один аккаунт для AI, GPX и будущего мессенджера.»`;
 
-НИКОГДА не выдумывай функции, которых нет на сайте. Если не знаешь ответа — предложи обратиться в поддержку через Discord.`;
-
-    // Анимация «Думаю…»
     function showThinking() {
         const thinkingEl = document.createElement('div');
         thinkingEl.className = 'bot-msg bot thinking';
