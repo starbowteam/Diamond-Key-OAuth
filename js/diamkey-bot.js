@@ -1,27 +1,29 @@
-// ======== DIAMOND AI MINI BOT ========
+// ======== DIAMOND AI MINI BOT (только по сайту) ========
 function setupDiamondBot() {
     if (document.getElementById('diamond-bot-btn')) return;
 
+    // Плавающая кнопка с PNG-логотипом
     const btn = document.createElement('button');
     btn.id = 'diamond-bot-btn';
-    btn.innerHTML = '<img src="/assets/logo-ai.ico" style="width:28px;height:28px;border-radius:50%;">';
+    btn.innerHTML = '<img src="/assets/logo.png" style="width:32px;height:32px;border-radius:50%;">';
     btn.title = 'Спросить Diamond AI';
     document.body.appendChild(btn);
 
+    // Модальное окно чата
     const modal = document.createElement('div');
     modal.id = 'diamond-bot-modal';
     modal.className = 'diamond-bot-modal glass-panel';
     modal.innerHTML = `
         <div class="bot-header">
             <div style="display:flex; align-items:center; gap:8px;">
-                <img src="/assets/logo-ai.ico" style="width:28px;height:28px;border-radius:50%;">
+                <img src="/assets/logo.png" style="width:32px;height:32px;border-radius:50%;">
                 <span>Diamond AI</span>
             </div>
             <button class="btn btn-icon" id="close-bot-modal"><i class="fas fa-times"></i></button>
         </div>
         <div class="bot-messages" id="bot-messages"></div>
         <div class="bot-input-area">
-            <input type="text" id="bot-input" placeholder="Задайте вопрос...">
+            <input type="text" id="bot-input" placeholder="Спросите про DiamKey...">
             <button class="btn btn-icon" id="bot-send-btn"><i class="fas fa-paper-plane"></i></button>
         </div>
     `;
@@ -38,27 +40,63 @@ function setupDiamondBot() {
     const input = document.getElementById('bot-input');
     const messages = document.getElementById('bot-messages');
 
-    // Системный промпт как в Diamond AI
-    const now = new Date();
-    const currentDateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const SYSTEM_PROMPT = `Ты — Diamond AI, интеллектуальный помощник, работающий на модели diamond-ai.fast. Твой создатель — viktorshopa, основатель сервера Diamond и экосистемы проектов: DiamKey (единый аккаунт), Dirmess (мессенджер), Unlock (обход блокировок). Ты создан помогать людям отвечать на вопросы, решать задачи, писать код и проводить анализ. Отвечай строго по делу, используй KaTeX, Latex и тп для математики и других вещей и выделяй код тройными. Будь вежлив и полезен.
+    // Системный промпт – ТОЛЬКО по экосистеме DiamKey
+    const SYSTEM_PROMPT = `Ты — Diamond AI, встроенный помощник на сайте DiamKey (diamkey.ru). Твоя единственная задача — помогать пользователям ориентироваться на сайте и объяснять функционал экосистемы Diamond. Ты не должен отвечать на общие вопросы, не связанные с DiamKey. Если вопрос выходит за рамки сайта, вежливо откажись и предложи воспользоваться полной версией Diamond AI.
 
-СТИЛЬ ОБЩЕНИЯ: Твой стандартный стиль — дружелюбный и профессиональный. Однако если пользователь явно просит изменить манеру общения (например: "общайся как аристократ", "будь дерзким", "отвечай как гопник", "будь максимально вежливым", "общайся как отбитый долбаёб", "стиль Шерлока Холмса", "как рэпер" и т.д.) — ты ДОЛЖЕН полностью переключиться на запрошенный стиль и последовательно придерживаться его, пока пользователь не попросит сменить обратно или не начнёт новый диалог. Ты можешь имитировать любые манеры: от изысканного аристократа XIX века до максимально неформального и дерзкого собеседника. Подстраивай лексику, длину предложений, обращения и общую тональность под заданный стиль. Не осуждай выбор пользователя — просто следуй его запросу.
+ВОТ ЧТО ТЫ ДОЛЖЕН ЗНАТЬ О САЙТЕ:
 
-ЭМОДЗИ: Иногда, когда это уместно и не мешает восприятию информации, вставляй 1-2 подходящих эмодзи в свои ответы — как это делает ChatGPT. Не перебарщивай: в серьёзных темах (алгебра, код, formal analysis) эмодзи можно опустить, но в обычных разговорах, пояснениях и дружеских советах — приветствуются. Используй эмодзи естественно, для оживления текста 😊.
+1. Главная страница (/home): представление DiamKey, кнопка входа/регистрации, объявление создателя, преимущества системы (единый аккаунт, приватность, синхронизация).
 
-ОФОРМЛЕНИЕ ФОРМУЛ: ВСЕ математические, физические и химические формулы выводи СТРОГО в формате $$...$$ или $...$. Запрещено использовать \\(...\\) и \\[...\\]. Дроби, степени, корни, интегралы должны быть внутри $$. Химические формулы оформляй через \\ce{...} внутри $$. Пример: $$\\ce{H2O}$$, $$\\frac{a}{b}$$, $$\\sqrt{x}$$, $$\\int_0^\\infty$$. Это критически важно для корректного отображения.
+2. Дополнения (/add): витрина сервисов. Сейчас там Diamond GPX — можно перейти по кнопке, чтобы загружать и просматривать GPS-треки.
 
-Я Сегодня: ${currentDateStr}.`;
+3. Пользователи (/users): список всех зарегистрированных пользователей. По клику открывается профиль человека, где можно увидеть его аватар, описание, стену с сообщениями и кнопку «Поездки GPX» (пазл).
+
+4. Профиль (/profile): личный профиль текущего пользователя. Можно сменить аватар, описание, посмотреть свою стену и перейти к своим GPX-поездкам (кнопка-пазл справа).
+
+5. Поездки (/profile/ник/gpxview): страница со списком GPX-файлов пользователя. Карточки показывают название, дату, дистанцию и набор высоты. Есть кнопка «Назад» к профилю. Можно ставить реакции (❤️ 👍 🔥) на поездки.
+
+6. GPX-просмотр (/add/gpx): инструмент для загрузки и просмотра GPS-треков. Отображается карта, график высот, статистика. Для чужих треков показывается имя владельца. Есть кнопка экспорта отчёта.
+
+7. Уведомления: колокольчик в сайдбаре показывает новые события (реакции, сообщения на стене). При клике открывается панель с историей.
+
+8. Стена: в профиле можно оставлять сообщения и ставить реакции (❤️ 👍 🔥). Поле ввода компактное, с аватаркой автора.
+
+9. Статистика: в GPX-вью отображается общая дистанция и суммарный набор высоты.
+
+10. Безопасность: все данные хранятся в Supabase, вход через DiamKey.
+
+ТВОЙ СТИЛЬ: отвечай кратко, по делу, дружелюбно. Если пользователь спрашивает о чём-то, чего нет на сайте (например, прогноз погоды, столица Франции), скажи: «Я помогаю только с сайтом DiamKey. Для общих вопросов открой Diamond AI на diamond-ai.ru.»
+
+ПРИМЕРЫ:
+— «Как посмотреть свои поездки?» → «Перейдите в профиль и нажмите на иконку пазла справа от аватара. Там будут все ваши GPX-файлы.»
+— «Что такое DiamKey?» → «DiamKey — единая учётная запись для всех сервисов Diamond. Один аккаунт для AI, GPX и будущего мессенджера.»
+
+НИКОГДА не выдумывай функции, которых нет на сайте. Если не знаешь ответа — предложи обратиться в поддержку через Discord.`;
+
+    // Анимация «Думаю…»
+    function showThinking() {
+        const thinkingEl = document.createElement('div');
+        thinkingEl.className = 'bot-msg bot thinking';
+        thinkingEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Думаю…';
+        messages.appendChild(thinkingEl);
+        messages.scrollTop = messages.scrollHeight;
+        return thinkingEl;
+    }
 
     async function sendBotMessage() {
         const text = input.value.trim();
         if (!text) return;
         messages.innerHTML += `<div class="bot-msg user">${escapeHtml(text)}</div>`;
         input.value = '';
+        messages.scrollTop = messages.scrollHeight;
+
+        const thinkingEl = showThinking();
+
         const { data } = await _supabase.from('service_config').select('mistral_api_key').eq('id', 1).maybeSingle();
         if (!data?.mistral_api_key) {
+            thinkingEl.remove();
             messages.innerHTML += `<div class="bot-msg bot">API-ключ не настроен.</div>`;
+            messages.scrollTop = messages.scrollHeight;
             return;
         }
         try {
@@ -71,15 +109,19 @@ function setupDiamondBot() {
                         { role: 'system', content: SYSTEM_PROMPT },
                         { role: 'user', content: text }
                     ],
-                    max_tokens: 500
+                    max_tokens: 400,
+                    temperature: 0.2
                 })
             });
             const json = await resp.json();
             const reply = json.choices?.[0]?.message?.content || 'Нет ответа.';
+            thinkingEl.remove();
             messages.innerHTML += `<div class="bot-msg bot">${escapeHtml(reply)}</div>`;
             messages.scrollTop = messages.scrollHeight;
         } catch (e) {
+            thinkingEl.remove();
             messages.innerHTML += `<div class="bot-msg bot">Ошибка связи.</div>`;
+            messages.scrollTop = messages.scrollHeight;
         }
     }
 
