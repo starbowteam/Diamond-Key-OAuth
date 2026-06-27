@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loginBlock.style.display = 'block';
         registerBlock.style.display = 'none';
         if (qrBlock) qrBlock.style.display = 'none';
-        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); }
+        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); qrGenerated = false; }
     });
 
     tabRegister?.addEventListener('click', () => {
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         registerBlock.style.display = 'block';
         loginBlock.style.display = 'none';
         if (qrBlock) qrBlock.style.display = 'none';
-        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); }
+        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); qrGenerated = false; }
     });
 
     tabQr?.addEventListener('click', () => {
@@ -71,11 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loginBlock.style.display = 'none';
         registerBlock.style.display = 'none';
         if (qrBlock) qrBlock.style.display = 'block';
-        // Не очищаем qrContainer, чтобы кнопка "Показать QR" осталась
-    });
-
-    document.getElementById('startQrBtn')?.addEventListener('click', () => {
-        startQrLogin();
+        // Автоматически генерируем QR
+        if (!qrGenerated) generateQrInModal();
     });
 
     document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
