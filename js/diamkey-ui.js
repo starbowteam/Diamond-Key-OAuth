@@ -32,6 +32,17 @@ function loadHomeData() {
     if (typeof loadAnnouncement === 'function') loadAnnouncement();
 }
 
+// Плавный переход после успешного входа
+function smoothLoginSuccess() {
+    const loader = document.getElementById('smoothLoader');
+    if (!loader) return;
+    loader.classList.add('show');
+    setTimeout(() => {
+        navigateTo('/home');
+        loader.classList.remove('show');
+    }, 1200);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginModal = document.getElementById('loginModal');
     if (!loginModal) return;
@@ -56,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         if (res.error) return showToast(res.error);
         closeModal('loginModal');
-        window.location.href = '/home';
+        smoothLoginSuccess();
     });
 
     const regLoginInput = document.getElementById('regLoginInput');
@@ -86,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await register(loginVal, pass1);
         if (res.error) return showToast(res.error);
         closeModal('loginModal');
-        window.location.href = '/home';
+        smoothLoginSuccess();
     });
 
     const scrollBtn = document.createElement('button');
