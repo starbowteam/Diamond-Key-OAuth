@@ -3,7 +3,7 @@ function setupDiamondBot() {
 
     const btn = document.createElement('button');
     btn.id = 'diamond-bot-btn';
-    btn.innerHTML = '<img src="/assets/logo-ai.ico" style="width:38px;height:38px;object-fit:contain;border-radius:50%;">';
+    btn.innerHTML = '<img src="/assets/logo-ai.ico" style="width:56px;height:56px;object-fit:contain;border-radius:50%;">';
     btn.title = 'Спросить Diamond AI';
     document.body.appendChild(btn);
 
