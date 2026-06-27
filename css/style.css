@@ -59,7 +59,7 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ===== САЙДБАР – ЖЁСТКО ЗАФИКСИРОВАН ===== */
+/* ===== САЙДБАР – ЖЁСТКО ФИКСИРОВАН, НЕ СКРОЛЛИТСЯ ===== */
 .sidebar {
     width: 72px;
     background: rgba(20, 20, 25, 0.9);
@@ -73,14 +73,13 @@ body {
     top: 0;
     left: 0;
     bottom: 0;
-    height: 100dvh;                 /* <-- жёсткая высота экрана */
+    height: 100vh;
     z-index: 100;
     gap: 20px;
-    overflow-y: auto;
 }
 
 .sidebar-bottom {
-    position: absolute;            /* привязан к нижнему краю .sidebar */
+    position: absolute;
     bottom: 24px;
     left: 0;
     right: 0;
@@ -139,6 +138,8 @@ body {
     padding: 32px 32px 100px 32px;
     position: relative;
     min-height: 100vh;
+    overflow-y: auto;
+    max-height: 100vh;
 }
 
 .page {
