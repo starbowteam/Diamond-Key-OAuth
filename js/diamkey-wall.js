@@ -114,7 +114,7 @@ function renderUserProfileHTML(login, profile, wallPosts) {
                 <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
             <div class="profile-actions">
-                <button class="btn btn-icon back-to-users-btn" onclick="navigateTo('/users')" title="Назад к пользователям"><i class="fas fa-arrow-left"></i></button>
+                <button class="btn btn-icon back-to-users-btn" onclick="goBackToUsersList()" title="Назад к пользователям"><i class="fas fa-arrow-left"></i></button>
                 <button class="btn btn-icon puzzle-btn" onclick="${navigateAction}" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
             </div>
         </div>
@@ -130,9 +130,11 @@ function renderUserProfileHTML(login, profile, wallPosts) {
 
 async function openUserProfile(login) {
     console.log('[DiamKey] openUserProfile для', login);
+    const usersPanel = document.getElementById('usersPanel');
+    const userView = document.getElementById('userProfileView');
     const pageUsers = document.getElementById('page-users');
-    if (!pageUsers) {
-        console.error('[DiamKey] Контейнер #page-users не найден');
+    if (!pageUsers || !usersPanel || !userView) {
+        console.error('[DiamKey] Не найдены контейнеры профиля');
         return;
     }
 
@@ -153,8 +155,11 @@ async function openUserProfile(login) {
         });
     }
 
-    pageUsers.innerHTML = `
-        <div class="glass-panel" style="text-align:center; padding:40px;">
+    // Показываем скелет в userProfileView
+    usersPanel.style.display = 'none';
+    userView.style.display = 'block';
+    userView.innerHTML = `
+        <div style="text-align:center; padding:40px;">
             <i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i>
             <p class="text-muted">Загрузка профиля ${escapeHtml(login)}...</p>
         </div>
@@ -168,15 +173,15 @@ async function openUserProfile(login) {
 
         const profile = profileRes.data;
         if (!profile) {
-            pageUsers.innerHTML = `<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>`;
+            userView.innerHTML = `<div style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>`;
             return;
         }
 
         const wallPosts = wallRes.data || [];
 
-        pageUsers.innerHTML = renderUserProfileHTML(login, profile, wallPosts);
+        userView.innerHTML = renderUserProfileHTML(login, profile, wallPosts);
 
-        pageUsers.querySelectorAll('.reaction-btn').forEach(btn => {
+        userView.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const postId = this.closest('.wall-post').dataset.postId;
@@ -184,7 +189,7 @@ async function openUserProfile(login) {
             });
         });
 
-        const wallInput = pageUsers.querySelector('.wall-input');
+        const wallInput = userView.querySelector('.wall-input');
         if (wallInput && currentUser) {
             if (!wallInput.querySelector('.wall-author-preview')) {
                 const preview = document.createElement('div');
@@ -194,10 +199,10 @@ async function openUserProfile(login) {
             }
         }
 
-        const postBtn = pageUsers.querySelector('#postUserWallBtn');
+        const postBtn = userView.querySelector('#postUserWallBtn');
         if (postBtn) {
             postBtn.onclick = async () => {
-                const msg = pageUsers.querySelector('#userWallMessage')?.value.trim();
+                const msg = userView.querySelector('#userWallMessage')?.value.trim();
                 if (!msg || !currentUser) return;
                 await _supabase.from('profile_wall').insert([{ 
                     user_login: currentUser.login, 
@@ -213,15 +218,18 @@ async function openUserProfile(login) {
         }
     } catch (e) {
         console.error('[DiamKey] Ошибка в openUserProfile:', e);
-        pageUsers.innerHTML = `<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>`;
+        userView.innerHTML = `<div style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>`;
     }
 }
 
 function goBackToUsersList() {
-    document.getElementById('usersPanel').style.display = 'block';
+    const usersPanel = document.getElementById('usersPanel');
     const userView = document.getElementById('userProfileView');
+    if (usersPanel) usersPanel.style.display = 'block';
     if (userView) userView.style.display = 'none';
     navigateTo('/users');
+    // Дополнительно вызываем loadUsers для гарантии
+    if (typeof loadUsers === 'function') loadUsers();
 }
 
 async function renderMyProfile() {
