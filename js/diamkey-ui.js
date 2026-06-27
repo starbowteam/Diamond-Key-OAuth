@@ -32,6 +32,76 @@ function loadHomeData() {
     if (typeof loadAnnouncement === 'function') loadAnnouncement();
 }
 
+// ======== КОЛОКОЛЬЧИК И УВЕДОМЛЕНИЯ ========
+async function updateNotificationBadge() {
+    const badge = document.getElementById('notifBadge');
+    if (!badge) return;
+    const count = await getUnreadNotificationCount();
+    badge.textContent = count > 0 ? count : '';
+    badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+async function openNotificationsPanel() {
+    const panel = document.getElementById('notificationsPanel');
+    if (!panel) return;
+    const list = document.getElementById('notificationsList');
+    list.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    panel.style.display = 'flex';
+    const notifs = await getNotifications();
+    if (notifs.length === 0) {
+        list.innerHTML = '<p class="text-muted">Нет уведомлений</p>';
+    } else {
+        list.innerHTML = notifs.map(n => `
+            <div class="notification-item ${n.read ? '' : 'unread'}">
+                <div class="notif-text">${escapeHtml(n.content)}</div>
+                <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
+            </div>
+        `).join('');
+    }
+    await markNotificationsRead();
+    updateNotificationBadge();
+}
+
+function setupNotifications() {
+    // Создаём колокольчик в сайдбаре, если пользователь авторизован
+    if (!currentUser) return;
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    if (document.getElementById('notifBell')) return;
+
+    const bell = document.createElement('a');
+    bell.className = 'sidebar-icon notif-bell';
+    bell.id = 'notifBell';
+    bell.href = '#';
+    bell.innerHTML = '<i class="fas fa-bell"></i><span class="badge" id="notifBadge"></span>';
+    bell.addEventListener('click', (e) => {
+        e.preventDefault();
+        openNotificationsPanel();
+    });
+    // Вставляем перед discord
+    const discordBtn = document.getElementById('discordSidebarIcon')?.parentElement;
+    if (discordBtn) sidebar.insertBefore(bell, discordBtn);
+
+    // Панель уведомлений
+    const panel = document.createElement('div');
+    panel.className = 'notifications-panel glass-panel';
+    panel.id = 'notificationsPanel';
+    panel.style.display = 'none';
+    panel.innerHTML = `
+        <div class="notif-header">
+            <h3>Уведомления</h3>
+            <button class="btn btn-icon" onclick="document.getElementById('notificationsPanel').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="notif-list" id="notificationsList"></div>
+    `;
+    document.body.appendChild(panel);
+
+    // Обновляем бейдж раз в 30 секунд
+    setInterval(updateNotificationBadge, 30000);
+    updateNotificationBadge();
+}
+
+// Добавляем инициализацию после входа
 document.addEventListener('DOMContentLoaded', () => {
     const loginModal = document.getElementById('loginModal');
     if (!loginModal) return;
@@ -99,4 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+
+    setupNotifications();
 });
