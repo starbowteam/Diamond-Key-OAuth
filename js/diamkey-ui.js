@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loginBlock.style.display = 'none';
         registerBlock.style.display = 'none';
         if (qrBlock) qrBlock.style.display = 'block';
-        // Автоматически генерируем QR
         if (!qrGenerated) generateQrInModal();
     });
 
