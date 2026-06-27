@@ -138,9 +138,65 @@ function startCipherEffect() {
 }
 startCipherEffect();
 
+// ======== ГЛОБАЛЬНЫЙ КЭШ ========
+const cache = {
+    get(key) {
+        try {
+            const raw = localStorage.getItem(`diam_${key}`);
+            if (!raw) return null;
+            const item = JSON.parse(raw);
+            if (item.expires && Date.now() > item.expires) {
+                localStorage.removeItem(`diam_${key}`);
+                return null;
+            }
+            return item.data;
+        } catch { return null; }
+    },
+    set(key, data, ttl = 3600000) { // 1 час по умолчанию
+        try {
+            const item = { data, expires: ttl ? Date.now() + ttl : null };
+            localStorage.setItem(`diam_${key}`, JSON.stringify(item));
+        } catch {}
+    },
+    del(key) { localStorage.removeItem(`diam_${key}`); }
+};
+
+// Кешируемая загрузка данных
+async function cachedFetch(table, query, key, ttl = 3600000) {
+    const cached = cache.get(key);
+    if (cached) return cached;
+    const { data, error } = await _supabase.from(table).select('*').match(query);
+    if (!error) cache.set(key, data, ttl);
+    return data || [];
+}
+
+// Универсальная загрузка профиля с кешем
+async function getProfile(login) {
+    return cachedFetch('users', { login }, `user_${login}`, 300000);
+}
+
+// Загрузка стены с кешем
+async function getWall(login) {
+    return cachedFetch('profile_wall', { profile_login: login }, `wall_${login}`, 300000);
+}
+
+// Загрузка GPX-файлов с кешем
+async function getGpxFiles(login) {
+    return cachedFetch('gpx_files', { user_login: login }, `gpx_${login}`, 300000);
+}
+
+// Загрузка объявления с кешем
+async function getAnnouncement() {
+    const cached = cache.get('announcement');
+    if (cached) return cached;
+    const { data } = await _supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
+    if (data) cache.set('announcement', data, 300000);
+    return data || [];
+}
+
 let cachedUsers = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 60000;
+const CACHE_DURATION = 300000; // 5 минут
 let usersRequestPromise = null;
 
 async function getUsers() {
