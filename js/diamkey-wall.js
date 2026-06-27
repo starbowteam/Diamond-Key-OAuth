@@ -63,6 +63,18 @@ async function toggleReaction(postId, type, btn) {
         return showToast('Ошибка');
     }
 
+    // Уведомление владельцу стены
+    const { data: owner } = await _supabase.from('profile_wall').select('profile_login').eq('id', postId).maybeSingle();
+    if (owner && owner.profile_login !== currentUser.login) {
+        await _supabase.from('notifications').insert({
+            user_login: owner.profile_login,
+            type: 'wall_reaction',
+            from_login: currentUser.login,
+            content: `${currentUser.name || currentUser.login} поставил(а) реакцию на вашу запись`,
+            read: false
+        });
+    }
+
     const postEl = btn.closest('.wall-post');
     if (postEl) {
         const footer = postEl.querySelector('.wall-post-footer');
@@ -82,7 +94,7 @@ function renderUserProfileHTML(login, profile, wallPosts) {
     const avatarHTML = profile.avatar 
         ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
         : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-
+    
     let wallHTML = '';
     if (wallPosts && wallPosts.length) {
         wallHTML = wallPosts.map(p => `
@@ -142,6 +154,7 @@ async function openUserProfile(login) {
     }
 
     if (!pageUsers.classList.contains('active')) {
+        console.warn('[DiamKey] Страница ещё не active, ждём активации');
         await new Promise(resolve => {
             const observer = new MutationObserver(mutations => {
                 if (pageUsers.classList.contains('active')) {
@@ -150,7 +163,10 @@ async function openUserProfile(login) {
                 }
             });
             observer.observe(pageUsers, { attributes: true, attributeFilter: ['class'] });
-            setTimeout(() => { observer.disconnect(); resolve(); }, 500);
+            setTimeout(() => {
+                observer.disconnect();
+                resolve();
+            }, 500);
         });
     }
 
@@ -197,6 +213,16 @@ async function openUserProfile(login) {
                     content: msg,
                     reactions: {}
                 }]);
+                // Уведомление владельцу стены
+                if (login !== currentUser.login) {
+                    await _supabase.from('notifications').insert({
+                        user_login: login,
+                        type: 'wall_post',
+                        from_login: currentUser.login,
+                        content: `${currentUser.name || currentUser.login} написал на вашей стене`,
+                        read: false
+                    });
+                }
                 showToast('Запись добавлена');
                 openUserProfile(login);
             };
@@ -439,4 +465,58 @@ async function viewGpxRoute(fileId) {
         return showToast('Не удалось загрузить маршрут');
     }
     navigateTo(`/add/gpx?id=${fileId}`);
+}
+
+function copyGpxLink(fileId) {
+    const url = `${location.origin}/add/gpx?id=${fileId}`;
+    navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована'));
+}
+
+// ========== ПОДТВЕРЖДЕНИЕ QR-ВХОДА ==========
+function renderQrConfirm(ticket) {
+    const page = document.getElementById('page-qr-confirm');
+    if (!page) return;
+
+    const isLoggedIn = !!currentUser;
+    let controlsHTML = '';
+    if (isLoggedIn) {
+        controlsHTML = `
+            <div style="margin-bottom:20px;">
+                <span>Вы вошли как <strong>${escapeHtml(currentUser.login)}</strong></span>
+            </div>
+            <button class="btn btn-success" id="acceptQrBtn"><i class="fas fa-check-circle"></i> Принять</button>
+            <button class="btn btn-danger" id="rejectQrBtn"><i class="fas fa-times-circle"></i> Отклонить</button>
+        `;
+    } else {
+        controlsHTML = `
+            <p>Сначала войдите в DiamKey</p>
+            <button class="btn" onclick="navigateTo('/home')"><i class="fas fa-sign-in-alt"></i> Войти</button>
+        `;
+    }
+
+    page.innerHTML = `
+        <div class="glass-panel" style="text-align:center; padding:40px; max-width:400px; margin:0 auto;">
+            <img src="/assets/favicon.ico" style="width:64px;height:64px;border-radius:50%;margin-bottom:20px;animation: float 3s ease-in-out infinite;">
+            <h2>Подтверждение входа</h2>
+            <p class="text-muted">Запрос на вход через QR-код</p>
+            <div id="qrConfirmControls">${controlsHTML}</div>
+            <p class="error-msg" id="qrConfirmError" style="display:none;"></p>
+        </div>
+    `;
+
+    if (isLoggedIn) {
+        document.getElementById('acceptQrBtn').addEventListener('click', async () => {
+            const { error } = await _supabase.from('qr_tickets').update({ login: currentUser.login, status: 'accepted' }).eq('ticket', ticket);
+            if (error) {
+                document.getElementById('qrConfirmError').textContent = 'Ошибка';
+                document.getElementById('qrConfirmError').style.display = 'block';
+                return;
+            }
+            page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход подтверждён!</h2></div>';
+        });
+        document.getElementById('rejectQrBtn').addEventListener('click', async () => {
+            await _supabase.from('qr_tickets').update({ status: 'rejected' }).eq('ticket', ticket);
+            page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход отклонён</h2></div>';
+        });
+    }
 }
