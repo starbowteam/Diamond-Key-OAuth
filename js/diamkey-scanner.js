@@ -1,4 +1,4 @@
-let html5QrCode = null;
+let qrScanner = null;
 
 async function startQrScanner() {
     if (!currentUser) {
@@ -6,13 +6,11 @@ async function startQrScanner() {
         return;
     }
 
-    // Проверяем поддержку камеры
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('Камера недоступна');
+    if (typeof QrScanner === 'undefined') {
+        showToast('Сканер не загружен. Обновите страницу.');
         return;
     }
 
-    // Создаём модальное окно
     const modal = document.createElement('div');
     modal.className = 'qr-scanner-modal';
     modal.innerHTML = `
@@ -21,7 +19,7 @@ async function startQrScanner() {
                 <h3>Сканер QR-кода</h3>
                 <button class="btn btn-icon" id="closeScannerBtn"><i class="fas fa-times"></i></button>
             </div>
-            <div id="qr-reader" style="width:100%;"></div>
+            <video id="qr-video" style="width:100%; border-radius:16px;"></video>
             <p class="text-muted" style="text-align:center; margin-top:12px;">Наведите камеру на QR-код</p>
         </div>
     `;
@@ -33,33 +31,26 @@ async function startQrScanner() {
     });
 
     try {
-        if (typeof Html5Qrcode === 'undefined') {
-            throw new Error('Библиотека сканера не загружена');
-        }
-        html5QrCode = new Html5Qrcode("qr-reader");
-        await html5QrCode.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            async (decodedText, decodedResult) => {
-                // Остановить сканирование
+        const video = document.getElementById('qr-video');
+        qrScanner = new QrScanner(
+            video,
+            async (result) => {
                 stopScanner();
                 modal.remove();
-                
-                // Извлечь ticket из URL
+
                 let ticket = null;
                 try {
-                    const url = new URL(decodedText);
+                    const url = new URL(result.data);
                     ticket = url.searchParams.get('ticket');
                 } catch (e) {
-                    // Если не URL, может быть просто ticket
-                    if (decodedText.startsWith('qr_')) ticket = decodedText;
+                    if (result.data.startsWith('qr_')) ticket = result.data;
                 }
+
                 if (!ticket) {
                     showToast('Неверный QR-код');
                     return;
                 }
 
-                // Подтверждаем вход
                 const { error } = await _supabase
                     .from('qr_tickets')
                     .update({ login: currentUser.login, status: 'accepted' })
@@ -70,10 +61,13 @@ async function startQrScanner() {
                 }
                 showToast('Вход подтверждён!');
             },
-            (errorMessage) => {
-                // Игнорируем ошибки сканирования
+            {
+                returnDetailedScanResult: true,
+                highlightScanRegion: true,
+                highlightCodeOutline: true,
             }
         );
+        await qrScanner.start();
     } catch (err) {
         modal.remove();
         showToast('Ошибка доступа к камере');
@@ -82,15 +76,13 @@ async function startQrScanner() {
 }
 
 function stopScanner() {
-    if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-            html5QrCode = null;
-        }).catch(err => console.warn(err));
+    if (qrScanner) {
+        qrScanner.stop();
+        qrScanner.destroy();
+        qrScanner = null;
     }
 }
 
-// Привязываем кнопку в сайдбаре
 document.addEventListener('DOMContentLoaded', () => {
     const scannerBtn = document.getElementById('qrScannerBtn');
     if (scannerBtn) {
