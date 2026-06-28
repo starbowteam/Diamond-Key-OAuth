@@ -378,7 +378,6 @@ body {
     height: 100%;
     min-width: 100%;
     transform-origin: center;
-    /* transform задаётся через JS */
 }
 .profile-cover .cover-hover {
     position: absolute;
@@ -788,7 +787,7 @@ body {
 .qr-scanner-header h3 { margin: 0; font-size: 20px; }
 #qr-video { border-radius: 16px; background: #000; }
 
-/* Модалка выдачи бейджей – увеличенная, горизонтальная */
+/* Модалка выдачи бейджей – горизонтальная */
 .badge-modal-content {
     max-width: 700px;
     width: 95%;
