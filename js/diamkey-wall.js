@@ -115,13 +115,6 @@ function getBadgeGradientClass(badgeName) {
 }
 
 function applyCoverTransform(img, posX, posY, scale) {
-    // posX, posY - проценты от центра (-100..100)
-    const translateX = posX * 2 + '%'; // у нас контейнер, translate работает относительно размеров самого img? 
-    // лучше вычислять: размеры img могут быть больше контейнера. Но мы используем relative позиционирование?
-    // Мы используем position:absolute; top:50%; left:50%; transform-origin: center; 
-    // translate использует проценты относительно размеров самого элемента.
-    // Поэтому translateX в процентах от ширины img, translateY от высоты img.
-    // posX/posY: 0 = центр, -100 = сдвиг на -100% ширины img влево, 100 = сдвиг на 100% вправо.
     img.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
 }
 
@@ -129,11 +122,11 @@ function renderCoverHTML(profile, isOwnProfile) {
     if (profile.cover && profile.cover.startsWith('image:')) {
         const src = profile.cover.replace('image:', '');
         const scale = profile.cover_scale || 1;
-        const posX = profile.cover_pos_x || 0; // проценты
+        const posX = profile.cover_pos_x || 0;
         const posY = profile.cover_pos_y || 0;
         return `
             <div class="profile-cover" id="profileCoverBlock">
-                <img class="cover-image" src="${escapeHtml(src)}" data-pos-x="${posX}" data-pos-y="${posY}" data-scale="${scale}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">
+                <img class="cover-image" src="${escapeHtml(src)}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">
                 ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
             </div>
         `;
@@ -560,11 +553,14 @@ async function renderProfileGpxView(login) {
             return;
         }
 
-        const hasRides = gpxFiles.length > 0;
-        const avatarHTML = profile.avatar 
-            ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
-            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
+        const isOwnProfile = (currentUser && currentUser.login === login);
+        const coverBlock = renderCoverHTML(profile, isOwnProfile);
 
+        const avatarHTML = profile.avatar 
+            ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
+
+        const hasRides = gpxFiles.length > 0;
         let cardsHTML = '';
         if (hasRides) {
             cardsHTML = gpxFiles.map(f => {
@@ -594,20 +590,28 @@ async function renderProfileGpxView(login) {
         }
 
         const backTarget = (currentUser && currentUser.login === login) ? '/profile' : `/users/${login}`;
+
         page.innerHTML = `
-            <div class="glass-panel">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-                    <div class="profile-header" style="margin-bottom:0;">
-                        <div class="avatar-wrapper">${avatarHTML}</div>
-                        <div class="profile-info">
-                            <h2>${escapeHtml(profile.name || login)}</h2>
-                        </div>
+            <div class="profile-panel">
+                ${coverBlock}
+                <div class="avatar-section">
+                    <div class="avatar-wrapper">
+                        ${avatarHTML}
                     </div>
-                    <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
                 </div>
-                <h3 class="gpx-section-title">Поездки ${escapeHtml(profile.name || login)}</h3>
-                <div class="profile-gpx-grid" id="profileGpxGrid">
-                    ${cardsHTML}
+                <div class="profile-info">
+                    <div class="profile-details">
+                        <h2>${escapeHtml(profile.name || login)}</h2>
+                    </div>
+                    <div class="profile-actions">
+                        <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
+                    </div>
+                </div>
+                <div style="padding: 0 32px 24px;">
+                    <div class="gpx-section-title">Поездки ${escapeHtml(profile.name || login)}</div>
+                    <div class="profile-gpx-grid" id="profileGpxGrid">
+                        ${cardsHTML}
+                    </div>
                 </div>
             </div>
         `;
