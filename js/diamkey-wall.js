@@ -89,6 +89,31 @@ async function toggleReaction(postId, type, btn) {
     }
 }
 
+function getBadgeGradientClass(badgeName) {
+    const map = {
+        'Bronze Buyer': 'badge-bronze',
+        'Silver Buyer': 'badge-silver',
+        'Gold Buyer': 'badge-gold',
+        'Diamond Buyer': 'badge-diamond',
+        'Emerald Buyer': 'badge-emerald',
+        'Amethyst Buyer': 'badge-amethyst',
+        'Legendary Buyer': 'badge-legendary',
+        'Покупатель Века!': 'badge-century',
+        'Creator | Seller': 'badge-creator-seller',
+        'Diamond Lady': 'badge-diamond-lady',
+        'Control Diamond': 'badge-control-diamond',
+        'Bot Manager': 'badge-bot-manager',
+        'Assistant': 'badge-assistant',
+        'Ticket Hold': 'badge-ticket-hold',
+        'Sales Manager': 'badge-sales-manager',
+        'Partner Manager': 'badge-partner-manager',
+        'Advertiser': 'badge-advertiser',
+        'Diamond Richest': 'badge-diamond-richest',
+        'Work': 'badge-work'
+    };
+    return map[badgeName] || '';
+}
+
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const avatarHTML = profile.avatar 
         ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
@@ -109,14 +134,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     if (badges && badges.length > 0) {
         badgesHTML = badges.map(b => {
             const badge = b.badges;
-            const gradientClass = badge.name === 'Bronze Buyer' ? 'badge-bronze' :
-                                  badge.name === 'Silver Buyer' ? 'badge-silver' :
-                                  badge.name === 'Gold Buyer' ? 'badge-gold' :
-                                  badge.name === 'Diamond Buyer' ? 'badge-diamond' :
-                                  badge.name === 'Emerald Buyer' ? 'badge-emerald' :
-                                  badge.name === 'Amethyst Buyer' ? 'badge-amethyst' :
-                                  badge.name === 'Legendary Buyer' ? 'badge-legendary' :
-                                  badge.name === 'Покупатель Века!' ? 'badge-century' : '';
+            const gradientClass = getBadgeGradientClass(badge.name);
             return `
                 <div class="badge-item">
                     <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
@@ -208,9 +226,8 @@ async function openUserProfile(login) {
         const profileHTML = await renderUserProfileHTML(login, profile, wallPosts, badges);
 
         userView.innerHTML = profileHTML;
-        userView.className = 'profile-panel';  // заменяем класс, чтобы применялся новый стиль
+        userView.className = 'profile-panel';
 
-        // Стена
         if (userWallSection) {
             userWallSection.style.display = 'block';
             let wallHTML = '';
@@ -267,7 +284,6 @@ async function openUserProfile(login) {
                 };
             }
 
-            // Привязываем реакции
             userWallSection.querySelectorAll('.reaction-btn').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -289,7 +305,7 @@ function goBackToUsersList() {
     if (usersPanel) usersPanel.style.display = 'block';
     if (userView) {
         userView.style.display = 'none';
-        userView.className = 'glass-panel profile-top';  // возвращаем исходный класс
+        userView.className = 'glass-panel profile-top';
     }
     if (userWallSection) userWallSection.style.display = 'none';
     navigateTo('/users');
@@ -327,14 +343,7 @@ async function renderMyProfile() {
         if (badges && badges.length > 0) {
             badgesHTML = badges.map(b => {
                 const badge = b.badges;
-                const gradientClass = badge.name === 'Bronze Buyer' ? 'badge-bronze' :
-                                      badge.name === 'Silver Buyer' ? 'badge-silver' :
-                                      badge.name === 'Gold Buyer' ? 'badge-gold' :
-                                      badge.name === 'Diamond Buyer' ? 'badge-diamond' :
-                                      badge.name === 'Emerald Buyer' ? 'badge-emerald' :
-                                      badge.name === 'Amethyst Buyer' ? 'badge-amethyst' :
-                                      badge.name === 'Legendary Buyer' ? 'badge-legendary' :
-                                      badge.name === 'Покупатель Века!' ? 'badge-century' : '';
+                const gradientClass = getBadgeGradientClass(badge.name);
                 return `
                     <div class="badge-item">
                         <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
