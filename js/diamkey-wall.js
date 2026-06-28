@@ -89,10 +89,10 @@ async function toggleReaction(postId, type, btn) {
     }
 }
 
-function renderUserProfileHTML(login, profile, wallPosts, badges) {
+async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const avatarHTML = profile.avatar 
-        ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
-        : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
+        ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+        : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
 
     const coverStyle = profile.cover 
         ? (profile.cover.startsWith('gradient:') 
@@ -102,7 +102,8 @@ function renderUserProfileHTML(login, profile, wallPosts, badges) {
                 : `background-image: url(${escapeHtml(profile.cover)}); background-size: cover; background-position: center;`)
         : '';
 
-    const onlineDot = isUserOnline(login) ? '<div class="online-dot"></div>' : '';
+    const online = await isUserOnline(login);
+    const onlineDot = online ? '<div class="online-dot"></div>' : '';
 
     let badgesHTML = '';
     if (badges && badges.length > 0) {
@@ -117,31 +118,12 @@ function renderUserProfileHTML(login, profile, wallPosts, badges) {
                                   badge.name === 'Legendary Buyer' ? 'badge-legendary' :
                                   badge.name === 'Покупатель Века!' ? 'badge-century' : '';
             return `
-                <div class="badge-card">
+                <div class="badge-item">
                     <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
-                    <div class="badge-name"><span class="${gradientClass}">${escapeHtml(badge.name)}</span></div>
+                    <span class="${gradientClass}">${escapeHtml(badge.name)}</span>
                 </div>
             `;
         }).join('');
-    } else {
-        badgesHTML = '<div class="badges-empty">У пользователя пока нет бейджей</div>';
-    }
-
-    let wallHTML = '';
-    if (wallPosts && wallPosts.length) {
-        wallHTML = wallPosts.map(p => `
-            <div class="wall-post glass-panel" data-post-id="${p.id}">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                    ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
-                    <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
-                    <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
-                </div>
-                <p>${escapeHtml(p.content)}</p>
-                <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
-            </div>
-        `).join('');
-    } else {
-        wallHTML = '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
     }
 
     const isOwnProfile = (currentUser && currentUser.login === login);
@@ -157,35 +139,24 @@ function renderUserProfileHTML(login, profile, wallPosts, badges) {
         <div class="profile-cover" style="${coverStyle}">
             ${coverEditBtn}
         </div>
-        <div class="profile-header">
-            <div class="avatar-wrapper" style="position:relative;">
+        <div class="avatar-section">
+            <div class="avatar-wrapper">
                 ${avatarHTML}
                 ${onlineDot}
             </div>
-            <div class="profile-info">
+        </div>
+        <div class="profile-info">
+            <div class="profile-details">
                 <h2>${escapeHtml(profile.name || login)}</h2>
-                <p class="editable-text">${escapeHtml(profile.description || 'Нет описания')}</p>
-                <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                <p class="description">${escapeHtml(profile.description || 'Нет описания')}</p>
+                <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
             <div class="profile-actions">
                 <button class="btn btn-icon back-to-users-btn" onclick="goBackToUsersList()" title="Назад к пользователям"><i class="fas fa-arrow-left"></i></button>
                 <button class="btn btn-icon puzzle-btn" onclick="${navigateAction}" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
             </div>
         </div>
-        <div class="badges-section">
-            <h3><i class="fas fa-medal"></i> Бейджи</h3>
-            <div class="badges-grid">${badgesHTML}</div>
-        </div>
-        <div class="profile-wall">
-            <div class="wall-input" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border-radius:18px; padding:8px 16px;">
-                <div style="width:36px; height:36px; border-radius:50%; overflow:hidden; flex-shrink:0;">
-                    ${currentUser && currentUser.avatar ? `<img src="${escapeHtml(currentUser.avatar)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
-                </div>
-                <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:transparent; border:none; color:var(--text-primary); resize:none; font-size:15px; outline:none; padding:8px 0;"></textarea>
-                <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
-            </div>
-            <div id="userWallPosts">${wallHTML}</div>
-        </div>
+        <div class="badges-row">${badgesHTML}</div>
     `;
 }
 
@@ -193,6 +164,7 @@ async function openUserProfile(login) {
     console.log('[DiamKey] openUserProfile для', login);
     const usersPanel = document.getElementById('usersPanel');
     const userView = document.getElementById('userProfileView');
+    const userWallSection = document.getElementById('userWallSection');
     const pageUsers = document.getElementById('page-users');
     if (!pageUsers || !usersPanel || !userView) {
         console.error('[DiamKey] Не найдены контейнеры профиля');
@@ -233,41 +205,76 @@ async function openUserProfile(login) {
             return;
         }
 
-        userView.innerHTML = renderUserProfileHTML(login, profile, wallPosts, badges);
+        const profileHTML = await renderUserProfileHTML(login, profile, wallPosts, badges);
 
-        userView.querySelectorAll('.reaction-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const postId = this.closest('.wall-post').dataset.postId;
-                toggleReaction(postId, this.dataset.type, this);
+        userView.innerHTML = profileHTML;
+        userView.className = 'profile-panel';  // заменяем класс, чтобы применялся новый стиль
+
+        // Стена
+        if (userWallSection) {
+            userWallSection.style.display = 'block';
+            let wallHTML = '';
+            if (wallPosts && wallPosts.length) {
+                wallHTML = wallPosts.map(p => `
+                    <div class="wall-post glass-panel" data-post-id="${p.id}">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                            ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                            <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
+                            <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
+                        </div>
+                        <p>${escapeHtml(p.content)}</p>
+                        <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
+                    </div>
+                `).join('');
+            } else {
+                wallHTML = '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
+            }
+            userWallSection.innerHTML = `
+                <div class="wall-input" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border-radius:18px; padding:8px 16px;">
+                    <div style="width:36px; height:36px; border-radius:50%; overflow:hidden; flex-shrink:0;">
+                        ${currentUser && currentUser.avatar ? `<img src="${escapeHtml(currentUser.avatar)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
+                    </div>
+                    <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:transparent; border:none; color:var(--text-primary); resize:none; font-size:15px; outline:none; padding:8px 0;"></textarea>
+                    <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <div id="userWallPosts">${wallHTML}</div>
+            `;
+
+            const postBtn = document.getElementById('postUserWallBtn');
+            if (postBtn) {
+                postBtn.onclick = async () => {
+                    const msg = document.getElementById('userWallMessage')?.value.trim();
+                    if (!msg || !currentUser) return;
+                    await _supabase.from('profile_wall').insert([{ 
+                        user_login: currentUser.login, 
+                        user_name: currentUser.name || currentUser.login, 
+                        user_avatar: currentUser.avatar || '', 
+                        profile_login: login, 
+                        content: msg,
+                        reactions: {}
+                    }]);
+                    if (login !== currentUser.login) {
+                        await _supabase.from('notifications').insert({
+                            user_login: login,
+                            type: 'wall_post',
+                            from_login: currentUser.login,
+                            content: `${currentUser.name || currentUser.login} написал на вашей стене`,
+                            read: false
+                        });
+                    }
+                    showToast('Запись добавлена');
+                    openUserProfile(login);
+                };
+            }
+
+            // Привязываем реакции
+            userWallSection.querySelectorAll('.reaction-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const postId = this.closest('.wall-post').dataset.postId;
+                    toggleReaction(postId, this.dataset.type, this);
+                });
             });
-        });
-
-        const postBtn = userView.querySelector('#postUserWallBtn');
-        if (postBtn) {
-            postBtn.onclick = async () => {
-                const msg = userView.querySelector('#userWallMessage')?.value.trim();
-                if (!msg || !currentUser) return;
-                await _supabase.from('profile_wall').insert([{ 
-                    user_login: currentUser.login, 
-                    user_name: currentUser.name || currentUser.login, 
-                    user_avatar: currentUser.avatar || '', 
-                    profile_login: login, 
-                    content: msg,
-                    reactions: {}
-                }]);
-                if (login !== currentUser.login) {
-                    await _supabase.from('notifications').insert({
-                        user_login: login,
-                        type: 'wall_post',
-                        from_login: currentUser.login,
-                        content: `${currentUser.name || currentUser.login} написал на вашей стене`,
-                        read: false
-                    });
-                }
-                showToast('Запись добавлена');
-                openUserProfile(login);
-            };
         }
     } catch (e) {
         console.error('[DiamKey] Ошибка в openUserProfile:', e);
@@ -278,8 +285,13 @@ async function openUserProfile(login) {
 function goBackToUsersList() {
     const usersPanel = document.getElementById('usersPanel');
     const userView = document.getElementById('userProfileView');
+    const userWallSection = document.getElementById('userWallSection');
     if (usersPanel) usersPanel.style.display = 'block';
-    if (userView) userView.style.display = 'none';
+    if (userView) {
+        userView.style.display = 'none';
+        userView.className = 'glass-panel profile-top';  // возвращаем исходный класс
+    }
+    if (userWallSection) userWallSection.style.display = 'none';
     navigateTo('/users');
     if (typeof loadUsers === 'function') loadUsers();
 }
@@ -300,10 +312,6 @@ async function renderMyProfile() {
 
         if (!profile) return;
 
-        const avatarHTML = profile.avatar 
-            ? `<img src="${escapeHtml(profile.avatar)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
-            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-
         const coverStyle = profile.cover 
             ? (profile.cover.startsWith('gradient:') 
                 ? `background: linear-gradient(135deg, ${profile.cover.split(':')[1]}, ${profile.cover.split(':')[2]});` 
@@ -311,6 +319,9 @@ async function renderMyProfile() {
                     ? `background: ${profile.cover.split(':')[1]};` 
                     : `background-image: url(${escapeHtml(profile.cover)}); background-size: cover; background-position: center;`)
             : '';
+
+        const online = await isUserOnline(login);
+        const onlineDot = online ? '<div class="online-dot"></div>' : '';
 
         let badgesHTML = '';
         if (badges && badges.length > 0) {
@@ -325,38 +336,43 @@ async function renderMyProfile() {
                                       badge.name === 'Legendary Buyer' ? 'badge-legendary' :
                                       badge.name === 'Покупатель Века!' ? 'badge-century' : '';
                 return `
-                    <div class="badge-card">
+                    <div class="badge-item">
                         <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
-                        <div class="badge-name"><span class="${gradientClass}">${escapeHtml(badge.name)}</span></div>
+                        <span class="${gradientClass}">${escapeHtml(badge.name)}</span>
                     </div>
                 `;
             }).join('');
-        } else {
-            badgesHTML = '<div class="badges-empty">У вас пока нет бейджей</div>';
         }
+
+        const avatarHTML = profile.avatar 
+            ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
 
         let wallHTML = wallPosts.length ? buildWallHTML(wallPosts) : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
         pageProfile.innerHTML = `
-            <div class="profile-cover" style="${coverStyle}">
-                <button class="edit-cover-btn" onclick="openCoverModal()"><i class="fas fa-pencil-alt"></i> Изменить обложку</button>
-            </div>
-            <div class="glass-panel profile-top" style="background:transparent; backdrop-filter:none; border:none; padding:0; margin-bottom:0;">
-                <div class="profile-header">
-                    <div class="avatar-wrapper" id="myAvatarWrapper">${avatarHTML}<div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div></div>
-                    <div class="profile-info">
+            <div class="profile-panel">
+                <div class="profile-cover" style="${coverStyle}">
+                    <button class="edit-cover-btn" onclick="openCoverModal()"><i class="fas fa-pencil-alt"></i> Изменить обложку</button>
+                </div>
+                <div class="avatar-section">
+                    <div class="avatar-wrapper" id="myAvatarWrapper">
+                        ${avatarHTML}
+                        ${onlineDot}
+                        <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
+                    </div>
+                </div>
+                <div class="profile-info">
+                    <div class="profile-details">
                         <h2>${escapeHtml(profile.name || login)}</h2>
-                        <p class="editable-text" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i></p>
-                        <span class="profile-regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                        <p class="description" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i></p>
+                        <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
                     <div class="profile-actions">
                         <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Мои GPX-поездки"><i class="fas fa-puzzle-piece"></i></button>
                     </div>
                 </div>
-            </div>
-            <div class="badges-section">
-                <h3><i class="fas fa-medal"></i> Бейджи</h3>
-                <div class="badges-grid">${badgesHTML}</div>
+                <div class="badges-row">${badgesHTML}</div>
             </div>
             <div class="glass-panel profile-wall">
                 <div class="wall-input">
