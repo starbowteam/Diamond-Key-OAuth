@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Старая модалка обложки больше не нужна, но оставим для совместимости
+    // Старая модалка обложки больше не используется, оставлено для совместимости
     document.querySelectorAll('[data-cover-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('[data-cover-tab]').forEach(b => b.classList.remove('active'));
@@ -155,9 +155,8 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
-// ================= НОВАЯ НАСТРОЙКА БАННЕРА =================
+// ================= НОВАЯ НАСТРОЙКА БАННЕРА (с тремя вкладками) =================
 function openCoverSetupModal(profile) {
-    // Создаём модалку динамически, чтобы не менять HTML
     const existing = document.getElementById('coverSetupModal');
     if (existing) existing.remove();
 
@@ -169,16 +168,41 @@ function openCoverSetupModal(profile) {
     modal.innerHTML = `
         <div class="modal-content glass-panel cover-setup-modal" onclick="event.stopPropagation()">
             <h3><i class="fas fa-image"></i> Настроить обложку</h3>
-            <div class="cover-preview-container" id="coverPreviewContainer">
-                <img id="coverPreviewImage" src="" alt="Preview" draggable="false">
+            <div class="auth-tabs" style="margin-bottom:20px;">
+                <button class="auth-tab active" data-cover-tab="gradients">Градиенты</button>
+                <button class="auth-tab" data-cover-tab="colors">Цвета</button>
+                <button class="auth-tab" data-cover-tab="upload">Загрузить</button>
             </div>
-            <div class="cover-controls">
-                <i class="fas fa-search-minus"></i>
-                <input type="range" id="coverScaleSlider" min="0.5" max="2" step="0.01" value="1">
-                <i class="fas fa-search-plus"></i>
+            <div id="coverGradients" class="cover-options-grid">
+                <div class="cover-option" style="background:linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%);" data-cover="gradient:#2a2a35:#1a1a22"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%);" data-cover="gradient:#1e3c5c:#0f1e33"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a3e 0%, #1a2e24 100%);" data-cover="gradient:#2d4a3e:#1a2e24"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d4a 0%, #2e1a2e 100%);" data-cover="gradient:#4a2d4a:#2e1a2e"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #3d2d4a 0%, #241a2e 100%);" data-cover="gradient:#3d2d4a:#241a2e"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #4a3d2d 0%, #2e241a 100%);" data-cover="gradient:#4a3d2d:#2e241a"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a4a 0%, #1a2e2e 100%);" data-cover="gradient:#2d4a4a:#1a2e2e"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%);" data-cover="gradient:#4a2d3d:#2e1a24"></div>
+            </div>
+            <div id="coverColors" class="cover-options-grid" style="display:none;">
+                <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
+                <div class="cover-option" style="background:#2d2d44;" data-cover="color:#2d2d44"></div>
+                <div class="cover-option" style="background:#16213e;" data-cover="color:#16213e"></div>
+                <div class="cover-option" style="background:#0f3460;" data-cover="color:#0f3460"></div>
+                <div class="cover-option" style="background:#533483;" data-cover="color:#533483"></div>
+                <div class="cover-option" style="background:#e94560;" data-cover="color:#e94560"></div>
+            </div>
+            <div id="coverUpload" style="display:none;">
+                <div class="cover-preview-container" id="coverPreviewContainer">
+                    <img id="coverPreviewImage" src="" alt="Preview" draggable="false" style="position:absolute; top:50%; left:50%; transform-origin:center; height:100%; width:auto; min-width:100%;">
+                </div>
+                <div class="cover-controls">
+                    <i class="fas fa-search-minus"></i>
+                    <input type="range" id="coverScaleSlider" min="0.5" max="2" step="0.01" value="1">
+                    <i class="fas fa-search-plus"></i>
+                </div>
+                <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Выбрать изображение</button>
             </div>
             <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
-                <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Загрузить</button>
                 <button class="btn btn-primary" id="saveCoverSetupBtn"><i class="fas fa-check"></i> Сохранить</button>
                 <button class="btn btn-secondary" id="cancelCoverSetupBtn">Отмена</button>
             </div>
@@ -187,82 +211,44 @@ function openCoverSetupModal(profile) {
     `;
     document.body.appendChild(modal);
 
-    const container = document.getElementById('coverPreviewContainer');
-    const image = document.getElementById('coverPreviewImage');
-    const slider = document.getElementById('coverScaleSlider');
-    const uploadBtn = document.getElementById('coverUploadBtn');
-    const fileInput = document.getElementById('coverFileInput');
+    const tabs = modal.querySelectorAll('[data-cover-tab]');
+    const tabGradients = document.getElementById('coverGradients');
+    const tabColors = document.getElementById('coverColors');
+    const tabUpload = document.getElementById('coverUpload');
     const saveBtn = document.getElementById('saveCoverSetupBtn');
     const cancelBtn = document.getElementById('cancelCoverSetupBtn');
-
-    let currentSrc = '';
+    let selectedCover = null;
+    let currentImageSrc = '';
     let posX = profile.cover_pos_x || 0;
     let posY = profile.cover_pos_y || 0;
     let scale = profile.cover_scale || 1;
 
-    // Если уже было изображение, загружаем его
-    if (profile.cover && profile.cover.startsWith('image:')) {
-        currentSrc = profile.cover.replace('image:', '');
-        image.src = currentSrc;
-    }
-
-    function applyTransform() {
-        image.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
-        slider.value = scale;
-    }
-
-    applyTransform();
-
-    // Drag
-    let isDragging = false;
-    let startX, startY, startPosX, startPosY;
-
-    container.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startPosX = posX;
-        startPosY = posY;
-        e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        posX = startPosX + dx;
-        posY = startPosY + dy;
-        applyTransform();
-    });
-    window.addEventListener('mouseup', () => {
-        isDragging = false;
-    });
-    // Touch events
-    container.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-            isDragging = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            startPosX = posX;
-            startPosY = posY;
-        }
-    });
-    window.addEventListener('touchmove', (e) => {
-        if (!isDragging || e.touches.length !== 1) return;
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
-        posX = startPosX + dx;
-        posY = startPosY + dy;
-        applyTransform();
-        e.preventDefault();
-    }, { passive: false });
-    window.addEventListener('touchend', () => {
-        isDragging = false;
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const tabName = tab.dataset.coverTab;
+            tabGradients.style.display = tabName === 'gradients' ? 'grid' : 'none';
+            tabColors.style.display = tabName === 'colors' ? 'grid' : 'none';
+            tabUpload.style.display = tabName === 'upload' ? 'block' : 'none';
+        });
     });
 
-    slider.addEventListener('input', () => {
-        scale = parseFloat(slider.value);
-        applyTransform();
+    // Выбор градиента/цвета
+    modal.querySelectorAll('.cover-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            modal.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            selectedCover = opt.dataset.cover;
+        });
     });
+
+    // Загрузка изображения
+    const uploadBtn = document.getElementById('coverUploadBtn');
+    const fileInput = document.getElementById('coverFileInput');
+    const previewContainer = document.getElementById('coverPreviewContainer');
+    const previewImage = document.getElementById('coverPreviewImage');
+    const scaleSlider = document.getElementById('coverScaleSlider');
 
     uploadBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => {
@@ -270,52 +256,117 @@ function openCoverSetupModal(profile) {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (ev) => {
-            currentSrc = ev.target.result;
-            image.src = currentSrc;
+            currentImageSrc = ev.target.result;
+            previewImage.src = currentImageSrc;
             posX = 0; posY = 0; scale = 1;
-            applyTransform();
+            applyPreviewTransform();
         };
         reader.readAsDataURL(file);
     });
 
+    function applyPreviewTransform() {
+        previewImage.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
+        scaleSlider.value = scale;
+    }
+
+    // Drag внутри preview
+    let dragging = false, startX, startY, startPosX, startPosY;
+    previewContainer.addEventListener('mousedown', (e) => {
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startPosX = posX;
+        startPosY = posY;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        // Преобразуем сдвиг в проценты от размеров previewContainer? 
+        // Лучше использовать относительное смещение в процентах от изображения.
+        // Но для простоты: dx/dy в пикселях, преобразуем в проценты от ширины previewContainer,
+        // чтобы они были стабильны при масштабировании окна.
+        const rect = previewContainer.getBoundingClientRect();
+        const percentX = (dx / rect.width) * 100;
+        const percentY = (dy / rect.height) * 100;
+        posX = startPosX + percentX;
+        posY = startPosY + percentY;
+        applyPreviewTransform();
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+    // Touch
+    previewContainer.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            dragging = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            startPosX = posX;
+            startPosY = posY;
+        }
+    });
+    window.addEventListener('touchmove', (e) => {
+        if (!dragging) return;
+        const rect = previewContainer.getBoundingClientRect();
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        const percentX = (dx / rect.width) * 100;
+        const percentY = (dy / rect.height) * 100;
+        posX = startPosX + percentX;
+        posY = startPosY + percentY;
+        applyPreviewTransform();
+        e.preventDefault();
+    }, { passive: false });
+    window.addEventListener('touchend', () => { dragging = false; });
+
+    scaleSlider.addEventListener('input', () => {
+        scale = parseFloat(scaleSlider.value);
+        applyPreviewTransform();
+    });
+
+    // Сохранение
     saveBtn.addEventListener('click', async () => {
-        if (!currentSrc) {
-            showToast('Сначала загрузите изображение');
+        if (selectedCover) {
+            // градиент или цвет
+            await updateProfile({ cover: selectedCover, cover_pos_x: 0, cover_pos_y: 0, cover_scale: 1 });
+            currentUser.cover = selectedCover;
+            currentUser.cover_pos_x = 0;
+            currentUser.cover_pos_y = 0;
+            currentUser.cover_scale = 1;
+        } else if (currentImageSrc) {
+            const coverValue = 'image:' + currentImageSrc;
+            await updateProfile({ cover: coverValue, cover_pos_x: posX, cover_pos_y: posY, cover_scale: scale });
+            currentUser.cover = coverValue;
+            currentUser.cover_pos_x = posX;
+            currentUser.cover_pos_y = posY;
+            currentUser.cover_scale = scale;
+        } else {
+            showToast('Выберите обложку');
             return;
         }
-        const coverValue = 'image:' + currentSrc;
-        await updateProfile({
-            cover: coverValue,
-            cover_pos_x: posX,
-            cover_pos_y: posY,
-            cover_scale: scale
-        });
-        currentUser.cover = coverValue;
-        currentUser.cover_pos_x = posX;
-        currentUser.cover_pos_y = posY;
-        currentUser.cover_scale = scale;
         modal.remove();
-        if (document.getElementById('page-profile').classList.contains('active')) {
-            renderMyProfile();
-        }
+        if (document.getElementById('page-profile').classList.contains('active')) renderMyProfile();
         showToast('Обложка обновлена');
     });
 
-    cancelBtn.addEventListener('click', () => {
-        modal.remove();
-    });
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
-    });
+    cancelBtn.addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    // Если уже было изображение, показать его в режиме загрузки
+    if (profile.cover && profile.cover.startsWith('image:')) {
+        currentImageSrc = profile.cover.replace('image:', '');
+        previewImage.src = currentImageSrc;
+        applyPreviewTransform();
+        // Переключиться на вкладку загрузки
+        document.querySelector('#coverSetupModal [data-cover-tab="upload"]').click();
+    }
 }
 
-// Старая openCoverModal больше не нужна, оставляем заглушку
 function openCoverModal() {
-    // можно перенаправить на новую, если ещё где-то вызывается
     if (currentUser) openCoverSetupModal(currentUser);
 }
 
-// ================= МОДАЛКА БЕЙДЖЕЙ (улучшенная) =================
+// ================= МОДАЛКА БЕЙДЖЕЙ (горизонтальная, с текущими) =================
 async function openBadgeModal() {
     const modal = document.getElementById('badgeModal');
     if (!modal) return;
@@ -347,37 +398,49 @@ async function openBadgeModal() {
             const userBadges = await getUserBadges(selectedUser);
             const userBadgeIds = userBadges.map(b => b.badge_id);
 
+            const currentContainer = document.getElementById('currentBadges');
             const optionsContainer = document.getElementById('badgeOptions');
-            optionsContainer.innerHTML = badges.map(b => {
-                const hasBadge = userBadgeIds.includes(b.id);
-                return `
-                    <div class="badge-option-card">
-                        <div class="badge-info">
-                            <div class="badge-icon"><i class="fas ${b.icon}" style="background:${b.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
-                            <span class="badge-name">${escapeHtml(b.name)}</span>
-                        </div>
-                        <button data-action="${hasBadge ? 'remove' : 'assign'}" data-badge-id="${b.id}">
-                            ${hasBadge ? '<i class="fas fa-times"></i> Убрать' : '<i class="fas fa-plus"></i> Выдать'}
-                        </button>
-                    </div>
-                `;
-            }).join('');
 
-            optionsContainer.querySelectorAll('button').forEach(btn => {
+            // Текущие бейджи
+            currentContainer.innerHTML = '';
+            userBadges.forEach(ub => {
+                const badge = ub.badges;
+                const card = document.createElement('div');
+                card.className = 'badge-item';
+                card.innerHTML = `
+                    <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
+                    <span class="${getBadgeGradientClass(badge.name)}">${escapeHtml(badge.name)}</span>
+                    <button class="btn btn-icon" style="margin-left:auto;" data-action="remove" data-badge-id="${badge.id}"><i class="fas fa-times"></i></button>
+                `;
+                currentContainer.appendChild(card);
+            });
+
+            // Доступные бейджи
+            optionsContainer.innerHTML = badges.filter(b => !userBadgeIds.includes(b.id)).map(b => `
+                <div class="badge-option-card">
+                    <div class="badge-icon-large"><i class="fas ${b.icon}" style="background:${b.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
+                    <span class="badge-name">${escapeHtml(b.name)}</span>
+                    <button data-action="assign" data-badge-id="${b.id}">
+                        <i class="fas fa-plus"></i> Выдать
+                    </button>
+                </div>
+            `).join('');
+
+            // Обработчики кнопок
+            modal.querySelectorAll('button[data-action="remove"]').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    const badgeId = btn.dataset.badgeId;
-                    const action = btn.dataset.action;
-                    if (action === 'assign') {
-                        const { error } = await assignBadge(selectedUser, badgeId);
-                        if (error) showToast(error.message || 'Ошибка');
-                        else showToast('Бейдж выдан');
-                    } else {
-                        const { error } = await removeBadge(selectedUser, badgeId);
-                        if (error) showToast('Ошибка');
-                        else showToast('Бейдж убран');
-                    }
+                    await removeBadge(selectedUser, btn.dataset.badgeId);
+                    showToast('Бейдж убран');
                     openBadgeModal(); // обновить
+                });
+            });
+            modal.querySelectorAll('button[data-action="assign"]').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await assignBadge(selectedUser, btn.dataset.badgeId);
+                    showToast('Бейдж выдан');
+                    openBadgeModal();
                 });
             });
         });
