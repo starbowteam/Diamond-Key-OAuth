@@ -130,18 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
             openBadgeModal();
         }
     });
-
-    // Старая модалка обложки больше не используется, оставлено для совместимости
-    document.querySelectorAll('[data-cover-tab]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('[data-cover-tab]').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const tab = btn.dataset.coverTab;
-            document.getElementById('coverGradients').style.display = tab === 'gradients' ? 'grid' : 'none';
-            document.getElementById('coverColors').style.display = tab === 'colors' ? 'grid' : 'none';
-            document.getElementById('coverUpload').style.display = tab === 'upload' ? 'block' : 'none';
-        });
-    });
 });
 
 function smoothLoginSuccess() {
@@ -155,61 +143,12 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
-// ================= НОВАЯ НАСТРОЙКА БАННЕРА (с тремя вкладками) =================
+// ========== НАСТРОЙКА ОБЛОЖКИ (использует #coverSetupModal) ==========
 function openCoverSetupModal(profile) {
-    const existing = document.getElementById('coverSetupModal');
-    if (existing) existing.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'coverSetupModal';
-    modal.className = 'modal';
+    const modal = document.getElementById('coverSetupModal');
+    if (!modal) return;
     modal.style.display = 'flex';
     modal.classList.add('active');
-    modal.innerHTML = `
-        <div class="modal-content glass-panel cover-setup-modal" onclick="event.stopPropagation()">
-            <h3><i class="fas fa-image"></i> Настроить обложку</h3>
-            <div class="auth-tabs" style="margin-bottom:20px;">
-                <button class="auth-tab active" data-cover-tab="gradients">Градиенты</button>
-                <button class="auth-tab" data-cover-tab="colors">Цвета</button>
-                <button class="auth-tab" data-cover-tab="upload">Загрузить</button>
-            </div>
-            <div id="coverGradients" class="cover-options-grid">
-                <div class="cover-option" style="background:linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%);" data-cover="gradient:#2a2a35:#1a1a22"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%);" data-cover="gradient:#1e3c5c:#0f1e33"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a3e 0%, #1a2e24 100%);" data-cover="gradient:#2d4a3e:#1a2e24"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d4a 0%, #2e1a2e 100%);" data-cover="gradient:#4a2d4a:#2e1a2e"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #3d2d4a 0%, #241a2e 100%);" data-cover="gradient:#3d2d4a:#241a2e"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #4a3d2d 0%, #2e241a 100%);" data-cover="gradient:#4a3d2d:#2e241a"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a4a 0%, #1a2e2e 100%);" data-cover="gradient:#2d4a4a:#1a2e2e"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%);" data-cover="gradient:#4a2d3d:#2e1a24"></div>
-            </div>
-            <div id="coverColors" class="cover-options-grid" style="display:none;">
-                <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
-                <div class="cover-option" style="background:#2d2d44;" data-cover="color:#2d2d44"></div>
-                <div class="cover-option" style="background:#16213e;" data-cover="color:#16213e"></div>
-                <div class="cover-option" style="background:#0f3460;" data-cover="color:#0f3460"></div>
-                <div class="cover-option" style="background:#533483;" data-cover="color:#533483"></div>
-                <div class="cover-option" style="background:#e94560;" data-cover="color:#e94560"></div>
-            </div>
-            <div id="coverUpload" style="display:none;">
-                <div class="cover-preview-container" id="coverPreviewContainer">
-                    <img id="coverPreviewImage" src="" alt="Preview" draggable="false" style="position:absolute; top:50%; left:50%; transform-origin:center; height:100%; width:auto; min-width:100%;">
-                </div>
-                <div class="cover-controls">
-                    <i class="fas fa-search-minus"></i>
-                    <input type="range" id="coverScaleSlider" min="0.5" max="2" step="0.01" value="1">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-                <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Выбрать изображение</button>
-            </div>
-            <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
-                <button class="btn btn-primary" id="saveCoverSetupBtn"><i class="fas fa-check"></i> Сохранить</button>
-                <button class="btn btn-secondary" id="cancelCoverSetupBtn">Отмена</button>
-            </div>
-            <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
-        </div>
-    `;
-    document.body.appendChild(modal);
 
     const tabs = modal.querySelectorAll('[data-cover-tab]');
     const tabGradients = document.getElementById('coverGradients');
@@ -281,13 +220,9 @@ function openCoverSetupModal(profile) {
     });
     window.addEventListener('mousemove', (e) => {
         if (!dragging) return;
+        const rect = previewContainer.getBoundingClientRect();
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
-        // Преобразуем сдвиг в проценты от размеров previewContainer? 
-        // Лучше использовать относительное смещение в процентах от изображения.
-        // Но для простоты: dx/dy в пикселях, преобразуем в проценты от ширины previewContainer,
-        // чтобы они были стабильны при масштабировании окна.
-        const rect = previewContainer.getBoundingClientRect();
         const percentX = (dx / rect.width) * 100;
         const percentY = (dy / rect.height) * 100;
         posX = startPosX + percentX;
@@ -295,7 +230,6 @@ function openCoverSetupModal(profile) {
         applyPreviewTransform();
     });
     window.addEventListener('mouseup', () => { dragging = false; });
-    // Touch
     previewContainer.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
             dragging = true;
@@ -327,7 +261,6 @@ function openCoverSetupModal(profile) {
     // Сохранение
     saveBtn.addEventListener('click', async () => {
         if (selectedCover) {
-            // градиент или цвет
             await updateProfile({ cover: selectedCover, cover_pos_x: 0, cover_pos_y: 0, cover_scale: 1 });
             currentUser.cover = selectedCover;
             currentUser.cover_pos_x = 0;
@@ -344,20 +277,19 @@ function openCoverSetupModal(profile) {
             showToast('Выберите обложку');
             return;
         }
-        modal.remove();
+        closeModal('coverSetupModal');
         if (document.getElementById('page-profile').classList.contains('active')) renderMyProfile();
         showToast('Обложка обновлена');
     });
 
-    cancelBtn.addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    cancelBtn.addEventListener('click', () => closeModal('coverSetupModal'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal('coverSetupModal'); });
 
-    // Если уже было изображение, показать его в режиме загрузки
+    // Если уже было изображение, показать его
     if (profile.cover && profile.cover.startsWith('image:')) {
         currentImageSrc = profile.cover.replace('image:', '');
         previewImage.src = currentImageSrc;
         applyPreviewTransform();
-        // Переключиться на вкладку загрузки
         document.querySelector('#coverSetupModal [data-cover-tab="upload"]').click();
     }
 }
@@ -366,17 +298,12 @@ function openCoverModal() {
     if (currentUser) openCoverSetupModal(currentUser);
 }
 
-// ================= МОДАЛКА БЕЙДЖЕЙ (горизонтальная, с текущими) =================
+// ========== МОДАЛКА ВЫДАЧИ БЕЙДЖЕЙ ==========
 async function openBadgeModal() {
     const modal = document.getElementById('badgeModal');
     if (!modal) return;
     modal.style.display = 'flex';
     modal.classList.add('active');
-
-    const modalContent = modal.querySelector('.modal-content');
-    if (modalContent) {
-        modalContent.className = 'modal-content glass-panel badge-modal-content';
-    }
 
     const users = await getUsers();
     const listContainer = document.getElementById('badgeUserList');
@@ -432,7 +359,7 @@ async function openBadgeModal() {
                     e.stopPropagation();
                     await removeBadge(selectedUser, btn.dataset.badgeId);
                     showToast('Бейдж убран');
-                    openBadgeModal(); // обновить
+                    openBadgeModal();
                 });
             });
             modal.querySelectorAll('button[data-action="assign"]').forEach(btn => {
