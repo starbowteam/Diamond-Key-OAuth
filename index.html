@@ -36,7 +36,7 @@
             <a class="sidebar-icon" href="https://dirmess.ru" target="_blank"><img src="/assets/dirmess.ico" style="width:30px;height:30px;"></a>
             <div class="sidebar-bottom">
                 <a class="sidebar-icon" id="qrScannerBtn" title="Сканер QR-кода"><i class="fas fa-qrcode"></i></a>
-                <a class="sidebar-icon" id="adminBadgeBtn" title="Выдать бейдж" style="display:none;"><i class="fas fa-medal"></i></a>
+                <a class="sidebar-icon" id="badgeAdminBtn" title="Выдать бейдж" style="display:none;"><i class="fas fa-medal"></i></a>
                 <a class="sidebar-icon" href="https://discord.gg/diamondshop" target="_blank" id="discordSidebarIcon"><i class="fab fa-discord"></i></a>
                 <button class="sidebar-icon" id="logoutSidebarBtn"><i class="fas fa-sign-out-alt"></i></button>
             </div>
@@ -160,6 +160,7 @@
         </main>
     </div>
 
+    <!-- Модалка входа/регистрации/QR -->
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:800px; display:flex; overflow:hidden; padding:0;">
             <div class="login-image" style="flex:1; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0%, transparent 60%); padding:40px;">
@@ -191,6 +192,20 @@
         </div>
     </div>
 
+    <!-- Модалка выдачи бейджей -->
+    <div class="modal" id="badgeModal" onclick="if(event.target===this) closeModal('badgeModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:500px; max-height:80vh; overflow-y:auto;">
+            <h3><i class="fas fa-medal"></i> Выдать бейдж</h3>
+            <input type="text" id="badgeUserSearch" placeholder="Поиск пользователя..." style="width:100%; padding:12px; margin-bottom:16px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+            <div id="badgeUserList" style="max-height:200px; overflow-y:auto; margin-bottom:20px; text-align:left;"></div>
+            <div id="badgeListContainer" style="display:none;">
+                <p class="text-muted" style="margin-bottom:12px;">Выберите бейдж для <strong id="selectedBadgeUser"></strong>:</p>
+                <div id="badgeOptions" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+            <button class="btn btn-secondary" onclick="closeModal('badgeModal')" style="margin-top:16px; width:100%;">Закрыть</button>
+        </div>
+    </div>
+
     <div class="modal" id="gpxNameModal" onclick="if(event.target===this) closeModal('gpxNameModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <h3>Название прогулки</h3>
@@ -213,6 +228,46 @@
         </div>
     </div>
 
+    <!-- Модалка смены обложки -->
+    <div class="modal" id="coverModal" onclick="if(event.target===this) closeModal('coverModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:600px;">
+            <h3><i class="fas fa-image"></i> Изменить обложку</h3>
+            <div class="auth-tabs" style="margin-bottom:20px;">
+                <button class="auth-tab active" data-cover-tab="gradients">Градиенты</button>
+                <button class="auth-tab" data-cover-tab="colors">Цвета</button>
+                <button class="auth-tab" data-cover-tab="upload">Загрузить</button>
+            </div>
+            <div id="coverGradients" class="cover-options-grid">
+                <div class="cover-option" style="background:linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%);" data-cover="gradient:#2a2a35:#1a1a22"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%);" data-cover="gradient:#1e3c5c:#0f1e33"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a3e 0%, #1a2e24 100%);" data-cover="gradient:#2d4a3e:#1a2e24"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d4a 0%, #2e1a2e 100%);" data-cover="gradient:#4a2d4a:#2e1a2e"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #3d2d4a 0%, #241a2e 100%);" data-cover="gradient:#3d2d4a:#241a2e"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #4a3d2d 0%, #2e241a 100%);" data-cover="gradient:#4a3d2d:#2e241a"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a4a 0%, #1a2e2e 100%);" data-cover="gradient:#2d4a4a:#1a2e2e"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%);" data-cover="gradient:#4a2d3d:#2e1a24"></div>
+            </div>
+            <div id="coverColors" class="cover-options-grid" style="display:none;">
+                <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
+                <div class="cover-option" style="background:#2d2d44;" data-cover="color:#2d2d44"></div>
+                <div class="cover-option" style="background:#16213e;" data-cover="color:#16213e"></div>
+                <div class="cover-option" style="background:#0f3460;" data-cover="color:#0f3460"></div>
+                <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
+                <div class="cover-option" style="background:#533483;" data-cover="color:#533483"></div>
+                <div class="cover-option" style="background:#e94560;" data-cover="color:#e94560"></div>
+                <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
+            </div>
+            <div id="coverUpload" style="display:none; text-align:center; padding:20px;">
+                <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
+                <button class="btn btn-primary" onclick="document.getElementById('coverFileInput').click()"><i class="fas fa-upload"></i> Выбрать изображение</button>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
+                <button class="btn btn-primary" id="saveCoverBtn"><i class="fas fa-check"></i> Сохранить</button>
+                <button class="btn btn-secondary" onclick="closeModal('coverModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
     <script src="/js/diamkey-core.js?v=12"></script>
@@ -223,7 +278,6 @@
     <script src="/js/diamkey-add.js?v=12"></script>
     <script src="/js/diamkey-qr.js?v=12"></script>
     <script src="/js/diamkey-scanner.js?v=12"></script>
-    <script src="/js/diamkey-admin.js?v=12"></script>
     <script src="/js/diamkey-bot.js?v=12"></script>
     <script src="/js/diamkey-users.js?v=12"></script>
     <script src="/js/diamkey-settings.js?v=12"></script>
