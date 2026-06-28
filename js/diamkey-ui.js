@@ -260,3 +260,21 @@ async function openBadgeModal() {
         });
     });
 }
+
+// Добавляем в updateSidebarVisibility показ админской кнопки
+function updateSidebarVisibility() {
+    const isLoggedIn = !!currentUser;
+    document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
+        const href = btn.getAttribute('href');
+        if (href === '/home' || href === 'https://discord.gg/diamondshop') return;
+        btn.style.display = isLoggedIn ? '' : 'none';
+    });
+    const logoutBtn = document.getElementById('logoutSidebarBtn');
+    const scannerBtn = document.getElementById('qrScannerBtn');
+    const badgeAdminBtn = document.getElementById('badgeAdminBtn');
+    if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'flex' : 'none';
+    if (scannerBtn) scannerBtn.style.display = isLoggedIn ? 'flex' : 'none';
+    if (badgeAdminBtn) {
+        badgeAdminBtn.style.display = (currentUser && currentUser.login === 'viktorshopa') ? 'flex' : 'none';
+    }
+}
