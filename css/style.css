@@ -362,35 +362,42 @@ body {
     margin-bottom: 32px;
 }
 
+/* Новый контейнер обложки */
 .profile-cover {
     height: 200px;
-    background: linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%);
+    background: linear-gradient(135deg, #3e404a 0%, #2a2c34 100%); /* светлее дефолт */
     position: relative;
-    background-size: cover;
-    background-position: center;
+    overflow: hidden;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-}
-
-.profile-cover .edit-cover-btn {
-    position: absolute;
-    bottom: 16px;
-    right: 24px;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 40px;
-    padding: 8px 20px;
-    color: white;
-    font-weight: 600;
-    font-size: 14px;
     cursor: pointer;
+}
+.profile-cover img.cover-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform-origin: center;
+    /* transform будет задан из JS (translate + scale) */
+}
+.profile-cover .cover-hover {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
-    gap: 6px;
-    transition: 0.2s;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
     z-index: 2;
+    color: white;
+    font-size: 24px;
 }
-.profile-cover .edit-cover-btn:hover { background: rgba(0,0,0,0.7); }
+.profile-cover:hover .cover-hover {
+    opacity: 1;
+}
 
 .avatar-section {
     display: flex;
@@ -469,6 +476,11 @@ body {
     font-size: 15px;
     margin-bottom: 8px;
     line-height: 1.4;
+    cursor: pointer;
+    transition: text-decoration 0.2s;
+}
+.profile-details .description:hover {
+    text-decoration: underline;
 }
 .profile-details .regdate {
     font-size: 13px;
@@ -516,7 +528,7 @@ body {
     background: rgba(255,255,255,0.1);
 }
 
-/* Градиенты для бейджей */
+/* Градиенты */
 .badge-bronze { background: linear-gradient(135deg, #cd7f32, #8b5a2b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .badge-silver { background: linear-gradient(135deg, #c0c0c0, #808080); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .badge-gold { background: linear-gradient(135deg, #ffd700, #b8860b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -524,7 +536,6 @@ body {
 .badge-emerald { background: linear-gradient(135deg, #50c878, #2e8b57); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .badge-amethyst { background: linear-gradient(135deg, #9fc1ff, #d88edf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .badge-legendary { background: linear-gradient(135deg, #e68585, #c51cb2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
 .badge-century {
     background: linear-gradient(90deg, #89CFF0, #9955bb, #89CFF0);
     background-size: 200% auto;
@@ -532,11 +543,7 @@ body {
     -webkit-text-fill-color: transparent;
     animation: centuryShift 3s linear infinite;
 }
-@keyframes centuryShift {
-    to { background-position: 200% center; }
-}
-
-/* Новые бейджи */
+@keyframes centuryShift { to { background-position: 200% center; } }
 .badge-creator-seller { background: linear-gradient(135deg, #f3f3f3, #a8a8a8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .badge-diamond-lady { background: linear-gradient(135deg, #ffb6c1, #ff69b4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .badge-control-diamond { background: linear-gradient(135deg, #dfdee2, #cdced1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -562,7 +569,6 @@ body {
 .reaction-btn:hover { background: rgba(255,255,255,0.08); }
 .reaction-btn.active { color: var(--accent); background: rgba(160,160,176,0.2); font-weight: bold; }
 
-/* Остальные элементы */
 #userSearch {
     width: 100%;
     padding: 14px 20px;
@@ -761,17 +767,6 @@ body {
 }
 .qr-rounded-wrapper canvas { display: block; border-radius: 24px; }
 
-.cover-options-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-.cover-option {
-    height: 60px;
-    border-radius: 16px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: 0.2s;
-}
-.cover-option:hover { border-color: var(--accent); }
-.cover-option.selected { border-color: white; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
-
 .qr-scanner-modal {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -794,10 +789,13 @@ body {
 .qr-scanner-header h3 { margin: 0; font-size: 20px; }
 #qr-video { border-radius: 16px; background: #000; }
 
-/* Модалка выдачи бейджей – улучшенная */
+/* Модалка выдачи бейджей – увеличенная */
 .badge-modal-content {
-    max-width: 550px;
+    max-width: 650px;
+    width: 95%;
     padding: 40px 36px;
+    max-height: 85vh;
+    overflow-y: auto;
 }
 .badge-modal-content h3 {
     font-size: 24px;
@@ -811,7 +809,7 @@ body {
     margin-bottom: 24px;
 }
 .badge-user-list {
-    max-height: 220px;
+    max-height: 300px;
     overflow-y: auto;
     margin-bottom: 24px;
 }
@@ -881,6 +879,43 @@ body {
 }
 .badge-option-card button:hover {
     background: rgba(255,255,255,0.15);
+}
+
+/* Модалка настройки обложки */
+.cover-setup-modal {
+    max-width: 700px;
+    width: 95%;
+}
+.cover-preview-container {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+    background: #1a1a1a;
+    cursor: grab;
+    user-select: none;
+}
+.cover-preview-container:active {
+    cursor: grabbing;
+}
+.cover-preview-container img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    /* transform задаётся динамически */
+}
+.cover-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    justify-content: center;
+}
+.cover-controls input[type="range"] {
+    flex: 1;
+    max-width: 200px;
 }
 
 /* Мобильная версия */
@@ -955,4 +990,5 @@ body {
     #diamond-bot-btn { width: 56px; height: 56px; bottom: 100px; right: 16px; }
     #diamond-bot-btn img { width: 44px; height: 44px; }
     .diamond-bot-modal { width: calc(100% - 32px); right: 16px; bottom: 170px; height: 380px; }
+    .cover-preview-container { height: 180px; }
 }
