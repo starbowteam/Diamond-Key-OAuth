@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async (ev) => {
-            selectedCover = ev.target.result; // base64
+            selectedCover = ev.target.result;
             document.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
         };
         reader.readAsDataURL(file);
@@ -197,18 +197,23 @@ async function openBadgeModal() {
     modal.style.display = 'flex';
     modal.classList.add('active');
 
-    // Загружаем список пользователей
+    // Используем улучшенные классы стилей
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.classList.add('badge-modal-content');
+    }
+
     const users = await getUsers();
     const listContainer = document.getElementById('badgeUserList');
     listContainer.innerHTML = users.map(u => `
-        <div class="user-row" data-login="${u.login}" style="padding:10px; cursor:pointer; border-radius:12px; display:flex; align-items:center; gap:10px; margin-bottom:4px;">
-            ${u.avatar ? `<img src="${u.avatar}" style="width:32px;height:32px;border-radius:50%;">` : '<i class="fas fa-user"></i>'}
+        <div class="badge-user-row" data-login="${u.login}">
+            ${u.avatar ? `<img src="${u.avatar}" alt="${u.login}">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
             <span>${escapeHtml(u.login)}</span>
         </div>
     `).join('');
 
     let selectedUser = null;
-    listContainer.querySelectorAll('.user-row').forEach(row => {
+    listContainer.querySelectorAll('.badge-user-row').forEach(row => {
         row.addEventListener('click', async () => {
             selectedUser = row.dataset.login;
             document.getElementById('selectedBadgeUser').textContent = selectedUser;
@@ -222,11 +227,13 @@ async function openBadgeModal() {
             optionsContainer.innerHTML = badges.map(b => {
                 const hasBadge = userBadgeIds.includes(b.id);
                 return `
-                    <div class="badge-card" style="cursor:pointer; opacity:${hasBadge ? '1' : '0.6'}" data-badge-id="${b.id}">
-                        <div class="badge-icon"><i class="fas ${b.icon}" style="background:${b.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
-                        <span class="badge-name">${escapeHtml(b.name)}</span>
-                        <button class="btn btn-icon" style="margin-left:auto;" data-action="${hasBadge ? 'remove' : 'assign'}">
-                            <i class="fas ${hasBadge ? 'fa-times' : 'fa-plus'}"></i>
+                    <div class="badge-option-card">
+                        <div class="badge-info">
+                            <div class="badge-icon"><i class="fas ${b.icon}" style="background:${b.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
+                            <span class="badge-name">${escapeHtml(b.name)}</span>
+                        </div>
+                        <button data-action="${hasBadge ? 'remove' : 'assign'}" data-badge-id="${b.id}">
+                            ${hasBadge ? '<i class="fas fa-times"></i> Убрать' : '<i class="fas fa-plus"></i> Выдать'}
                         </button>
                     </div>
                 `;
@@ -235,7 +242,7 @@ async function openBadgeModal() {
             optionsContainer.querySelectorAll('button').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    const badgeId = btn.parentElement.dataset.badgeId;
+                    const badgeId = btn.dataset.badgeId;
                     const action = btn.dataset.action;
                     if (action === 'assign') {
                         const { error } = await assignBadge(selectedUser, badgeId);
@@ -246,7 +253,8 @@ async function openBadgeModal() {
                         if (error) showToast('Ошибка');
                         else showToast('Бейдж убран');
                     }
-                    openBadgeModal(); // обновить
+                    // Обновить модалку
+                    openBadgeModal();
                 });
             });
         });
@@ -255,13 +263,12 @@ async function openBadgeModal() {
     // Поиск
     document.getElementById('badgeUserSearch').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
-        listContainer.querySelectorAll('.user-row').forEach(row => {
-            row.style.display = row.dataset.login.toLowerCase().includes(term) ? '' : 'none';
+        listContainer.querySelectorAll('.badge-user-row').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
         });
     });
 }
 
-// Добавляем в updateSidebarVisibility показ админской кнопки
 function updateSidebarVisibility() {
     const isLoggedIn = !!currentUser;
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
