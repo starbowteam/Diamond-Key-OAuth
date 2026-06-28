@@ -32,17 +32,6 @@ function loadHomeData() {
     if (typeof loadAnnouncement === 'function') loadAnnouncement();
 }
 
-function smoothLoginSuccess() {
-    const loader = document.getElementById('smoothLoader');
-    if (!loader) return;
-    loader.classList.add('show');
-    setTimeout(() => {
-        navigateTo('/home');
-        loader.classList.remove('show');
-        updateSidebarVisibility(); // <-- показываем кнопки после входа
-    }, 1200);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     const loginModal = document.getElementById('loginModal');
     if (!loginModal) return;
@@ -135,4 +124,139 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+
+    // Кнопка выдачи бейджей (админская)
+    document.getElementById('badgeAdminBtn')?.addEventListener('click', () => {
+        if (currentUser && currentUser.login === 'viktorshopa') {
+            openBadgeModal();
+        }
+    });
+
+    // Модалка обложки – переключение вкладок
+    document.querySelectorAll('[data-cover-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('[data-cover-tab]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const tab = btn.dataset.coverTab;
+            document.getElementById('coverGradients').style.display = tab === 'gradients' ? 'grid' : 'none';
+            document.getElementById('coverColors').style.display = tab === 'colors' ? 'grid' : 'none';
+            document.getElementById('coverUpload').style.display = tab === 'upload' ? 'block' : 'none';
+        });
+    });
+
+    // Выбор обложки
+    let selectedCover = null;
+    document.querySelectorAll('.cover-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            document.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            selectedCover = opt.dataset.cover;
+        });
+    });
+
+    document.getElementById('coverFileInput')?.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            selectedCover = ev.target.result; // base64
+            document.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('saveCoverBtn')?.addEventListener('click', async () => {
+        if (!selectedCover) return;
+        await _supabase.from('users').update({ cover: selectedCover }).eq('login', currentUser.login);
+        currentUser.cover = selectedCover;
+        closeModal('coverModal');
+        if (document.getElementById('page-profile').classList.contains('active')) renderMyProfile();
+        showToast('Обложка обновлена');
+    });
 });
+
+function smoothLoginSuccess() {
+    const loader = document.getElementById('smoothLoader');
+    if (!loader) return;
+    loader.classList.add('show');
+    setTimeout(() => {
+        navigateTo('/home');
+        loader.classList.remove('show');
+        updateSidebarVisibility();
+    }, 1200);
+}
+
+function openCoverModal() {
+    const modal = document.getElementById('coverModal');
+    if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
+}
+
+async function openBadgeModal() {
+    const modal = document.getElementById('badgeModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+
+    // Загружаем список пользователей
+    const users = await getUsers();
+    const listContainer = document.getElementById('badgeUserList');
+    listContainer.innerHTML = users.map(u => `
+        <div class="user-row" data-login="${u.login}" style="padding:10px; cursor:pointer; border-radius:12px; display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+            ${u.avatar ? `<img src="${u.avatar}" style="width:32px;height:32px;border-radius:50%;">` : '<i class="fas fa-user"></i>'}
+            <span>${escapeHtml(u.login)}</span>
+        </div>
+    `).join('');
+
+    let selectedUser = null;
+    listContainer.querySelectorAll('.user-row').forEach(row => {
+        row.addEventListener('click', async () => {
+            selectedUser = row.dataset.login;
+            document.getElementById('selectedBadgeUser').textContent = selectedUser;
+            document.getElementById('badgeListContainer').style.display = 'block';
+
+            const badges = await getAllBadges();
+            const userBadges = await getUserBadges(selectedUser);
+            const userBadgeIds = userBadges.map(b => b.badge_id);
+
+            const optionsContainer = document.getElementById('badgeOptions');
+            optionsContainer.innerHTML = badges.map(b => {
+                const hasBadge = userBadgeIds.includes(b.id);
+                return `
+                    <div class="badge-card" style="cursor:pointer; opacity:${hasBadge ? '1' : '0.6'}" data-badge-id="${b.id}">
+                        <div class="badge-icon"><i class="fas ${b.icon}" style="background:${b.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
+                        <span class="badge-name">${escapeHtml(b.name)}</span>
+                        <button class="btn btn-icon" style="margin-left:auto;" data-action="${hasBadge ? 'remove' : 'assign'}">
+                            <i class="fas ${hasBadge ? 'fa-times' : 'fa-plus'}"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            optionsContainer.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const badgeId = btn.parentElement.dataset.badgeId;
+                    const action = btn.dataset.action;
+                    if (action === 'assign') {
+                        const { error } = await assignBadge(selectedUser, badgeId);
+                        if (error) showToast(error.message || 'Ошибка');
+                        else showToast('Бейдж выдан');
+                    } else {
+                        const { error } = await removeBadge(selectedUser, badgeId);
+                        if (error) showToast('Ошибка');
+                        else showToast('Бейдж убран');
+                    }
+                    openBadgeModal(); // обновить
+                });
+            });
+        });
+    });
+
+    // Поиск
+    document.getElementById('badgeUserSearch').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        listContainer.querySelectorAll('.user-row').forEach(row => {
+            row.style.display = row.dataset.login.toLowerCase().includes(term) ? '' : 'none';
+        });
+    });
+}
