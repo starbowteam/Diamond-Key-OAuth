@@ -114,18 +114,41 @@ function getBadgeGradientClass(badgeName) {
     return map[badgeName] || '';
 }
 
+function renderCoverHTML(profile, isOwnProfile) {
+    if (profile.cover && profile.cover.startsWith('image:')) {
+        const src = profile.cover.replace('image:', '');
+        const scale = profile.cover_scale || 1;
+        const posX = profile.cover_pos_x || 0;
+        const posY = profile.cover_pos_y || 0;
+        const transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+        return `
+            <div class="profile-cover" id="profileCoverBlock">
+                <img class="cover-image" src="${escapeHtml(src)}" style="transform: ${transform};" draggable="false">
+                ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
+            </div>
+        `;
+    } else if (profile.cover && (profile.cover.startsWith('gradient:') || profile.cover.startsWith('color:'))) {
+        const bg = profile.cover.startsWith('gradient:')
+            ? `background: linear-gradient(135deg, ${profile.cover.split(':')[1]}, ${profile.cover.split(':')[2]});`
+            : `background: ${profile.cover.split(':')[1]};`;
+        return `
+            <div class="profile-cover" id="profileCoverBlock" style="${bg}">
+                ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
+            </div>
+        `;
+    } else {
+        return `
+            <div class="profile-cover" id="profileCoverBlock">
+                ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
+            </div>
+        `;
+    }
+}
+
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const avatarHTML = profile.avatar 
         ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
         : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
-
-    const coverStyle = profile.cover 
-        ? (profile.cover.startsWith('gradient:') 
-            ? `background: linear-gradient(135deg, ${profile.cover.split(':')[1]}, ${profile.cover.split(':')[2]});` 
-            : profile.cover.startsWith('color:') 
-                ? `background: ${profile.cover.split(':')[1]};` 
-                : `background-image: url(${escapeHtml(profile.cover)}); background-size: cover; background-position: center;`)
-        : '';
 
     const online = await isUserOnline(login);
     const onlineDot = online ? '<div class="online-dot"></div>' : '';
@@ -149,14 +172,10 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         ? `navigateTo('/profile/${login}/gpxview')`
         : `navigateTo('/profile/${login}/gpxview', true)`;
 
-    const coverEditBtn = isOwnProfile 
-        ? `<button class="edit-cover-btn" onclick="openCoverModal()"><i class="fas fa-pencil-alt"></i> Изменить обложку</button>`
-        : '';
+    const coverBlock = renderCoverHTML(profile, isOwnProfile);
 
     return `
-        <div class="profile-cover" style="${coverStyle}">
-            ${coverEditBtn}
-        </div>
+        ${coverBlock}
         <div class="avatar-section">
             <div class="avatar-wrapper">
                 ${avatarHTML}
@@ -166,7 +185,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         <div class="profile-info">
             <div class="profile-details">
                 <h2>${escapeHtml(profile.name || login)}</h2>
-                <p class="description">${escapeHtml(profile.description || 'Нет описания')}</p>
+                <p class="description" id="profileDescription">${escapeHtml(profile.description || 'Нет описания')}</p>
                 <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
             <div class="profile-actions">
@@ -228,6 +247,33 @@ async function openUserProfile(login) {
         userView.innerHTML = profileHTML;
         userView.className = 'profile-panel';
 
+        // Обработчик клика по обложке (для своего профиля)
+        const coverBlock = document.getElementById('profileCoverBlock');
+        if (coverBlock && currentUser && currentUser.login === login) {
+            coverBlock.addEventListener('click', () => {
+                openCoverSetupModal(profile);
+            });
+        }
+
+        // Обработчик клика по описанию
+        const descEl = document.getElementById('profileDescription');
+        if (descEl && currentUser && currentUser.login === login) {
+            descEl.addEventListener('click', () => {
+                document.getElementById('editDescriptionInput').value = profile.description || '';
+                document.getElementById('editDescriptionModal').style.display = 'flex';
+                document.getElementById('editDescriptionModal').classList.add('active');
+            });
+            // Сохранение описания
+            document.getElementById('saveDescriptionBtn').onclick = async () => {
+                const desc = document.getElementById('editDescriptionInput').value.trim();
+                await updateProfile({ description: desc });
+                descEl.textContent = desc || 'Нет описания';
+                closeModal('editDescriptionModal');
+                showToast('Описание сохранено');
+            };
+        }
+
+        // Стена
         if (userWallSection) {
             userWallSection.style.display = 'block';
             let wallHTML = '';
@@ -328,14 +374,6 @@ async function renderMyProfile() {
 
         if (!profile) return;
 
-        const coverStyle = profile.cover 
-            ? (profile.cover.startsWith('gradient:') 
-                ? `background: linear-gradient(135deg, ${profile.cover.split(':')[1]}, ${profile.cover.split(':')[2]});` 
-                : profile.cover.startsWith('color:') 
-                    ? `background: ${profile.cover.split(':')[1]};` 
-                    : `background-image: url(${escapeHtml(profile.cover)}); background-size: cover; background-position: center;`)
-            : '';
-
         const online = await isUserOnline(login);
         const onlineDot = online ? '<div class="online-dot"></div>' : '';
 
@@ -357,13 +395,13 @@ async function renderMyProfile() {
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
             : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
 
+        const coverBlock = renderCoverHTML(profile, true);
+
         let wallHTML = wallPosts.length ? buildWallHTML(wallPosts) : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
         pageProfile.innerHTML = `
             <div class="profile-panel">
-                <div class="profile-cover" style="${coverStyle}">
-                    <button class="edit-cover-btn" onclick="openCoverModal()"><i class="fas fa-pencil-alt"></i> Изменить обложку</button>
-                </div>
+                ${coverBlock}
                 <div class="avatar-section">
                     <div class="avatar-wrapper" id="myAvatarWrapper">
                         ${avatarHTML}
@@ -374,7 +412,7 @@ async function renderMyProfile() {
                 <div class="profile-info">
                     <div class="profile-details">
                         <h2>${escapeHtml(profile.name || login)}</h2>
-                        <p class="description" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i></p>
+                        <p class="description" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')}</p>
                         <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
                     <div class="profile-actions">
@@ -392,6 +430,14 @@ async function renderMyProfile() {
             </div>
         `;
 
+        // Обработчики
+        const coverBlockEl = document.getElementById('profileCoverBlock');
+        if (coverBlockEl) {
+            coverBlockEl.addEventListener('click', () => {
+                openCoverSetupModal(profile);
+            });
+        }
+
         document.getElementById('myAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
             input.onchange = async (e) => {
@@ -403,16 +449,19 @@ async function renderMyProfile() {
             input.click();
         };
 
-        document.getElementById('myDescription').onclick = () => {
-            document.getElementById('editDescriptionInput').value = profile.description || '';
-            document.getElementById('editDescriptionModal').style.display = 'flex';
-            document.getElementById('editDescriptionModal').classList.add('active');
-        };
+        const descEl = document.getElementById('myDescription');
+        if (descEl) {
+            descEl.addEventListener('click', () => {
+                document.getElementById('editDescriptionInput').value = profile.description || '';
+                document.getElementById('editDescriptionModal').style.display = 'flex';
+                document.getElementById('editDescriptionModal').classList.add('active');
+            });
+        }
 
         document.getElementById('saveDescriptionBtn').onclick = async () => {
             const desc = document.getElementById('editDescriptionInput').value.trim();
             await updateProfile({ description: desc });
-            document.getElementById('myDescription').innerHTML = `${escapeHtml(desc || 'Нажмите, чтобы добавить описание')} <i class="fas fa-pencil-alt edit-icon"></i>`;
+            if (descEl) descEl.textContent = desc || 'Нажмите, чтобы добавить описание';
             closeModal('editDescriptionModal');
             showToast('Описание сохранено');
         };
