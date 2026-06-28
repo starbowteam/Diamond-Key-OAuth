@@ -525,9 +525,8 @@ body {
 .badge-amethyst { background: linear-gradient(135deg, #9fc1ff, #d88edf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .badge-legendary { background: linear-gradient(135deg, #e68585, #c51cb2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-/* Новый Покупатель Века! */
 .badge-century {
-    background: linear-gradient(90deg, #e0f0ff, #e6d5f5, #e0f0ff);
+    background: linear-gradient(90deg, #89CFF0, #9955bb, #89CFF0);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
