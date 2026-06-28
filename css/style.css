@@ -892,10 +892,10 @@ body {
     color: #2ecc71;
 }
 
-/* Карточки GPX в профиле */
+/* Карточки GPX в профиле – теперь тянутся */
 .profile-gpx-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 16px;
     margin-top: 24px;
 }
@@ -935,11 +935,6 @@ body {
 }
 .gpx-card-stats span:first-child {
     color: var(--text-primary);
-}
-.gpx-section-title {
-    font-size: 20px;
-    font-weight: 600;
-    margin: 24px 0 8px;
 }
 .empty-gpx-message {
     text-align: center;
