@@ -1,19 +1,28 @@
 function navigateTo(path, replace = false) {
-    if (replace) {
-        history.replaceState(null, null, path);
-    } else {
-        history.pushState(null, null, path);
-    }
+    if (replace) { history.replaceState(null, null, path); }
+    else { history.pushState(null, null, path); }
     handleRoute();
+}
+
+function updateSidebarVisibility() {
+    const isLoggedIn = !!currentUser;
+    document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
+        const href = btn.getAttribute('href');
+        if (href === '/home' || href === 'https://discord.gg/diamondshop') return;
+        btn.style.display = isLoggedIn ? '' : 'none';
+    });
+    // Кнопка выхода и сканер (без href) всегда должны следовать за состоянием
+    const logoutBtn = document.getElementById('logoutSidebarBtn');
+    const scannerBtn = document.getElementById('qrScannerBtn');
+    if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'flex' : 'none';
+    if (scannerBtn) scannerBtn.style.display = isLoggedIn ? 'flex' : 'none';
 }
 
 function handleRoute() {
     let path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
-    
     console.log('[DiamKey] Маршрут:', path);
 
-    // Редирект с корня на /home
     if (path === '/' || path === '') {
         history.replaceState(null, null, '/home');
         path = '/home';
@@ -58,17 +67,11 @@ function handleRoute() {
             const uploadBtn = document.getElementById('uploadGpxBtn');
             if (uploadBtn) uploadBtn.style.display = 'none';
             console.log('[DiamKey] Загрузка GPX по ID из URL:', gpxId);
-            setTimeout(() => {
-                if (typeof loadGpxFromId === 'function') loadGpxFromId(gpxId);
-            }, 400);
+            setTimeout(() => { if (typeof loadGpxFromId === 'function') loadGpxFromId(gpxId); }, 400);
         } else {
             const uploadBtn = document.getElementById('uploadGpxBtn');
             if (currentUser && uploadBtn) uploadBtn.style.display = 'inline-flex';
             else if (uploadBtn) uploadBtn.style.display = 'none';
-        }
-        if (!localStorage.getItem('gpx_info_seen')) {
-            const modal = document.getElementById('gpxInfoModal');
-            if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
         }
     } else if (path === '/users') {
         activatePage('page-users');
@@ -76,32 +79,25 @@ function handleRoute() {
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
         activatePage('page-users', true);
-        setTimeout(() => {
-            if (typeof openUserProfile === 'function') openUserProfile(login);
-        }, 0);
+        setTimeout(() => { if (typeof openUserProfile === 'function') openUserProfile(login); }, 0);
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/home'); return; }
         activatePage('page-profile', true);
-        setTimeout(() => {
-            if (typeof renderMyProfile === 'function') renderMyProfile();
-        }, 0);
+        setTimeout(() => { if (typeof renderMyProfile === 'function') renderMyProfile(); }, 0);
     } else if (path.startsWith('/profile/') && path.endsWith('/gpxview')) {
         const login = path.split('/profile/')[1].split('/gpxview')[0];
         activatePage('page-profile-gpx', true);
-        setTimeout(() => {
-            if (typeof renderProfileGpxView === 'function') renderProfileGpxView(login);
-        }, 0);
+        setTimeout(() => { if (typeof renderProfileGpxView === 'function') renderProfileGpxView(login); }, 0);
     } else if (path === '/qr-confirm') {
         activatePage('page-qr-confirm', true);
         const ticket = params.get('ticket');
-        if (ticket && typeof renderQrConfirm === 'function') {
-            renderQrConfirm(ticket);
-        }
+        if (ticket && typeof renderQrConfirm === 'function') renderQrConfirm(ticket);
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
     }
 
+    // Подсветка активной иконки
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.classList.remove('active');
         const href = btn.getAttribute('href');
@@ -115,19 +111,16 @@ window.addEventListener('popstate', handleRoute);
 
 document.addEventListener('DOMContentLoaded', () => {
     handleRoute();
-    const isLoggedIn = !!currentUser;
-    document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
-        const href = btn.getAttribute('href');
-        if (href === '/home' || href === 'https://discord.gg/diamondshop') return;
-        if (!isLoggedIn) btn.style.display = 'none';
-    });
-    const logoutBtn = document.getElementById('logoutSidebarBtn');
-    if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'flex' : 'none';
+    updateSidebarVisibility();   // <-- первичная настройка видимости
 
+    const logoutBtn = document.getElementById('logoutSidebarBtn');
     logoutBtn?.addEventListener('click', () => {
         localStorage.removeItem('diamkey_current');
+        currentUser = null;
+        updateSidebarVisibility(); // <-- скрываем всё при выходе
         window.location.href = '/home';
     });
+
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (btn.getAttribute('target') === '_blank') return;
