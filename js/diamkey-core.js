@@ -69,15 +69,7 @@ async function register(login, password) {
     const token = generateToken();
     const secretWord = generateFastSecret();
     const { error } = await _supabase.from('users').insert([{
-        login,
-        email,
-        password,
-        name: '',
-        avatar: '',
-        description: '',
-        token,
-        secret_word: secretWord,
-        cover: 'default'
+        login, email, password, name: '', avatar: '', description: '', token, secret_word: secretWord
     }]);
     if (error) {
         console.error('[DiamKey] Ошибка регистрации:', error);
@@ -92,13 +84,12 @@ async function register(login, password) {
 
 async function loadProfile() {
     if (!currentUser) return;
-    const { data } = await _supabase.from('users').select('name, avatar, description, created_at, cover').eq('login', currentUser.login).maybeSingle();
+    const { data } = await _supabase.from('users').select('name, avatar, description, created_at').eq('login', currentUser.login).maybeSingle();
     if (data) {
         currentUser.name = data.name || currentUser.login;
         currentUser.avatar = data.avatar || '';
         currentUser.description = data.description || '';
         currentUser.created_at = data.created_at;
-        currentUser.cover = data.cover || 'default';
     } else {
         console.warn('[DiamKey] Профиль не найден в базе');
     }
@@ -114,7 +105,6 @@ async function updateProfile(updates) {
     if (updates.name) currentUser.name = updates.name;
     if (updates.avatar) currentUser.avatar = updates.avatar;
     if (updates.description) currentUser.description = updates.description;
-    if (updates.cover) currentUser.cover = updates.cover;
     localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
 }
 
@@ -149,17 +139,10 @@ let usersRequestPromise = null;
 async function getUsers() {
     if (cachedUsers && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedUsers;
     if (usersRequestPromise) return usersRequestPromise;
-
     usersRequestPromise = (async () => {
         try {
             const { data, error } = await _supabase.from('users').select('login, name, avatar, description, created_at').order('login');
-            if (error) {
-                if (error.code === '20' || error.message?.includes('abort')) {
-                    console.warn('[DiamKey] AbortError при загрузке пользователей, использую кеш');
-                    return cachedUsers || [];
-                }
-                throw error;
-            }
+            if (error) throw error;
             cachedUsers = data || [];
             cacheTimestamp = Date.now();
             return cachedUsers;
@@ -170,7 +153,6 @@ async function getUsers() {
             usersRequestPromise = null;
         }
     })();
-
     return usersRequestPromise;
 }
 
@@ -194,45 +176,6 @@ async function getAnnouncement() {
     return data || [];
 }
 
-async function updatePresence(status = 'online') {
-    if (!currentUser) return;
-    await _supabase.from('user_presence').upsert({ login: currentUser.login, last_seen: new Date().toISOString(), status }, { onConflict: 'login' });
-}
-setInterval(() => updatePresence('online'), 30000);
-if (currentUser) updatePresence('online');
-
-async function getUserPresence(login) {
-    const { data } = await _supabase.from('user_presence').select('last_seen, status').eq('login', login).maybeSingle();
-    return data;
-}
-
-async function getBadges() {
-    const { data } = await _supabase.from('badges').select('*');
-    return data || [];
-}
-
-async function getUserBadges(login) {
-    const { data } = await _supabase.from('user_badges').select('badge_id').eq('user_login', login);
-    if (!data || data.length === 0) return [];
-    const ids = data.map(d => d.badge_id);
-    const { data: badges } = await _supabase.from('badges').select('*').in('id', ids);
-    return badges || [];
-}
-
-async function assignBadge(login, badgeId) {
-    const { error } = await _supabase.from('user_badges').insert({
-        user_login: login,
-        badge_id: badgeId,
-        assigned_by: currentUser.login
-    });
-    if (error) throw error;
-}
-
-async function removeBadge(login, badgeId) {
-    const { error } = await _supabase.from('user_badges').delete().eq('user_login', login).eq('badge_id', badgeId);
-    if (error) throw error;
-}
-
 async function loadHomeStats() {
     const results = {};
     try {
@@ -248,4 +191,46 @@ async function loadHomeStats() {
         console.error('[DiamKey] Ошибка загрузки статистики:', e);
     }
     return results;
+}
+
+// ======== БЕЙДЖИ ========
+async function getAllBadges() {
+    const { data } = await _supabase.from('badges').select('*');
+    return data || [];
+}
+
+async function getUserBadges(login) {
+    const { data } = await _supabase.from('user_badges').select('badge_id, badges(*)').eq('user_login', login);
+    return data || [];
+}
+
+async function assignBadge(userLogin, badgeId) {
+    const existing = await _supabase.from('user_badges').select('id').eq('user_login', userLogin).eq('badge_id', badgeId).maybeSingle();
+    if (existing.data) return { error: 'Уже выдан' };
+    const { error } = await _supabase.from('user_badges').insert({
+        user_login: userLogin,
+        badge_id: badgeId,
+        assigned_by: currentUser?.login
+    });
+    return { error };
+}
+
+async function removeBadge(userLogin, badgeId) {
+    const { error } = await _supabase.from('user_badges').delete().eq('user_login', userLogin).eq('badge_id', badgeId);
+    return { error };
+}
+
+// ======== ОНЛАЙН-СТАТУС ========
+async function updatePresence() {
+    if (!currentUser) return;
+    await _supabase.from('user_presence').upsert({ login: currentUser.login, last_seen: new Date().toISOString() }, { onConflict: 'login' });
+}
+setInterval(updatePresence, 30000);
+if (currentUser) updatePresence();
+
+async function isUserOnline(login) {
+    const { data } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
+    if (!data) return false;
+    const diff = Date.now() - new Date(data.last_seen).getTime();
+    return diff < 120000;
 }
