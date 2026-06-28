@@ -6,6 +6,8 @@ async function startQrScanner() {
         return;
     }
 
+
+     // 67
     if (typeof QrScanner === 'undefined') {
         showToast('Сканер не загружен. Обновите страницу.');
         return;
