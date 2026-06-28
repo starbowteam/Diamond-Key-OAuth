@@ -143,7 +143,6 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
-// ========== НАСТРОЙКА ОБЛОЖКИ (использует #coverSetupModal) ==========
 function openCoverSetupModal(profile) {
     const modal = document.getElementById('coverSetupModal');
     if (!modal) return;
@@ -173,7 +172,6 @@ function openCoverSetupModal(profile) {
         });
     });
 
-    // Выбор градиента/цвета
     modal.querySelectorAll('.cover-option').forEach(opt => {
         opt.addEventListener('click', () => {
             modal.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
@@ -182,7 +180,6 @@ function openCoverSetupModal(profile) {
         });
     });
 
-    // Загрузка изображения
     const uploadBtn = document.getElementById('coverUploadBtn');
     const fileInput = document.getElementById('coverFileInput');
     const previewContainer = document.getElementById('coverPreviewContainer');
@@ -208,7 +205,6 @@ function openCoverSetupModal(profile) {
         scaleSlider.value = scale;
     }
 
-    // Drag внутри preview
     let dragging = false, startX, startY, startPosX, startPosY;
     previewContainer.addEventListener('mousedown', (e) => {
         dragging = true;
@@ -258,7 +254,6 @@ function openCoverSetupModal(profile) {
         applyPreviewTransform();
     });
 
-    // Сохранение
     saveBtn.addEventListener('click', async () => {
         if (selectedCover) {
             await updateProfile({ cover: selectedCover, cover_pos_x: 0, cover_pos_y: 0, cover_scale: 1 });
@@ -285,7 +280,6 @@ function openCoverSetupModal(profile) {
     cancelBtn.addEventListener('click', () => closeModal('coverSetupModal'));
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal('coverSetupModal'); });
 
-    // Если уже было изображение, показать его
     if (profile.cover && profile.cover.startsWith('image:')) {
         currentImageSrc = profile.cover.replace('image:', '');
         previewImage.src = currentImageSrc;
@@ -298,7 +292,6 @@ function openCoverModal() {
     if (currentUser) openCoverSetupModal(currentUser);
 }
 
-// ========== МОДАЛКА ВЫДАЧИ БЕЙДЖЕЙ ==========
 async function openBadgeModal() {
     const modal = document.getElementById('badgeModal');
     if (!modal) return;
@@ -325,49 +318,47 @@ async function openBadgeModal() {
             const userBadges = await getUserBadges(selectedUser);
             const userBadgeIds = userBadges.map(b => b.badge_id);
 
-            const currentContainer = document.getElementById('currentBadges');
             const optionsContainer = document.getElementById('badgeOptions');
-
-            // Текущие бейджи
-            currentContainer.innerHTML = '';
-            userBadges.forEach(ub => {
-                const badge = ub.badges;
-                const card = document.createElement('div');
-                card.className = 'badge-item';
-                card.innerHTML = `
-                    <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
-                    <span class="${getBadgeGradientClass(badge.name)}">${escapeHtml(badge.name)}</span>
-                    <button class="btn btn-icon" style="margin-left:auto;" data-action="remove" data-badge-id="${badge.id}"><i class="fas fa-times"></i></button>
+            optionsContainer.innerHTML = badges.map(b => {
+                const hasBadge = userBadgeIds.includes(b.id);
+                const action = hasBadge ? 'remove' : 'assign';
+                const btnClass = hasBadge ? 'remove' : 'assign';
+                const icon = hasBadge ? 'fa-times' : 'fa-plus';
+                const label = hasBadge ? 'Убрать' : 'Выдать';
+                return `
+                    <div class="badge-option-card" data-badge-id="${b.id}">
+                        <div class="badge-icon-large"><i class="fas ${b.icon}" style="background:${b.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
+                        <span class="badge-name">${escapeHtml(b.name)}</span>
+                        <button class="${btnClass}" data-action="${action}" data-badge-id="${b.id}">
+                            <i class="fas ${icon}"></i> ${label}
+                        </button>
+                    </div>
                 `;
-                currentContainer.appendChild(card);
-            });
+            }).join('');
 
-            // Доступные бейджи
-            optionsContainer.innerHTML = badges.filter(b => !userBadgeIds.includes(b.id)).map(b => `
-                <div class="badge-option-card">
-                    <div class="badge-icon-large"><i class="fas ${b.icon}" style="background:${b.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
-                    <span class="badge-name">${escapeHtml(b.name)}</span>
-                    <button data-action="assign" data-badge-id="${b.id}">
-                        <i class="fas fa-plus"></i> Выдать
-                    </button>
-                </div>
-            `).join('');
-
-            // Обработчики кнопок
-            modal.querySelectorAll('button[data-action="remove"]').forEach(btn => {
+            optionsContainer.querySelectorAll('button').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    await removeBadge(selectedUser, btn.dataset.badgeId);
-                    showToast('Бейдж убран');
-                    openBadgeModal();
-                });
-            });
-            modal.querySelectorAll('button[data-action="assign"]').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    await assignBadge(selectedUser, btn.dataset.badgeId);
-                    showToast('Бейдж выдан');
-                    openBadgeModal();
+                    const badgeId = btn.dataset.badgeId;
+                    const action = btn.dataset.action;
+                    if (action === 'assign') {
+                        const { error } = await assignBadge(selectedUser, badgeId);
+                        if (error) showToast(error.message || 'Ошибка');
+                        else showToast('Бейдж выдан');
+                    } else {
+                        const { error } = await removeBadge(selectedUser, badgeId);
+                        if (error) showToast('Ошибка');
+                        else showToast('Бейдж убран');
+                    }
+                    // Обновляем кнопку на месте
+                    const card = btn.closest('.badge-option-card');
+                    const newAction = action === 'assign' ? 'remove' : 'assign';
+                    const newClass = newAction === 'remove' ? 'remove' : 'assign';
+                    const newIcon = newAction === 'remove' ? 'fa-times' : 'fa-plus';
+                    const newLabel = newAction === 'remove' ? 'Убрать' : 'Выдать';
+                    btn.dataset.action = newAction;
+                    btn.className = newClass;
+                    btn.innerHTML = `<i class="fas ${newIcon}"></i> ${newLabel}`;
                 });
             });
         });
