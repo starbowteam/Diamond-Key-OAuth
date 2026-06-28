@@ -362,10 +362,9 @@ body {
     margin-bottom: 32px;
 }
 
-/* Новый контейнер обложки */
 .profile-cover {
     height: 200px;
-    background: linear-gradient(135deg, #3e404a 0%, #2a2c34 100%); /* светлее дефолт */
+    background: linear-gradient(135deg, #3e404a 0%, #2a2c34 100%);
     position: relative;
     overflow: hidden;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
@@ -373,13 +372,13 @@ body {
 }
 .profile-cover img.cover-image {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    top: 50%;
+    left: 50%;
+    width: auto;
     height: 100%;
-    object-fit: cover;
+    min-width: 100%;
     transform-origin: center;
-    /* transform будет задан из JS (translate + scale) */
+    /* transform задаётся через JS */
 }
 .profile-cover .cover-hover {
     position: absolute;
@@ -789,9 +788,9 @@ body {
 .qr-scanner-header h3 { margin: 0; font-size: 20px; }
 #qr-video { border-radius: 16px; background: #000; }
 
-/* Модалка выдачи бейджей – увеличенная */
+/* Модалка выдачи бейджей – увеличенная, горизонтальная */
 .badge-modal-content {
-    max-width: 650px;
+    max-width: 700px;
     width: 95%;
     padding: 40px 36px;
     max-height: 85vh;
@@ -809,7 +808,7 @@ body {
     margin-bottom: 24px;
 }
 .badge-user-list {
-    max-height: 300px;
+    max-height: 220px;
     overflow-y: auto;
     margin-bottom: 24px;
 }
@@ -832,44 +831,51 @@ body {
 .badge-options-container {
     margin-top: 16px;
 }
-.badge-option-card {
+.badge-options-scroll {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+    scroll-snap-type: x mandatory;
+}
+.badge-option-card {
+    flex: 0 0 auto;
+    width: 160px;
+    padding: 16px;
+    border-radius: 20px;
     background: rgba(255,255,255,0.04);
     border: 1px solid var(--border-glass);
-    border-radius: 18px;
-    margin-bottom: 8px;
+    text-align: center;
+    scroll-snap-align: start;
     transition: 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
 }
 .badge-option-card:hover {
     background: rgba(255,255,255,0.08);
     border-color: var(--accent);
 }
-.badge-option-card .badge-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.badge-option-card .badge-icon {
-    font-size: 22px;
-    width: 36px;
-    height: 36px;
+.badge-option-card .badge-icon-large {
+    font-size: 28px;
+    width: 44px;
+    height: 44px;
     background: rgba(255,255,255,0.1);
-    border-radius: 10px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 .badge-option-card .badge-name {
     font-weight: 600;
-    font-size: 15px;
+    font-size: 14px;
 }
 .badge-option-card button {
-    padding: 8px 16px;
+    margin-top: auto;
+    padding: 6px 14px;
     border-radius: 20px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     border: 1px solid var(--border-glass);
     background: rgba(255,255,255,0.08);
@@ -879,6 +885,12 @@ body {
 }
 .badge-option-card button:hover {
     background: rgba(255,255,255,0.15);
+}
+.current-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
 }
 
 /* Модалка настройки обложки */
@@ -902,10 +914,12 @@ body {
 }
 .cover-preview-container img {
     position: absolute;
-    top: 0;
-    left: 0;
-    transform-origin: 0 0;
-    /* transform задаётся динамически */
+    top: 50%;
+    left: 50%;
+    transform-origin: center;
+    height: 100%;
+    width: auto;
+    min-width: 100%;
 }
 .cover-controls {
     display: flex;
@@ -991,4 +1005,5 @@ body {
     #diamond-bot-btn img { width: 44px; height: 44px; }
     .diamond-bot-modal { width: calc(100% - 32px); right: 16px; bottom: 170px; height: 380px; }
     .cover-preview-container { height: 180px; }
+    .badge-option-card { width: 130px; }
 }
