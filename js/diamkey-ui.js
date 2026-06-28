@@ -32,6 +32,17 @@ function loadHomeData() {
     if (typeof loadAnnouncement === 'function') loadAnnouncement();
 }
 
+function smoothLoginSuccess() {
+    const loader = document.getElementById('smoothLoader');
+    if (!loader) return;
+    loader.classList.add('show');
+    setTimeout(() => {
+        navigateTo('/home');
+        loader.classList.remove('show');
+        updateSidebarVisibility(); // <-- показываем кнопки после входа
+    }, 1200);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginModal = document.getElementById('loginModal');
     if (!loginModal) return;
@@ -125,13 +136,3 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 });
-
-function smoothLoginSuccess() {
-    const loader = document.getElementById('smoothLoader');
-    if (!loader) return;
-    loader.classList.add('show');
-    setTimeout(() => {
-        navigateTo('/home');
-        loader.classList.remove('show');
-    }, 1200);
-}
