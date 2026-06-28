@@ -1,4 +1,3 @@
-// ========== DIAMKEY CORE – полный файл ==========
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -78,7 +77,7 @@ async function register(login, password) {
         description: '',
         token,
         secret_word: secretWord,
-        cover: 'default'       // <-- обложка по умолчанию
+        cover: 'default'
     }]);
     if (error) {
         console.error('[DiamKey] Ошибка регистрации:', error);
@@ -195,7 +194,6 @@ async function getAnnouncement() {
     return data || [];
 }
 
-// ========== ПРИСУТСТВИЕ (Онлайн-точка) ==========
 async function updatePresence(status = 'online') {
     if (!currentUser) return;
     await _supabase.from('user_presence').upsert({ login: currentUser.login, last_seen: new Date().toISOString(), status }, { onConflict: 'login' });
@@ -208,7 +206,6 @@ async function getUserPresence(login) {
     return data;
 }
 
-// ========== БЕЙДЖИ ==========
 async function getBadges() {
     const { data } = await _supabase.from('badges').select('*');
     return data || [];
