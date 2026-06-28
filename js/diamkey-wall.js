@@ -114,16 +114,26 @@ function getBadgeGradientClass(badgeName) {
     return map[badgeName] || '';
 }
 
+function applyCoverTransform(img, posX, posY, scale) {
+    // posX, posY - проценты от центра (-100..100)
+    const translateX = posX * 2 + '%'; // у нас контейнер, translate работает относительно размеров самого img? 
+    // лучше вычислять: размеры img могут быть больше контейнера. Но мы используем relative позиционирование?
+    // Мы используем position:absolute; top:50%; left:50%; transform-origin: center; 
+    // translate использует проценты относительно размеров самого элемента.
+    // Поэтому translateX в процентах от ширины img, translateY от высоты img.
+    // posX/posY: 0 = центр, -100 = сдвиг на -100% ширины img влево, 100 = сдвиг на 100% вправо.
+    img.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
+}
+
 function renderCoverHTML(profile, isOwnProfile) {
     if (profile.cover && profile.cover.startsWith('image:')) {
         const src = profile.cover.replace('image:', '');
         const scale = profile.cover_scale || 1;
-        const posX = profile.cover_pos_x || 0;
+        const posX = profile.cover_pos_x || 0; // проценты
         const posY = profile.cover_pos_y || 0;
-        const transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
         return `
             <div class="profile-cover" id="profileCoverBlock">
-                <img class="cover-image" src="${escapeHtml(src)}" style="transform: ${transform};" draggable="false">
+                <img class="cover-image" src="${escapeHtml(src)}" data-pos-x="${posX}" data-pos-y="${posY}" data-scale="${scale}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">
                 ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
             </div>
         `;
@@ -247,7 +257,6 @@ async function openUserProfile(login) {
         userView.innerHTML = profileHTML;
         userView.className = 'profile-panel';
 
-        // Обработчик клика по обложке (для своего профиля)
         const coverBlock = document.getElementById('profileCoverBlock');
         if (coverBlock && currentUser && currentUser.login === login) {
             coverBlock.addEventListener('click', () => {
@@ -255,7 +264,6 @@ async function openUserProfile(login) {
             });
         }
 
-        // Обработчик клика по описанию
         const descEl = document.getElementById('profileDescription');
         if (descEl && currentUser && currentUser.login === login) {
             descEl.addEventListener('click', () => {
@@ -263,7 +271,6 @@ async function openUserProfile(login) {
                 document.getElementById('editDescriptionModal').style.display = 'flex';
                 document.getElementById('editDescriptionModal').classList.add('active');
             });
-            // Сохранение описания
             document.getElementById('saveDescriptionBtn').onclick = async () => {
                 const desc = document.getElementById('editDescriptionInput').value.trim();
                 await updateProfile({ description: desc });
@@ -273,7 +280,6 @@ async function openUserProfile(login) {
             };
         }
 
-        // Стена
         if (userWallSection) {
             userWallSection.style.display = 'block';
             let wallHTML = '';
@@ -430,7 +436,6 @@ async function renderMyProfile() {
             </div>
         `;
 
-        // Обработчики
         const coverBlockEl = document.getElementById('profileCoverBlock');
         if (coverBlockEl) {
             coverBlockEl.addEventListener('click', () => {
