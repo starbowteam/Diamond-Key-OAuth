@@ -538,6 +538,7 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+/* ============ ОБНОВЛЁННАЯ GPX-ВЬЮ ============ */
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
@@ -586,7 +587,7 @@ async function renderProfileGpxView(login) {
                 `;
             }).join('');
         } else {
-            cardsHTML = '<div class="empty-gpx-message"><h3>Поездок пока нет</h3></div>';
+            cardsHTML = '<div class="empty-gpx-message"><p>Поездок пока нет</p></div>';
         }
 
         const backTarget = (currentUser && currentUser.login === login) ? '/profile' : `/users/${login}`;
@@ -599,16 +600,12 @@ async function renderProfileGpxView(login) {
                         ${avatarHTML}
                     </div>
                 </div>
-                <div class="profile-info">
-                    <div class="profile-details">
-                        <h2>${escapeHtml(profile.name || login)}</h2>
-                    </div>
+                <div class="profile-info" style="justify-content: flex-end;">
                     <div class="profile-actions">
                         <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
                     </div>
                 </div>
                 <div style="padding: 0 32px 24px;">
-                    <div class="gpx-section-title">Поездки ${escapeHtml(profile.name || login)}</div>
                     <div class="profile-gpx-grid" id="profileGpxGrid">
                         ${cardsHTML}
                     </div>
