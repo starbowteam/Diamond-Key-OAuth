@@ -125,14 +125,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
-    // Кнопка выдачи бейджей (админская)
     document.getElementById('badgeAdminBtn')?.addEventListener('click', () => {
         if (currentUser && currentUser.login === 'viktorshopa') {
             openBadgeModal();
         }
     });
 
-    // Модалка обложки – переключение вкладок
+    // Старая модалка обложки больше не нужна, но оставим для совместимости
     document.querySelectorAll('[data-cover-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('[data-cover-tab]').forEach(b => b.classList.remove('active'));
@@ -142,36 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('coverColors').style.display = tab === 'colors' ? 'grid' : 'none';
             document.getElementById('coverUpload').style.display = tab === 'upload' ? 'block' : 'none';
         });
-    });
-
-    // Выбор обложки
-    let selectedCover = null;
-    document.querySelectorAll('.cover-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            document.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
-            selectedCover = opt.dataset.cover;
-        });
-    });
-
-    document.getElementById('coverFileInput')?.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            selectedCover = ev.target.result;
-            document.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
-        };
-        reader.readAsDataURL(file);
-    });
-
-    document.getElementById('saveCoverBtn')?.addEventListener('click', async () => {
-        if (!selectedCover) return;
-        await _supabase.from('users').update({ cover: selectedCover }).eq('login', currentUser.login);
-        currentUser.cover = selectedCover;
-        closeModal('coverModal');
-        if (document.getElementById('page-profile').classList.contains('active')) renderMyProfile();
-        showToast('Обложка обновлена');
     });
 });
 
@@ -186,21 +155,176 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
-function openCoverModal() {
-    const modal = document.getElementById('coverModal');
-    if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
+// ================= НОВАЯ НАСТРОЙКА БАННЕРА =================
+function openCoverSetupModal(profile) {
+    // Создаём модалку динамически, чтобы не менять HTML
+    const existing = document.getElementById('coverSetupModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'coverSetupModal';
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+    modal.innerHTML = `
+        <div class="modal-content glass-panel cover-setup-modal" onclick="event.stopPropagation()">
+            <h3><i class="fas fa-image"></i> Настроить обложку</h3>
+            <div class="cover-preview-container" id="coverPreviewContainer">
+                <img id="coverPreviewImage" src="" alt="Preview" draggable="false">
+            </div>
+            <div class="cover-controls">
+                <i class="fas fa-search-minus"></i>
+                <input type="range" id="coverScaleSlider" min="0.5" max="2" step="0.01" value="1">
+                <i class="fas fa-search-plus"></i>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
+                <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Загрузить</button>
+                <button class="btn btn-primary" id="saveCoverSetupBtn"><i class="fas fa-check"></i> Сохранить</button>
+                <button class="btn btn-secondary" id="cancelCoverSetupBtn">Отмена</button>
+            </div>
+            <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const container = document.getElementById('coverPreviewContainer');
+    const image = document.getElementById('coverPreviewImage');
+    const slider = document.getElementById('coverScaleSlider');
+    const uploadBtn = document.getElementById('coverUploadBtn');
+    const fileInput = document.getElementById('coverFileInput');
+    const saveBtn = document.getElementById('saveCoverSetupBtn');
+    const cancelBtn = document.getElementById('cancelCoverSetupBtn');
+
+    let currentSrc = '';
+    let posX = profile.cover_pos_x || 0;
+    let posY = profile.cover_pos_y || 0;
+    let scale = profile.cover_scale || 1;
+
+    // Если уже было изображение, загружаем его
+    if (profile.cover && profile.cover.startsWith('image:')) {
+        currentSrc = profile.cover.replace('image:', '');
+        image.src = currentSrc;
+    }
+
+    function applyTransform() {
+        image.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+        slider.value = scale;
+    }
+
+    applyTransform();
+
+    // Drag
+    let isDragging = false;
+    let startX, startY, startPosX, startPosY;
+
+    container.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startPosX = posX;
+        startPosY = posY;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        posX = startPosX + dx;
+        posY = startPosY + dy;
+        applyTransform();
+    });
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+    // Touch events
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            startPosX = posX;
+            startPosY = posY;
+        }
+    });
+    window.addEventListener('touchmove', (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        posX = startPosX + dx;
+        posY = startPosY + dy;
+        applyTransform();
+        e.preventDefault();
+    }, { passive: false });
+    window.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+    slider.addEventListener('input', () => {
+        scale = parseFloat(slider.value);
+        applyTransform();
+    });
+
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            currentSrc = ev.target.result;
+            image.src = currentSrc;
+            posX = 0; posY = 0; scale = 1;
+            applyTransform();
+        };
+        reader.readAsDataURL(file);
+    });
+
+    saveBtn.addEventListener('click', async () => {
+        if (!currentSrc) {
+            showToast('Сначала загрузите изображение');
+            return;
+        }
+        const coverValue = 'image:' + currentSrc;
+        await updateProfile({
+            cover: coverValue,
+            cover_pos_x: posX,
+            cover_pos_y: posY,
+            cover_scale: scale
+        });
+        currentUser.cover = coverValue;
+        currentUser.cover_pos_x = posX;
+        currentUser.cover_pos_y = posY;
+        currentUser.cover_scale = scale;
+        modal.remove();
+        if (document.getElementById('page-profile').classList.contains('active')) {
+            renderMyProfile();
+        }
+        showToast('Обложка обновлена');
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        modal.remove();
+    });
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
 }
 
+// Старая openCoverModal больше не нужна, оставляем заглушку
+function openCoverModal() {
+    // можно перенаправить на новую, если ещё где-то вызывается
+    if (currentUser) openCoverSetupModal(currentUser);
+}
+
+// ================= МОДАЛКА БЕЙДЖЕЙ (улучшенная) =================
 async function openBadgeModal() {
     const modal = document.getElementById('badgeModal');
     if (!modal) return;
     modal.style.display = 'flex';
     modal.classList.add('active');
 
-    // Используем улучшенные классы стилей
     const modalContent = modal.querySelector('.modal-content');
     if (modalContent) {
-        modalContent.classList.add('badge-modal-content');
+        modalContent.className = 'modal-content glass-panel badge-modal-content';
     }
 
     const users = await getUsers();
@@ -253,14 +377,12 @@ async function openBadgeModal() {
                         if (error) showToast('Ошибка');
                         else showToast('Бейдж убран');
                     }
-                    // Обновить модалку
-                    openBadgeModal();
+                    openBadgeModal(); // обновить
                 });
             });
         });
     });
 
-    // Поиск
     document.getElementById('badgeUserSearch').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
         listContainer.querySelectorAll('.badge-user-row').forEach(row => {
