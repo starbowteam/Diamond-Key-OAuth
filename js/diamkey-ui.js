@@ -265,7 +265,6 @@ function showCaptchaModal(onSuccess) {
     });
 }
 
-// ========== МОДАЛКА ОБЛОЖКИ (градиенты и цвета) ==========
 function openCoverSetupModal(profile) {
     const container = document.getElementById('coverSetupModalContainer');
     container.innerHTML = '';
@@ -290,7 +289,6 @@ function openCoverSetupModal(profile) {
                 <button class="auth-tab" data-tab="upload">Загрузить</button>
             </div>
 
-            <!-- Градиенты -->
             <div id="coverGradients" class="cover-options-grid" style="display:grid;">
                 <div class="cover-option" style="background:linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%);" data-cover="gradient:#2a2a35:#1a1a22"></div>
                 <div class="cover-option" style="background:linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%);" data-cover="gradient:#1e3c5c:#0f1e33"></div>
@@ -302,7 +300,6 @@ function openCoverSetupModal(profile) {
                 <div class="cover-option" style="background:linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%);" data-cover="gradient:#4a2d3d:#2e1a24"></div>
             </div>
 
-            <!-- Цвета -->
             <div id="coverColors" class="cover-options-grid" style="display:none;">
                 <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
                 <div class="cover-option" style="background:#2d2d44;" data-cover="color:#2d2d44"></div>
@@ -314,7 +311,6 @@ function openCoverSetupModal(profile) {
                 <div class="cover-option" style="background:#3a1a3a;" data-cover="color:#3a1a3a"></div>
             </div>
 
-            <!-- Загрузка -->
             <div id="coverUpload" style="display:none;">
                 <div class="cover-preview-container" id="coverPreviewContainer">
                     <img id="coverPreviewImage" src="" alt="Preview" draggable="false" style="position:absolute; top:50%; left:50%; transform-origin:center; height:100%; width:auto; min-width:100%;">
@@ -485,7 +481,6 @@ function openCoverModal() {
     if (currentUser) openCoverSetupModal(currentUser);
 }
 
-// ========== МОДАЛКА БЕЙДЖЕЙ ==========
 async function openBadgeModal() {
     const modal = document.getElementById('badgeModal');
     if (!modal) return;
@@ -581,3 +576,5 @@ function updateSidebarVisibility() {
         badgeAdminBtn.style.display = (currentUser && currentUser.login === 'viktorshopa') ? 'flex' : 'none';
     }
 }
+
+// 67
