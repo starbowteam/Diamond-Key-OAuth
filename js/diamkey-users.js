@@ -19,7 +19,6 @@ async function loadUsers() {
     document.getElementById('usersLoaderStatus').textContent = 'Готово!';
     await new Promise(r => setTimeout(r, 400));
 
-    // Сортирующие кнопки + кнопка фильтра бейджей
     sortContainer.innerHTML = `
         <span class="text-muted">Сортировка:</span>
         <button class="sort-btn active" data-sort="login">По нику</button>
@@ -30,7 +29,7 @@ async function loadUsers() {
     `;
 
     let currentSort = 'login';
-    let activeBadgeFilter = null; // объект {id, name} или null
+    let activeBadgeFilter = null;
     const allBadges = await getAllBadges();
 
     async function filterUsersByBadge(badgeId) {
@@ -60,8 +59,8 @@ async function loadUsers() {
         );
         container.innerHTML = sorted.map(u => `
             <div class="user-card glass-panel" data-login="${u.login}" style="cursor:pointer;">
-                ${u.avatar
-                    ? `<img src="${u.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">`
+                ${u.avatar && u.avatar.trim()
+                    ? `<img src="${escapeHtml(u.avatar)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
                     : '<i class="fas fa-user" style="font-size:44px;color:var(--text-muted);width:44px;height:44px;display:flex;align-items:center;justify-content:center;"></i>'}
                 <div><h4>${escapeHtml(u.name || u.login)}</h4><span>@${u.login}</span></div>
             </div>
@@ -69,14 +68,12 @@ async function loadUsers() {
 
         container.querySelectorAll('.user-card').forEach(card => {
             card.addEventListener('click', () => {
-                const login = card.dataset.login;
-                navigateTo('/users/' + login);
+                navigateTo('/users/' + card.dataset.login);
             });
         });
         updateFilterButton();
     }
 
-    // Обработчики сортировки
     sortContainer.querySelectorAll('.sort-btn[data-sort]').forEach(btn => {
         btn.addEventListener('click', () => {
             sortContainer.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.classList.remove('active'));
@@ -86,10 +83,9 @@ async function loadUsers() {
         });
     });
 
-    // Кнопка фильтра
     document.getElementById('badgeFilterBtn').addEventListener('click', () => {
         openBadgeFilterModal(allBadges, (badge) => {
-            activeBadgeFilter = badge; // {id, name} или null
+            activeBadgeFilter = badge;
             render();
         });
     });
@@ -105,7 +101,6 @@ async function loadUsers() {
 }
 
 function openBadgeFilterModal(badges, onSelect) {
-    // Удаляем предыдущую, если есть
     const existing = document.querySelector('.badge-filter-modal');
     if (existing) existing.remove();
 
@@ -152,7 +147,6 @@ function openBadgeFilterModal(badges, onSelect) {
         setTimeout(() => modal.remove(), 300);
         onSelect(null);
     });
-
     document.getElementById('closeBadgeFilterBtn').addEventListener('click', () => {
         modal.classList.remove('active');
         setTimeout(() => modal.remove(), 300);
