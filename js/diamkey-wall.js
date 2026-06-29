@@ -149,23 +149,41 @@ function renderCoverHTML(profile, isOwnProfile) {
 }
 
 /**
- * Аватар без вылезания за рамку.
- * Если src пустой – fa-user, иначе img + скрытая иконка для подмены при ошибке.
+ * Аватар без вылезаний и сдвигов.
+ * Если src пустой – fa-user в том же размере.
  */
 function avatarHTML(src, size = 100) {
-    const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>`;
-    if (!src || !src.trim()) return fallbackIcon;
+    if (!src || !src.trim()) {
+        return `<i class="fas fa-user" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);background:var(--bg-primary);border-radius:50%;font-size:${size*0.5}px;"></i>`;
+    }
+    return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;"
+             onerror="this.outerHTML='<i class=\'fas fa-user\' style=\'width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);background:var(--bg-primary);border-radius:50%;font-size:${size*0.5}px;\'></i>';">`;
+}
 
-    return `
-        <img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-        <i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:none;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>
-    `;
+/**
+ * Форматирует статус онлайн
+ */
+function onlineStatusHTML(online, lastSeen) {
+    if (online) {
+        return '<span class="online-status online"><i class="fas fa-circle"></i> В сети</span>';
+    }
+    if (!lastSeen) return '<span class="online-status offline"><i class="fas fa-circle"></i> Не в сети</span>';
+    const minutes = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 60000);
+    if (minutes < 1) return '<span class="online-status offline"><i class="fas fa-circle"></i> Был только что</span>';
+    if (minutes < 60) return `<span class="online-status offline"><i class="fas fa-circle"></i> Был ${minutes} мин назад</span>`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `<span class="online-status offline"><i class="fas fa-circle"></i> Был ${hours} ч назад</span>`;
+    return `<span class="online-status offline"><i class="fas fa-circle"></i> Был ${new Date(lastSeen).toLocaleDateString()}</span>`;
 }
 
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const online = await isUserOnline(login);
-    const onlineDot = online ? '<div class="online-dot"></div>' : '';
+    let lastSeen = null;
+    if (!online) {
+        const { data } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
+        if (data) lastSeen = data.last_seen;
+    }
+    const statusHTML = onlineStatusHTML(online, lastSeen);
 
     let badgesHTML = '';
     if (badges && badges.length > 0) {
@@ -193,13 +211,13 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         <div class="avatar-section">
             <div class="avatar-wrapper">
                 ${avatarHTML(profile.avatar, 100)}
-                ${onlineDot}
             </div>
         </div>
         <div class="profile-info">
             <div class="profile-details">
                 <h2>${escapeHtml(profile.name || login)}</h2>
                 <p class="description" id="profileDescription">${escapeHtml(profile.description || 'Нет описания')}</p>
+                ${statusHTML}
                 <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
             <div class="profile-actions">
@@ -384,7 +402,12 @@ async function renderMyProfile() {
         if (!profile) return;
 
         const online = await isUserOnline(login);
-        const onlineDot = online ? '<div class="online-dot"></div>' : '';
+        let lastSeen = null;
+        if (!online) {
+            const { data } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
+            if (data) lastSeen = data.last_seen;
+        }
+        const statusHTML = onlineStatusHTML(online, lastSeen);
 
         let badgesHTML = '';
         if (badges && badges.length > 0) {
@@ -409,7 +432,6 @@ async function renderMyProfile() {
                 <div class="avatar-section">
                     <div class="avatar-wrapper" id="myAvatarWrapper">
                         ${avatarHTML(profile.avatar, 100)}
-                        ${onlineDot}
                         <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
                     </div>
                 </div>
@@ -417,6 +439,7 @@ async function renderMyProfile() {
                     <div class="profile-details">
                         <h2>${escapeHtml(profile.name || login)}</h2>
                         <p class="description" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')}</p>
+                        ${statusHTML}
                         <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
                     <div class="profile-actions">
