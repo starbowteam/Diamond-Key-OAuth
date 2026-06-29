@@ -222,8 +222,9 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                 <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
             </div>
             <div class="profile-body">
-                <!-- Левая колонка -->
-                <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
+                <!-- Описание как карточка с полосой -->
+                <div class="description-card" id="profileDescription">${escapeHtml(desc)}</div>
+                <!-- Дополнения -->
                 <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
                     <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
                     <div class="action-card-text">
@@ -232,14 +233,15 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                     </div>
                     <i class="fas fa-chevron-right action-card-arrow"></i>
                 </div>
-                <!-- Вторая строка -->
-                <div style="display:flex; flex-direction:column; justify-content:space-between;">
+                <!-- Бейджи + статус/дата -->
+                <div>
                     <div class="badges-panel">${badgesHTML}</div>
                     <div class="meta-row">
                         ${statusHTML}
                         <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
                 </div>
+                <!-- Diamond Plus -->
                 <div class="action-card ${diamondPlusClass}" id="diamondPlusCard">
                     <div class="action-card-icon"><i class="fas fa-crown"></i></div>
                     <div class="action-card-text">
@@ -469,7 +471,7 @@ async function renderMyProfile() {
                     <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
                 </div>
                 <div class="profile-body">
-                    <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
+                    <div class="description-card" id="myDescription">${escapeHtml(desc)}</div>
                     <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
                         <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
                         <div class="action-card-text">
@@ -478,7 +480,7 @@ async function renderMyProfile() {
                         </div>
                         <i class="fas fa-chevron-right action-card-arrow"></i>
                     </div>
-                    <div style="display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
                         <div class="badges-panel">${badgesHTML}</div>
                         <div class="meta-row">
                             ${statusHTML}
@@ -654,7 +656,7 @@ async function renderProfileGpxView(login) {
         }
 
         const isOwnProfile = (currentUser && currentUser.login === login);
-        const coverBlock = renderCoverHTML(profile, false, false); // без кнопок
+        const coverBlock = renderCoverHTML(profile, false, false);
 
         let totalRides = gpxFiles.length;
         let totalDist = 0, totalAscent = 0;
