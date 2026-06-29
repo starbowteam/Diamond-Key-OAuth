@@ -129,20 +129,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // === Регистрация (без капчи, но с проверкой сложности) ===
+    // === Регистрация с капчей ===
     document.getElementById('doRegisterBtn')?.addEventListener('click', async () => {
         const loginVal = regLoginInput.value.trim();
         const pass1 = regPasswordInput.value;
         const pass2 = regPasswordConfirm.value;
+        if (!loginVal || !pass1 || !pass2) return showToast('Заполните все поля');
         if (pass1 !== pass2) return showToast('Пароли не совпадают');
 
         const strength = evaluatePasswordStrength(pass1);
         if (strength.score < 2) return showToast('Пароль слишком слабый. Следуйте подсказкам.');
 
-        const res = await register(loginVal, pass1);
-        if (res.error) return showToast(res.error);
-        closeModal('loginModal');
-        smoothLoginSuccess();
+        // Запускаем капчу
+        showCaptchaModal(async () => {
+            const res = await register(loginVal, pass1);
+            if (res.error) {
+                showToast(res.error);
+                return;
+            }
+            closeModal('loginModal');
+            smoothLoginSuccess();
+        });
     });
 
     const scrollBtn = document.createElement('button');
@@ -216,6 +223,7 @@ function showCaptchaModal(onSuccess) {
         timerSeconds--;
         if (timerSeconds <= 0) {
             clearInterval(timerInterval);
+            // Меняем капчу и сбрасываем таймер
             captchaCode = generateCaptchaCode();
             timerSeconds = 15;
             modal.querySelector('.captcha-display').textContent = captchaCode;
@@ -259,6 +267,7 @@ function showCaptchaModal(onSuccess) {
         this.value = this.value.replace(/\D/g, '').substring(0, 3);
     });
 
+    // Закрытие по клику вне модалки
     modal.addEventListener('click', function(e) {
         if (e.target === modal) {
             clearInterval(timerInterval);
