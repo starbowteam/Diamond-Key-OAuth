@@ -6,7 +6,7 @@ async function loadAnnouncement() {
     if (data && data.length) {
         const creator = await getProfile('viktorshopa');
         body.innerHTML = `
-            <img src="${creator?.avatar || ''}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--border-glass);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            ${avatarHTML(creator?.avatar, 48, 'fallback-only')}
             <div class="announcement-content">
                 <p>${escapeHtml(data[0].content)}</p>
                 <div class="announcement-footer">
@@ -148,16 +148,24 @@ function renderCoverHTML(profile, isOwnProfile) {
     }
 }
 
-// Универсальная функция аватара
-function avatarHTML(avatarSrc, size) {
-    if (avatarSrc && avatarSrc.trim()) {
-        return `<img src="${escapeHtml(avatarSrc)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
-    }
-    return `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"></i>`;
+/**
+ * Единая функция отрисовки аватара.
+ * @param {string} src - ссылка на аватар (может быть пустой или битой)
+ * @param {number} size - размер в пикселях
+ * @param {string} variant - 'full' (для основного аватара) или 'fallback-only' (для мелких, где нужен только контейнер)
+ * @returns {string} HTML-разметка
+ */
+function avatarHTML(src, size = 100) {
+    const fallback = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"></i>`;
+
+    if (!src || !src.trim()) return fallback;
+
+    return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" 
+        onerror="this.outerHTML = '${fallback.replace(/'/g, "\\'")}';" 
+    />`;
 }
 
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
-    const avatarBlock = avatarHTML(profile.avatar, 100);
     const online = await isUserOnline(login);
     const onlineDot = online ? '<div class="online-dot"></div>' : '';
 
@@ -186,7 +194,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         ${coverBlock}
         <div class="avatar-section">
             <div class="avatar-wrapper">
-                ${avatarBlock}
+                ${avatarHTML(profile.avatar, 100)}
                 ${onlineDot}
             </div>
         </div>
@@ -284,7 +292,7 @@ async function openUserProfile(login) {
                 wallHTML = wallPosts.map(p => `
                     <div class="wall-post glass-panel" data-post-id="${p.id}">
                         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                            ${p.user_avatar && p.user_avatar.trim() ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                            ${avatarHTML(p.user_avatar, 32)}
                             <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
                             <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
                         </div>
@@ -298,7 +306,7 @@ async function openUserProfile(login) {
             userWallSection.innerHTML = `
                 <div class="wall-input" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border-radius:18px; padding:8px 16px;">
                     <div style="width:36px; height:36px; border-radius:50%; overflow:hidden; flex-shrink:0;">
-                        ${currentUser && currentUser.avatar && currentUser.avatar.trim() ? `<img src="${escapeHtml(currentUser.avatar)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
+                        ${avatarHTML(currentUser?.avatar, 36)}
                     </div>
                     <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:transparent; border:none; color:var(--text-primary); resize:none; font-size:15px; outline:none; padding:8px 0;"></textarea>
                     <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
@@ -379,7 +387,6 @@ async function renderMyProfile() {
 
         const online = await isUserOnline(login);
         const onlineDot = online ? '<div class="online-dot"></div>' : '';
-        const avatarBlock = avatarHTML(profile.avatar, 100);
 
         let badgesHTML = '';
         if (badges && badges.length > 0) {
@@ -403,7 +410,7 @@ async function renderMyProfile() {
                 ${coverBlock}
                 <div class="avatar-section">
                     <div class="avatar-wrapper" id="myAvatarWrapper">
-                        ${avatarBlock}
+                        ${avatarHTML(profile.avatar, 100)}
                         ${onlineDot}
                         <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
                     </div>
@@ -491,7 +498,7 @@ function buildWallHTML(posts) {
     return posts.map(p => `
         <div class="wall-post glass-panel" data-post-id="${p.id}">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                ${p.user_avatar && p.user_avatar.trim() ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                ${avatarHTML(p.user_avatar, 32)}
                 <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
                 <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
             </div>
@@ -555,7 +562,6 @@ async function renderProfileGpxView(login) {
 
         const isOwnProfile = (currentUser && currentUser.login === login);
         const coverBlock = renderCoverHTML(profile, isOwnProfile);
-        const avatarBlock = avatarHTML(profile.avatar, 100);
 
         let totalRides = gpxFiles.length;
         let totalDist = 0, totalAscent = 0;
@@ -597,7 +603,7 @@ async function renderProfileGpxView(login) {
                 ${coverBlock}
                 <div class="avatar-section" style="display:flex; align-items:center; gap:20px;">
                     <div class="avatar-wrapper" style="flex-shrink:0;">
-                        ${avatarBlock}
+                        ${avatarHTML(profile.avatar, 100)}
                     </div>
                     <div style="margin-left:auto;">
                         <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
