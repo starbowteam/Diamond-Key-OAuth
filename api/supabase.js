@@ -35,6 +35,3 @@ export default async function handler(req, res) {
         res.status(500).json({ error: 'Proxy error', details: error.message });
     }
 }
-
-
-// 61!!
