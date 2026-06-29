@@ -6,7 +6,7 @@ async function loadAnnouncement() {
     if (data && data.length) {
         const creator = await getProfile('viktorshopa');
         body.innerHTML = `
-            ${avatarHTML(creator?.avatar, 48, 'fallback-only')}
+            ${avatarHTML(creator?.avatar, 48)}
             <div class="announcement-content">
                 <p>${escapeHtml(data[0].content)}</p>
                 <div class="announcement-footer">
@@ -149,20 +149,20 @@ function renderCoverHTML(profile, isOwnProfile) {
 }
 
 /**
- * Единая функция отрисовки аватара.
- * @param {string} src - ссылка на аватар (может быть пустой или битой)
- * @param {number} size - размер в пикселях
- * @param {string} variant - 'full' (для основного аватара) или 'fallback-only' (для мелких, где нужен только контейнер)
- * @returns {string} HTML-разметка
+ * Надёжная функция аватара: если src пустой или битый — показывает fa-user.
+ * Мусорных символов больше не будет.
  */
 function avatarHTML(src, size = 100) {
-    const fallback = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"></i>`;
+    const fallbackHTML = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></i>`;
+    if (!src || !src.trim()) return fallbackHTML;
 
-    if (!src || !src.trim()) return fallback;
-
-    return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" 
-        onerror="this.outerHTML = '${fallback.replace(/'/g, "\\'")}';" 
-    />`;
+    return `
+    <span style="display:inline-block;width:${size}px;height:${size}px;flex-shrink:0;">
+        <img src="${escapeHtml(src)}"
+             style="width:100%;height:100%;border-radius:50%;object-fit:cover;"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <span style="display:none;width:100%;height:100%;">${fallbackHTML}</span>
+    </span>`;
 }
 
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
