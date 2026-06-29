@@ -11,7 +11,6 @@ function updateSidebarVisibility() {
         if (href === '/home' || href === 'https://discord.gg/diamondshop') return;
         btn.style.display = isLoggedIn ? '' : 'none';
     });
-    // Кнопка выхода и сканер (без href) всегда должны следовать за состоянием
     const logoutBtn = document.getElementById('logoutSidebarBtn');
     const scannerBtn = document.getElementById('qrScannerBtn');
     if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'flex' : 'none';
@@ -66,7 +65,6 @@ function handleRoute() {
             document.getElementById('saveGpxBtn').style.display = 'none';
             const uploadBtn = document.getElementById('uploadGpxBtn');
             if (uploadBtn) uploadBtn.style.display = 'none';
-            console.log('[DiamKey] Загрузка GPX по ID из URL:', gpxId);
             setTimeout(() => { if (typeof loadGpxFromId === 'function') loadGpxFromId(gpxId); }, 400);
         } else {
             const uploadBtn = document.getElementById('uploadGpxBtn');
@@ -92,6 +90,9 @@ function handleRoute() {
         activatePage('page-qr-confirm', true);
         const ticket = params.get('ticket');
         if (ticket && typeof renderQrConfirm === 'function') renderQrConfirm(ticket);
+    } else if (path === '/diamond-plus') {
+        activatePage('page-diamond-plus', true);
+        if (typeof renderDiamondPlusPage === 'function') renderDiamondPlusPage();
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
@@ -111,13 +112,13 @@ window.addEventListener('popstate', handleRoute);
 
 document.addEventListener('DOMContentLoaded', () => {
     handleRoute();
-    updateSidebarVisibility();   // <-- первичная настройка видимости
+    updateSidebarVisibility();
 
     const logoutBtn = document.getElementById('logoutSidebarBtn');
     logoutBtn?.addEventListener('click', () => {
         localStorage.removeItem('diamkey_current');
         currentUser = null;
-        updateSidebarVisibility(); // <-- скрываем всё при выходе
+        updateSidebarVisibility();
         window.location.href = '/home';
     });
 
