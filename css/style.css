@@ -466,7 +466,7 @@ body {
     opacity: 1;
 }
 
-/* Двухколоночная компоновка с выравниванием */
+/* Двухколоночная компоновка */
 .profile-body {
     display: flex;
     gap: 32px;
@@ -477,13 +477,13 @@ body {
     flex: 1 1 300px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    gap: 16px;
 }
 .profile-right {
     flex: 1 1 300px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
     justify-content: center;
 }
 
@@ -501,25 +501,53 @@ body {
     backdrop-filter: blur(4px);
     letter-spacing: -0.3px;
     width: fit-content;
-    margin-bottom: 12px;
 }
 
 .description-box {
     background: rgba(255,255,255,0.02);
     border-left: 2px solid var(--accent);
     padding: 8px 16px;
-    margin-bottom: 16px;
     border-radius: 0 8px 8px 0;
     color: var(--text-muted);
     font-size: 15px;
     line-height: 1.5;
     cursor: pointer;
     transition: text-decoration 0.2s;
-    flex: 1;
-    margin-bottom: 12px;
 }
 .description-box:hover {
     text-decoration: underline;
+}
+
+/* Бейджи слева */
+.badges-left {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.badge-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 30px;
+    padding: 5px 12px 5px 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+.badge-item:hover { background: rgba(255,255,255,0.06); }
+
+.badge-icon {
+    font-size: 16px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
 }
 
 .meta-row {
@@ -569,21 +597,21 @@ body {
 }
 .regdate i { font-size: 12px; }
 
-/* Большая интерактивная кнопка Дополнений */
-.addons-card {
+/* Карточки действий (Дополнения, Diamond Plus) */
+.action-card {
     display: flex;
     align-items: center;
     gap: 16px;
     background: rgba(255,255,255,0.02);
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: var(--radius-md);
-    padding: 24px 28px;
+    padding: 20px 24px;
     cursor: pointer;
     transition: all 0.25s ease;
     position: relative;
     overflow: hidden;
 }
-.addons-card::before {
+.action-card::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -591,90 +619,60 @@ body {
     opacity: 0;
     transition: opacity 0.3s;
 }
-.addons-card:hover {
+.action-card:hover {
     border-color: var(--accent);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.4), 0 0 24px rgba(192,192,208,0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3), 0 0 20px rgba(192,192,208,0.2);
 }
-.addons-card:hover::before {
+.action-card:hover::before {
     opacity: 1;
 }
-.addons-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 18px;
+.action-card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
     background: rgba(255,255,255,0.06);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: 28px;
     color: var(--accent);
     flex-shrink: 0;
     transition: 0.3s;
 }
-.addons-card:hover .addons-icon {
+.action-card:hover .action-card-icon {
     color: #fff;
     background: rgba(255,255,255,0.15);
     transform: scale(1.1) rotate(-5deg);
 }
-.addons-text {
+.action-card-text {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
-.addons-title {
-    font-size: 22px;
+.action-card-title {
+    font-size: 18px;
     font-weight: 700;
     color: var(--text-primary);
 }
-.addons-subtitle {
-    font-size: 14px;
+.action-card-subtitle {
+    font-size: 13px;
     color: var(--text-muted);
 }
-.addons-arrow {
+.action-card-arrow {
     margin-left: auto;
-    font-size: 22px;
+    font-size: 18px;
     color: var(--accent);
     transition: transform 0.3s;
 }
-.addons-card:hover .addons-arrow {
-    transform: translateX(6px);
+.action-card:hover .action-card-arrow {
+    transform: translateX(4px);
 }
 
-.badges-row {
-    padding: 0 32px 24px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    justify-content: center;
+/* Diamond Plus глитч (только на своём профиле) */
+.diamond-plus-card .action-card-title {
+    position: relative;
 }
-
-.badge-item {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 30px;
-    padding: 6px 14px 6px 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    transition: 0.2s;
-}
-.badge-item:hover { background: rgba(255,255,255,0.06); }
-
-.badge-icon {
-    font-size: 18px;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.08);
-}
-
 /* Градиенты */
 .badge-bronze { background: linear-gradient(135deg, #cd7f32, #8b5a2b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .badge-silver { background: linear-gradient(135deg, #c0c0c0, #808080); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
