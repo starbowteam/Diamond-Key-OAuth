@@ -26,7 +26,6 @@ function showToast(msg) {
 const saved = localStorage.getItem('diamkey_current');
 if (saved) try { currentUser = JSON.parse(saved); } catch(e) { console.log('[DiamKey] Ошибка парсинга сохранённой сессии'); }
 
-// ---------- АВАТАР (глобальная функция) ----------
 function avatarHTML(src, size = 100) {
     const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>`;
     if (!src || !src.trim()) return fallbackIcon;
@@ -206,7 +205,6 @@ async function loadHomeStats() {
     return results;
 }
 
-// ======== БЕЙДЖИ ========
 async function getAllBadges() {
     const { data } = await _supabase.from('badges').select('*');
     return data || [];
@@ -233,7 +231,6 @@ async function removeBadge(userLogin, badgeId) {
     return { error };
 }
 
-// ======== ОНЛАЙН-СТАТУС ========
 async function updatePresence() {
     if (!currentUser) return;
     await _supabase.from('user_presence').upsert({ login: currentUser.login, last_seen: new Date().toISOString() }, { onConflict: 'login' });
@@ -248,7 +245,6 @@ async function isUserOnline(login) {
     return diff < 120000;
 }
 
-// ======== РЕАКЦИИ НА GPX ========
 async function toggleGpxReaction(fileId, type) {
     if (!currentUser) return showToast('Войдите');
     const storageKey = `gpx_reacted_${fileId}`;
