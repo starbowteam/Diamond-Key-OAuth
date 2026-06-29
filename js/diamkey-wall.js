@@ -190,6 +190,10 @@ function getStatusHTML(login, lastSeen) {
     return `<div class="status-badge offline">Был(а) ${days} д. назад</div>`;
 }
 
+function defaultDescription(login) {
+    return `Я ${login}, пришёл к вам в DiamKey! Надеюсь подружиться!`;
+}
+
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const { data: presence } = await _supabase
         .from('user_presence')
@@ -198,6 +202,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         .maybeSingle();
 
     const statusHTML = getStatusHTML(login, presence?.last_seen);
+    const desc = profile.description || defaultDescription(profile.name || login);
 
     let badgesHTML = '';
     if (badges && badges.length > 0) {
@@ -230,13 +235,15 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         <div class="profile-info">
             <div class="profile-details">
                 <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
-                <p class="description" id="profileDescription">${escapeHtml(profile.description || 'Нет описания')}</p>
-                ${statusHTML}
-                <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
+                <div class="meta-row">
+                    ${statusHTML}
+                    <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                </div>
             </div>
             <div class="profile-actions">
                 <button class="btn btn-icon back-to-users-btn" onclick="goBackToUsersList()" title="Назад к пользователям"><i class="fas fa-arrow-left"></i></button>
-                <button class="btn btn-icon puzzle-btn" onclick="${navigateAction}" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
+                <button class="btn" onclick="${navigateAction}" title="Дополнения"><i class="fas fa-puzzle-piece"></i> Дополнения</button>
             </div>
         </div>
         <div class="badges-row">${badgesHTML}</div>
@@ -309,7 +316,7 @@ async function openUserProfile(login) {
             document.getElementById('saveDescriptionBtn').onclick = async () => {
                 const desc = document.getElementById('editDescriptionInput').value.trim();
                 await updateProfile({ description: desc });
-                descEl.textContent = desc || 'Нет описания';
+                descEl.textContent = desc || defaultDescription(profile.name || login);
                 closeModal('editDescriptionModal');
                 showToast('Описание сохранено');
             };
@@ -422,6 +429,7 @@ async function renderMyProfile() {
             .maybeSingle();
 
         const statusHTML = getStatusHTML(login, presence?.last_seen);
+        const desc = profile.description || defaultDescription(profile.name || login);
 
         let badgesHTML = '';
         if (badges && badges.length > 0) {
@@ -452,12 +460,14 @@ async function renderMyProfile() {
                 <div class="profile-info">
                     <div class="profile-details">
                         <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
-                        <p class="description" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')}</p>
-                        ${statusHTML}
-                        <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                        <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
+                        <div class="meta-row">
+                            ${statusHTML}
+                            <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                        </div>
                     </div>
                     <div class="profile-actions">
-                        <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Мои GPX-поездки"><i class="fas fa-puzzle-piece"></i></button>
+                        <button class="btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Дополнения"><i class="fas fa-puzzle-piece"></i> Дополнения</button>
                     </div>
                 </div>
                 <div class="badges-row">${badgesHTML}</div>
@@ -499,9 +509,9 @@ async function renderMyProfile() {
         }
 
         document.getElementById('saveDescriptionBtn').onclick = async () => {
-            const desc = document.getElementById('editDescriptionInput').value.trim();
-            await updateProfile({ description: desc });
-            if (descEl) descEl.textContent = desc || 'Нажмите, чтобы добавить описание';
+            const newDesc = document.getElementById('editDescriptionInput').value.trim();
+            await updateProfile({ description: newDesc });
+            if (descEl) descEl.textContent = newDesc || defaultDescription(profile.name || login);
             closeModal('editDescriptionModal');
             showToast('Описание сохранено');
         };
@@ -580,6 +590,7 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+/* ====== GPX-ВЬЮ С НОВЫМ ДИЗАЙНОМ ====== */
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
@@ -609,103 +620,50 @@ async function renderProfileGpxView(login) {
         const distStr = totalDist > 1000 ? (totalDist / 1000).toFixed(1) + ' км' : totalDist.toFixed(0) + ' м';
         const ascentStr = totalAscent > 0 ? '+' + totalAscent.toFixed(0) + ' м' : '—';
 
-        let statsRowHTML = '';
-        if (totalRides > 0) {
-            statsRowHTML = `
-                <div class="user-stats-row" style="margin: 24px 0 8px;">
-                    <div class="stat-badge">
-                        <div class="number">${totalRides}</div>
-                        <div class="label">Поездки</div>
-                    </div>
-                    <div class="stat-badge">
-                        <div class="number">${distStr}</div>
-                        <div class="label">Общая дистанция</div>
-                    </div>
-                    <div class="stat-badge">
-                        <div class="number">${ascentStr}</div>
-                        <div class="label">Набор высоты</div>
-                    </div>
-                </div>
-            `;
-        } else {
-            statsRowHTML = '<div class="empty-gpx-message"><p>Поездок пока нет</p></div>';
-        }
-
         const backTarget = (currentUser && currentUser.login === login) ? '/profile' : `/users/${login}`;
 
         page.innerHTML = `
             <div class="profile-panel">
                 ${coverBlock}
-                <div class="avatar-section" style="display:flex; align-items:center; gap:20px;">
-                    <div class="avatar-wrapper" style="flex-shrink:0;">
+                <button class="back-btn" onclick="navigateTo('${backTarget}')"><i class="fas fa-arrow-left"></i> Назад</button>
+                <div class="avatar-section">
+                    <div class="avatar-wrapper">
                         ${avatarHTML(profile.avatar, 100)}
                     </div>
-                    <div style="margin-left:auto;">
-                        <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
-                    </div>
                 </div>
-                <div style="padding: 0 32px 24px;">
-                    ${statsRowHTML}
-                    ${totalRides > 0 ? `
-                        <div class="profile-gpx-grid" id="profileGpxGrid" style="display:flex; flex-wrap:wrap; gap:16px; margin-top:24px;">
-                            ${gpxFiles.map(f => {
-                                const stats = getGpxStats(f.content);
-                                let cardStatsHTML = '';
-                                if (stats.dist !== null) {
-                                    const dist = stats.dist > 1000 ? (stats.dist/1000).toFixed(1) + ' км' : Math.round(stats.dist) + ' м';
-                                    const ascent = stats.ascent > 0 ? '+' + Math.round(stats.ascent) + ' м' : '';
-                                    cardStatsHTML = `
-                                        <div class="gpx-card-stats">
-                                            <span>${dist}</span>
-                                            ${ascent ? `<span>↑ ${ascent}</span>` : ''}
-                                        </div>
-                                    `;
-                                }
-                                return `
-                                    <div class="gpx-card" onclick="viewGpxRoute('${f.id}')" style="flex: 1 1 220px;" data-file-id="${f.id}">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <h4>${escapeHtml(f.name)}</h4>
-                                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                                        ${cardStatsHTML}
-                                        <div class="gpx-card-reactions" style="margin-top:10px; display:flex; gap:8px; align-items:center;" data-file-id="${f.id}">
-                                            ${renderReactions(f.reactions || {}, f.id, 'gpx_')}
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    ` : ''}
+                <div class="path-row" style="display:flex; align-items:center; gap:12px; padding: 12px 32px 0;">
+                    <div class="nickname-badge" style="margin-bottom:0; font-size:18px;">${escapeHtml(profile.name || login)}</div>
+                    <i class="fas fa-chevron-right" style="color:var(--accent);"></i>
+                    <div class="nickname-badge" style="margin-bottom:0; font-size:18px; background:rgba(160,160,176,0.1); border-color:var(--accent);">Дополнения ${escapeHtml(profile.name || login)}</div>
                 </div>
+                ${totalRides > 0 ? `
+                <div class="gpx-stats-row" style="display:flex; gap:16px; justify-content:center; padding: 20px 32px; flex-wrap:wrap;">
+                    <div class="stat-badge"><div class="number">${totalRides}</div><div class="label">Поездки</div></div>
+                    <div class="stat-badge"><div class="number">${distStr}</div><div class="label">Общая дистанция</div></div>
+                    <div class="stat-badge"><div class="number">${ascentStr}</div><div class="label">Набор высоты</div></div>
+                </div>
+                <div class="gpx-grid">
+                    ${gpxFiles.map(f => {
+                        const stats = getGpxStats(f.content);
+                        let cardStatsHTML = '';
+                        if (stats.dist !== null) {
+                            const dist = stats.dist > 1000 ? (stats.dist/1000).toFixed(1) + ' км' : Math.round(stats.dist) + ' м';
+                            const ascent = stats.ascent > 0 ? '+' + Math.round(stats.ascent) + ' м' : '';
+                            cardStatsHTML = `<div class="stats"><span>${dist}</span>${ascent ? `<span>↑ ${ascent}</span>` : ''}</div>`;
+                        }
+                        return `
+                            <div class="gpx-card" onclick="viewGpxRoute('${f.id}')" data-file-id="${f.id}">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <h4>${escapeHtml(f.name)}</h4>
+                                <div class="date">${new Date(f.created_at).toLocaleDateString()}</div>
+                                ${cardStatsHTML}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                ` : '<div class="empty-gpx-message" style="padding: 40px; text-align:center; color:var(--text-muted);">Поездок пока нет</div>'}
             </div>
         `;
-
-        document.querySelectorAll('.gpx-card-reactions .reaction-btn').forEach(btn => {
-            btn.addEventListener('click', async function(e) {
-                e.stopPropagation();
-                const fileId = this.closest('.gpx-card').dataset.fileId;
-                const type = this.dataset.type;
-                await toggleGpxReaction(fileId, type);
-                const { data: file } = await _supabase.from('gpx_files').select('reactions').eq('id', fileId).maybeSingle();
-                if (file) {
-                    const reactionsDiv = document.querySelector(`.gpx-card-reactions[data-file-id="${fileId}"]`);
-                    if (reactionsDiv) {
-                        reactionsDiv.innerHTML = renderReactions(file.reactions, fileId, 'gpx_');
-                        reactionsDiv.querySelectorAll('.reaction-btn').forEach(b => {
-                            b.addEventListener('click', async function(ev) {
-                                ev.stopPropagation();
-                                const fid = reactionsDiv.dataset.fileId;
-                                const t = this.dataset.type;
-                                await toggleGpxReaction(fid, t);
-                                const { data: updatedFile } = await _supabase.from('gpx_files').select('reactions').eq('id', fid).maybeSingle();
-                                if (updatedFile) {
-                                    reactionsDiv.innerHTML = renderReactions(updatedFile.reactions, fid, 'gpx_');
-                                }
-                            });
-                        });
-                    }
-                }
-            });
-        });
     } catch (e) {
         console.error('[DiamKey] Ошибка загрузки GPX-профиля:', e);
         page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
