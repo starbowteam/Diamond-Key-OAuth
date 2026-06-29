@@ -143,9 +143,8 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
-// ========== ПОЛНОСТЬЮ НОВАЯ МОДАЛКА ОБЛОЖКИ ==========
+// ========== МОДАЛКА ОБЛОЖКИ (градиенты и цвета гарантированно видны) ==========
 function openCoverSetupModal(profile) {
-    // Удаляем предыдущую модалку, если есть
     const container = document.getElementById('coverSetupModalContainer');
     container.innerHTML = '';
 
@@ -160,6 +159,7 @@ function openCoverSetupModal(profile) {
         }
     };
 
+    // Градиенты и цвета сразу в HTML
     modal.innerHTML = `
         <div class="modal-content glass-panel cover-setup-modal" onclick="event.stopPropagation()">
             <h3><i class="fas fa-image"></i> Настроить обложку</h3>
@@ -168,7 +168,42 @@ function openCoverSetupModal(profile) {
                 <button class="auth-tab" data-tab="colors">Цвета</button>
                 <button class="auth-tab" data-tab="upload">Загрузить</button>
             </div>
-            <div id="coverTabContent"></div>
+
+            <!-- Вкладка Градиенты -->
+            <div id="coverGradients" class="cover-options-grid" style="display:grid;">
+                <div class="cover-option" style="background:linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%);" data-cover="gradient:#2a2a35:#1a1a22"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%);" data-cover="gradient:#1e3c5c:#0f1e33"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a3e 0%, #1a2e24 100%);" data-cover="gradient:#2d4a3e:#1a2e24"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d4a 0%, #2e1a2e 100%);" data-cover="gradient:#4a2d4a:#2e1a2e"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #3d2d4a 0%, #241a2e 100%);" data-cover="gradient:#3d2d4a:#241a2e"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #4a3d2d 0%, #2e241a 100%);" data-cover="gradient:#4a3d2d:#2e241a"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a4a 0%, #1a2e2e 100%);" data-cover="gradient:#2d4a4a:#1a2e2e"></div>
+                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%);" data-cover="gradient:#4a2d3d:#2e1a24"></div>
+            </div>
+
+            <!-- Вкладка Цвета (скрыта) -->
+            <div id="coverColors" class="cover-options-grid" style="display:none;">
+                <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
+                <div class="cover-option" style="background:#2d2d44;" data-cover="color:#2d2d44"></div>
+                <div class="cover-option" style="background:#16213e;" data-cover="color:#16213e"></div>
+                <div class="cover-option" style="background:#0f3460;" data-cover="color:#0f3460"></div>
+                <div class="cover-option" style="background:#533483;" data-cover="color:#533483"></div>
+                <div class="cover-option" style="background:#e94560;" data-cover="color:#e94560"></div>
+            </div>
+
+            <!-- Вкладка Загрузка изображения (скрыта) -->
+            <div id="coverUpload" style="display:none;">
+                <div class="cover-preview-container" id="coverPreviewContainer">
+                    <img id="coverPreviewImage" src="" alt="Preview" draggable="false" style="position:absolute; top:50%; left:50%; transform-origin:center; height:100%; width:auto; min-width:100%;">
+                </div>
+                <div class="cover-controls">
+                    <i class="fas fa-search-minus"></i>
+                    <input type="range" id="coverScaleSlider" min="0.5" max="2" step="0.01" value="1">
+                    <i class="fas fa-search-plus"></i>
+                </div>
+                <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Выбрать изображение</button>
+            </div>
+
             <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
                 <button class="btn btn-primary" id="saveCoverBtn"><i class="fas fa-check"></i> Сохранить</button>
                 <button class="btn btn-secondary" id="cancelCoverBtn">Отмена</button>
@@ -180,30 +215,18 @@ function openCoverSetupModal(profile) {
     container.appendChild(modal);
     setTimeout(() => modal.classList.add('active'), 10);
 
-    const tabsContainer = document.getElementById('coverTabs');
-    const contentDiv = document.getElementById('coverTabContent');
-    const saveBtn = document.getElementById('saveCoverBtn');
-    const cancelBtn = document.getElementById('cancelCoverBtn');
-
-    // Данные для вкладок
-    const gradients = [
-        { bg: 'linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%)', value: 'gradient:#2a2a35:#1a1a22' },
-        { bg: 'linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%)', value: 'gradient:#1e3c5c:#0f1e33' },
-        { bg: 'linear-gradient(135deg, #2d4a3e 0%, #1a2e24 100%)', value: 'gradient:#2d4a3e:#1a2e24' },
-        { bg: 'linear-gradient(135deg, #4a2d4a 0%, #2e1a2e 100%)', value: 'gradient:#4a2d4a:#2e1a2e' },
-        { bg: 'linear-gradient(135deg, #3d2d4a 0%, #241a2e 100%)', value: 'gradient:#3d2d4a:#241a2e' },
-        { bg: 'linear-gradient(135deg, #4a3d2d 0%, #2e241a 100%)', value: 'gradient:#4a3d2d:#2e241a' },
-        { bg: 'linear-gradient(135deg, #2d4a4a 0%, #1a2e2e 100%)', value: 'gradient:#2d4a4a:#1a2e2e' },
-        { bg: 'linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%)', value: 'gradient:#4a2d3d:#2e1a24' }
-    ];
-    const colors = [
-        { bg: '#1a1a2e', value: 'color:#1a1a2e' },
-        { bg: '#2d2d44', value: 'color:#2d2d44' },
-        { bg: '#16213e', value: 'color:#16213e' },
-        { bg: '#0f3460', value: 'color:#0f3460' },
-        { bg: '#533483', value: 'color:#533483' },
-        { bg: '#e94560', value: 'color:#e94560' }
-    ];
+    // Элементы
+    const tabs = modal.querySelectorAll('#coverTabs .auth-tab');
+    const gradientDiv = modal.querySelector('#coverGradients');
+    const colorsDiv = modal.querySelector('#coverColors');
+    const uploadDiv = modal.querySelector('#coverUpload');
+    const saveBtn = modal.querySelector('#saveCoverBtn');
+    const cancelBtn = modal.querySelector('#cancelCoverBtn');
+    const fileInput = modal.querySelector('#coverFileInput');
+    const previewImage = modal.querySelector('#coverPreviewImage');
+    const previewContainer = modal.querySelector('#coverPreviewContainer');
+    const scaleSlider = modal.querySelector('#coverScaleSlider');
+    const uploadBtn = modal.querySelector('#coverUploadBtn');
 
     let selectedCover = null;
     let currentImageSrc = '';
@@ -211,157 +234,96 @@ function openCoverSetupModal(profile) {
     let posY = profile.cover_pos_y || 0;
     let scale = profile.cover_scale || 1;
 
-    // Функция переключения вкладок
-    function showTab(tabName) {
-        contentDiv.innerHTML = '';
-        if (tabName === 'gradients') {
-            contentDiv.innerHTML = '<div class="cover-options-grid" id="coverGrid"></div>';
-            const grid = document.getElementById('coverGrid');
-            gradients.forEach(g => {
-                const div = document.createElement('div');
-                div.className = 'cover-option';
-                div.style.background = g.bg;
-                div.dataset.cover = g.value;
-                div.addEventListener('click', function() {
-                    document.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
-                    this.classList.add('selected');
-                    selectedCover = this.dataset.cover;
-                });
-                grid.appendChild(div);
-            });
-        } else if (tabName === 'colors') {
-            contentDiv.innerHTML = '<div class="cover-options-grid" id="coverGrid"></div>';
-            const grid = document.getElementById('coverGrid');
-            colors.forEach(c => {
-                const div = document.createElement('div');
-                div.className = 'cover-option';
-                div.style.background = c.bg;
-                div.dataset.cover = c.value;
-                div.addEventListener('click', function() {
-                    document.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
-                    this.classList.add('selected');
-                    selectedCover = this.dataset.cover;
-                });
-                grid.appendChild(div);
-            });
-        } else if (tabName === 'upload') {
-            contentDiv.innerHTML = `
-                <div class="cover-preview-container" id="coverPreviewContainer">
-                    <img id="coverPreviewImage" src="${currentImageSrc}" alt="Preview" draggable="false" style="position:absolute; top:50%; left:50%; transform-origin:center; height:100%; width:auto; min-width:100%;">
-                </div>
-                <div class="cover-controls">
-                    <i class="fas fa-search-minus"></i>
-                    <input type="range" id="coverScaleSlider" min="0.5" max="2" step="0.01" value="${scale}">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-                <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Выбрать изображение</button>
-            `;
-            const uploadBtn = document.getElementById('coverUploadBtn');
-            const fileInput = document.getElementById('coverFileInput');
-            const previewImage = document.getElementById('coverPreviewImage');
-            const scaleSlider = document.getElementById('coverScaleSlider');
-            const previewContainer = document.getElementById('coverPreviewContainer');
-
-            uploadBtn.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    currentImageSrc = ev.target.result;
-                    previewImage.src = currentImageSrc;
-                    posX = 0; posY = 0; scale = 1;
-                    applyPreviewTransform();
-                };
-                reader.readAsDataURL(file);
-            });
-
-            function applyPreviewTransform() {
-                previewImage.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
-                scaleSlider.value = scale;
-            }
-
-            // Перетаскивание
-            let dragging = false, startX, startY, startPosX, startPosY;
-            previewContainer.addEventListener('mousedown', (e) => {
-                dragging = true;
-                startX = e.clientX;
-                startY = e.clientY;
-                startPosX = posX;
-                startPosY = posY;
-                e.preventDefault();
-            });
-            window.addEventListener('mousemove', (e) => {
-                if (!dragging) return;
-                const rect = previewContainer.getBoundingClientRect();
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                const percentX = (dx / rect.width) * 100;
-                const percentY = (dy / rect.height) * 100;
-                posX = startPosX + percentX;
-                posY = startPosY + percentY;
-                applyPreviewTransform();
-            });
-            window.addEventListener('mouseup', () => { dragging = false; });
-            previewContainer.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    dragging = true;
-                    startX = e.touches[0].clientX;
-                    startY = e.touches[0].clientY;
-                    startPosX = posX;
-                    startPosY = posY;
-                }
-            });
-            window.addEventListener('touchmove', (e) => {
-                if (!dragging) return;
-                const rect = previewContainer.getBoundingClientRect();
-                const dx = e.touches[0].clientX - startX;
-                const dy = e.touches[0].clientY - startY;
-                const percentX = (dx / rect.width) * 100;
-                const percentY = (dy / rect.height) * 100;
-                posX = startPosX + percentX;
-                posY = startPosY + percentY;
-                applyPreviewTransform();
-                e.preventDefault();
-            }, { passive: false });
-            window.addEventListener('touchend', () => { dragging = false; });
-
-            scaleSlider.addEventListener('input', () => {
-                scale = parseFloat(scaleSlider.value);
-                applyPreviewTransform();
-            });
-
-            applyPreviewTransform();
-        }
-
-        // После отрисовки любой вкладки, подсвечиваем выбранный градиент/цвет, если он был выбран ранее
-        if (tabName === 'gradients' || tabName === 'colors') {
-            document.querySelectorAll('.cover-option').forEach(opt => {
-                if (opt.dataset.cover === selectedCover) {
-                    opt.classList.add('selected');
-                }
-            });
-        }
-    }
-
-    // Назначаем обработчики вкладок
-    tabsContainer.querySelectorAll('.auth-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            tabsContainer.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            showTab(this.dataset.tab);
+    // Переключение вкладок
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const tabName = tab.dataset.tab;
+            gradientDiv.style.display = tabName === 'gradients' ? 'grid' : 'none';
+            colorsDiv.style.display = tabName === 'colors' ? 'grid' : 'none';
+            uploadDiv.style.display = tabName === 'upload' ? 'block' : 'none';
         });
     });
 
-    // По умолчанию открываем градиенты
-    showTab('gradients');
+    // Выбор градиента/цвета
+    modal.querySelectorAll('.cover-option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            modal.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedCover = this.dataset.cover;
+        });
+    });
 
-    // Если у пользователя было изображение, можно переключиться на вкладку загрузки
-    if (profile.cover && profile.cover.startsWith('image:')) {
-        currentImageSrc = profile.cover.replace('image:', '');
-        const uploadTab = tabsContainer.querySelector('[data-tab="upload"]');
-        if (uploadTab) uploadTab.click();
+    // Загрузка изображения
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            currentImageSrc = ev.target.result;
+            previewImage.src = currentImageSrc;
+            posX = 0; posY = 0; scale = 1;
+            applyPreviewTransform();
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function applyPreviewTransform() {
+        previewImage.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
+        scaleSlider.value = scale;
     }
+
+    // Перетаскивание
+    let dragging = false, startX, startY, startPosX, startPosY;
+    previewContainer.addEventListener('mousedown', (e) => {
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startPosX = posX;
+        startPosY = posY;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const rect = previewContainer.getBoundingClientRect();
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const percentX = (dx / rect.width) * 100;
+        const percentY = (dy / rect.height) * 100;
+        posX = startPosX + percentX;
+        posY = startPosY + percentY;
+        applyPreviewTransform();
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+    previewContainer.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            dragging = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            startPosX = posX;
+            startPosY = posY;
+        }
+    });
+    window.addEventListener('touchmove', (e) => {
+        if (!dragging) return;
+        const rect = previewContainer.getBoundingClientRect();
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        const percentX = (dx / rect.width) * 100;
+        const percentY = (dy / rect.height) * 100;
+        posX = startPosX + percentX;
+        posY = startPosY + percentY;
+        applyPreviewTransform();
+        e.preventDefault();
+    }, { passive: false });
+    window.addEventListener('touchend', () => { dragging = false; });
+
+    scaleSlider.addEventListener('input', () => {
+        scale = parseFloat(scaleSlider.value);
+        applyPreviewTransform();
+    });
 
     // Сохранение
     saveBtn.addEventListener('click', async () => {
@@ -392,13 +354,22 @@ function openCoverSetupModal(profile) {
         modal.classList.remove('active');
         setTimeout(() => modal.remove(), 300);
     });
+
+    // Если уже было изображение – показать его и переключить вкладку
+    if (profile.cover && profile.cover.startsWith('image:')) {
+        currentImageSrc = profile.cover.replace('image:', '');
+        previewImage.src = currentImageSrc;
+        applyPreviewTransform();
+        const uploadTab = modal.querySelector('[data-tab="upload"]');
+        if (uploadTab) uploadTab.click();
+    }
 }
 
 function openCoverModal() {
     if (currentUser) openCoverSetupModal(currentUser);
 }
 
-// ========== ОСТАЛЬНЫЕ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ ==========
+// ========== ОСТАЛЬНЫЕ ФУНКЦИИ ==========
 async function openBadgeModal() {
     const modal = document.getElementById('badgeModal');
     if (!modal) return;
