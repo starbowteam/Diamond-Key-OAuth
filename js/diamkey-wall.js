@@ -118,34 +118,35 @@ function applyCoverTransform(img, posX, posY, scale) {
     img.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
 }
 
-function renderCoverHTML(profile, isOwnProfile) {
+function renderCoverHTML(profile, isOwnProfile, showBackBtn = false) {
+    let coverContent = '';
     if (profile.cover && profile.cover.startsWith('image:')) {
         const src = profile.cover.replace('image:', '');
         const scale = profile.cover_scale || 1;
         const posX = profile.cover_pos_x || 0;
         const posY = profile.cover_pos_y || 0;
-        return `
-            <div class="profile-cover" id="profileCoverBlock">
-                <img class="cover-image" src="${escapeHtml(src)}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">
-                ${isOwnProfile ? '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>' : ''}
-            </div>
-        `;
+        coverContent = `<img class="cover-image" src="${escapeHtml(src)}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">`;
     } else if (profile.cover && (profile.cover.startsWith('gradient:') || profile.cover.startsWith('color:'))) {
         const bg = profile.cover.startsWith('gradient:')
             ? `background: linear-gradient(135deg, ${profile.cover.split(':')[1]}, ${profile.cover.split(':')[2]});`
             : `background: ${profile.cover.split(':')[1]};`;
-        return `
-            <div class="profile-cover" id="profileCoverBlock" style="${bg}">
-                ${isOwnProfile ? '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>' : ''}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="profile-cover" id="profileCoverBlock">
-                ${isOwnProfile ? '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>' : ''}
-            </div>
-        `;
+        coverContent = `<div style="width:100%;height:100%;${bg}"></div>`;
     }
+
+    let buttons = '';
+    if (showBackBtn) {
+        buttons += '<button class="back-btn-profile" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i> Назад</button>';
+    }
+    if (isOwnProfile && !showBackBtn) {
+        buttons += '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>';
+    }
+
+    return `
+        <div class="profile-cover" id="profileCoverBlock">
+            ${coverContent}
+            ${buttons}
+        </div>
+    `;
 }
 
 function getStatusHTML(login, lastSeen) {
@@ -198,10 +199,12 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                 </div>
             `;
         }).join('');
+    } else {
+        badgesHTML = '<div class="badges-empty">Бейджиков пока нет!</div>';
     }
 
     const isOwnProfile = (currentUser && currentUser.login === login);
-    const coverBlock = renderCoverHTML(profile, isOwnProfile);
+    const showBackBtn = !isOwnProfile; // кнопка назад только для чужих профилей
 
     // Блок Diamond Plus
     const diamondPlusTitle = isOwnProfile ? 'Diamond Plus' : 'Diamond Plus';
@@ -209,38 +212,42 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const diamondPlusClass = isOwnProfile ? 'diamond-plus-card' : '';
 
     return `
-        ${coverBlock}
-        <div class="avatar-section">
-            <div class="avatar-wrapper">
-                ${avatarHTML(profile.avatar, 100)}
+        <div class="profile-panel">
+            ${renderCoverHTML(profile, isOwnProfile, showBackBtn)}
+            <div class="avatar-section">
+                <div class="avatar-wrapper">
+                    ${avatarHTML(profile.avatar, 100)}
+                </div>
             </div>
-        </div>
-        <div class="profile-body">
-            <div class="profile-left">
+            <div class="profile-nickname-center">
                 <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
-                <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
-                <div class="badges-panel">${badgesHTML}</div>
-                <div class="meta-row">
-                    ${statusHTML}
-                    <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
-                </div>
             </div>
-            <div class="profile-right">
-                <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
-                    <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
-                    <div class="action-card-text">
-                        <span class="action-card-title">Дополнения</span>
-                        <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
+            <div class="profile-body">
+                <div class="profile-left">
+                    <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
+                    <div class="badges-panel">${badgesHTML}</div>
+                    <div class="meta-row">
+                        ${statusHTML}
+                        <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
-                    <i class="fas fa-chevron-right action-card-arrow"></i>
                 </div>
-                <div class="action-card ${diamondPlusClass}" id="diamondPlusCard">
-                    <div class="action-card-icon"><i class="fas fa-crown"></i></div>
-                    <div class="action-card-text">
-                        <span class="action-card-title" id="plusTitle">${diamondPlusTitle}</span>
-                        <span class="action-card-subtitle">${diamondPlusSubtitle}</span>
+                <div class="profile-right">
+                    <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
+                        <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
+                        <div class="action-card-text">
+                            <span class="action-card-title">Дополнения</span>
+                            <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
+                        </div>
+                        <i class="fas fa-chevron-right action-card-arrow"></i>
                     </div>
-                    <i class="fas fa-chevron-right action-card-arrow"></i>
+                    <div class="action-card ${diamondPlusClass}" id="diamondPlusCard">
+                        <div class="action-card-icon"><i class="fas fa-crown"></i></div>
+                        <div class="action-card-text">
+                            <span class="action-card-title" id="plusTitle">${diamondPlusTitle}</span>
+                            <span class="action-card-subtitle">${diamondPlusSubtitle}</span>
+                        </div>
+                        <i class="fas fa-chevron-right action-card-arrow"></i>
+                    </div>
                 </div>
             </div>
         </div>
@@ -294,7 +301,6 @@ async function openUserProfile(login) {
 
         const profileHTML = await renderUserProfileHTML(login, profile, wallPosts, badges);
         userView.innerHTML = profileHTML;
-        userView.className = 'profile-panel';
 
         const descEl = document.getElementById('profileDescription');
         if (descEl && currentUser && currentUser.login === login) {
@@ -446,6 +452,8 @@ async function renderMyProfile() {
                     </div>
                 `;
             }).join('');
+        } else {
+            badgesHTML = '<div class="badges-empty">Бейджиков пока нет!</div>';
         }
 
         const coverBlock = renderCoverHTML(profile, true);
@@ -460,9 +468,11 @@ async function renderMyProfile() {
                         <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
                     </div>
                 </div>
+                <div class="profile-nickname-center">
+                    <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
+                </div>
                 <div class="profile-body">
                     <div class="profile-left">
-                        <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
                         <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
                         <div class="badges-panel">${badgesHTML}</div>
                         <div class="meta-row">
@@ -507,13 +517,6 @@ async function renderMyProfile() {
         if (plusCard) {
             plusCard.addEventListener('click', () => {
                 showToast('В разработке');
-            });
-        }
-
-        const coverBlockEl = document.getElementById('profileCoverBlock');
-        if (coverBlockEl) {
-            coverBlockEl.addEventListener('click', () => {
-                openCoverSetupModal(profile);
             });
         }
 
@@ -658,7 +661,8 @@ async function renderProfileGpxView(login) {
         }
 
         const isOwnProfile = (currentUser && currentUser.login === login);
-        const coverBlock = renderCoverHTML(profile, isOwnProfile);
+        // В GPX-вью не показываем кнопку Обложка и Назад в обложке, а свою кнопку Назад добавим отдельно
+        const coverBlock = renderCoverHTML(profile, false, false); // без кнопок
 
         let totalRides = gpxFiles.length;
         let totalDist = 0, totalAscent = 0;
@@ -676,7 +680,6 @@ async function renderProfileGpxView(login) {
         page.innerHTML = `
             <div class="profile-panel">
                 ${coverBlock}
-                <!-- Кнопка Назад теперь вынесена из обложки и имеет высокий z-index -->
                 <button class="gpx-back-btn" onclick="navigateTo('${backTarget}')"><i class="fas fa-arrow-left"></i> Назад</button>
                 <div class="avatar-section">
                     <div class="avatar-wrapper">
