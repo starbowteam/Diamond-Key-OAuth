@@ -520,7 +520,7 @@ body {
     padding: 0 32px;
 }
 
-/* Двухколоночная компоновка через Grid */
+/* Grid-компоновка */
 .profile-body {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -529,111 +529,24 @@ body {
     padding: 20px 32px 24px;
 }
 
-/* Описание */
-.description-box {
+/* Карточка описания с акцентной полосой */
+.description-card {
     background: rgba(255,255,255,0.02);
-    border-left: 2px solid var(--accent);
-    padding: 8px 16px;
-    border-radius: 0 8px 8px 0;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 20px 24px;
     color: var(--text-muted);
     font-size: 15px;
     line-height: 1.5;
+    display: flex;
+    align-items: center;
     cursor: pointer;
     transition: text-decoration 0.2s;
-    /* высота автоматически подстроится под высоту первой action-card */
 }
-.description-box:hover {
+.description-card:hover {
     text-decoration: underline;
 }
-
-/* Панель бейджей – темнее */
-.badges-panel {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-md);
-    padding: 14px 16px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-}
-.badges-empty {
-    color: var(--text-muted);
-    font-size: 14px;
-    width: 100%;
-    text-align: center;
-}
-
-.badge-item {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 30px;
-    padding: 8px 18px 8px 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    transition: 0.2s;
-}
-.badge-item:hover { background: rgba(255,255,255,0.1); }
-.badge-icon {
-    font-size: 22px;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.08);
-}
-
-.meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 16px;
-    margin-top: auto;
-}
-
-/* Статус */
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-    gap: 6px;
-}
-.status-badge.online {
-    background: rgba(46, 204, 113, 0.15);
-    color: #2ecc71;
-}
-.status-badge.online::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #2ecc71;
-    display: inline-block;
-}
-.status-badge.offline {
-    background: rgba(160, 160, 176, 0.15);
-    color: var(--text-muted);
-}
-
-.regdate {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--text-muted);
-    background: rgba(255,255,255,0.03);
-    padding: 4px 12px;
-    border-radius: 20px;
-}
-.regdate i { font-size: 12px; }
 
 /* Карточки действий */
 .action-card {
@@ -706,6 +619,98 @@ body {
 .action-card:hover .action-card-arrow {
     transform: translateX(4px);
 }
+
+/* Панель бейджей – компактнее */
+.badges-panel {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+.badges-empty {
+    color: var(--text-muted);
+    font-size: 13px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Бейджи компактнее */
+.badge-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    padding: 4px 12px 4px 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+.badge-item:hover { background: rgba(255,255,255,0.1); }
+.badge-icon {
+    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+}
+
+.meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+/* Статус */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    gap: 6px;
+}
+.status-badge.online {
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+}
+.status-badge.online::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2ecc71;
+    display: inline-block;
+}
+.status-badge.offline {
+    background: rgba(160, 160, 176, 0.15);
+    color: var(--text-muted);
+}
+
+.regdate {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.03);
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+.regdate i { font-size: 12px; }
 
 /* Никнейм в рамке */
 .nickname-badge {
