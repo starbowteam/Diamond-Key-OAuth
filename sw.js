@@ -7,7 +7,7 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-    // берём под контроль все страницы сразу
+    // берём под контроль все страницы сраз
     event.waitUntil(clients.claim());
 });
 
