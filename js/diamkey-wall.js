@@ -6,7 +6,7 @@ async function loadAnnouncement() {
     if (data && data.length) {
         const creator = await getProfile('viktorshopa');
         body.innerHTML = `
-            <img src="${creator?.avatar || ''}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--border-glass);">
+            <img src="${creator?.avatar || ''}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--border-glass);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
             <div class="announcement-content">
                 <p>${escapeHtml(data[0].content)}</p>
                 <div class="announcement-footer">
@@ -148,11 +148,16 @@ function renderCoverHTML(profile, isOwnProfile) {
     }
 }
 
-async function renderUserProfileHTML(login, profile, wallPosts, badges) {
-    const avatarHTML = profile.avatar 
-        ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-        : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
+// Универсальная функция аватара
+function avatarHTML(avatarSrc, size) {
+    if (avatarSrc && avatarSrc.trim()) {
+        return `<img src="${escapeHtml(avatarSrc)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
+    }
+    return `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"></i>`;
+}
 
+async function renderUserProfileHTML(login, profile, wallPosts, badges) {
+    const avatarBlock = avatarHTML(profile.avatar, 100);
     const online = await isUserOnline(login);
     const onlineDot = online ? '<div class="online-dot"></div>' : '';
 
@@ -181,7 +186,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         ${coverBlock}
         <div class="avatar-section">
             <div class="avatar-wrapper">
-                ${avatarHTML}
+                ${avatarBlock}
                 ${onlineDot}
             </div>
         </div>
@@ -246,7 +251,6 @@ async function openUserProfile(login) {
         }
 
         const profileHTML = await renderUserProfileHTML(login, profile, wallPosts, badges);
-
         userView.innerHTML = profileHTML;
         userView.className = 'profile-panel';
 
@@ -280,7 +284,7 @@ async function openUserProfile(login) {
                 wallHTML = wallPosts.map(p => `
                     <div class="wall-post glass-panel" data-post-id="${p.id}">
                         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                            ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                            ${p.user_avatar && p.user_avatar.trim() ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
                             <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
                             <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
                         </div>
@@ -294,7 +298,7 @@ async function openUserProfile(login) {
             userWallSection.innerHTML = `
                 <div class="wall-input" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border-radius:18px; padding:8px 16px;">
                     <div style="width:36px; height:36px; border-radius:50%; overflow:hidden; flex-shrink:0;">
-                        ${currentUser && currentUser.avatar ? `<img src="${escapeHtml(currentUser.avatar)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
+                        ${currentUser && currentUser.avatar && currentUser.avatar.trim() ? `<img src="${escapeHtml(currentUser.avatar)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
                     </div>
                     <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:transparent; border:none; color:var(--text-primary); resize:none; font-size:15px; outline:none; padding:8px 0;"></textarea>
                     <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
@@ -375,6 +379,7 @@ async function renderMyProfile() {
 
         const online = await isUserOnline(login);
         const onlineDot = online ? '<div class="online-dot"></div>' : '';
+        const avatarBlock = avatarHTML(profile.avatar, 100);
 
         let badgesHTML = '';
         if (badges && badges.length > 0) {
@@ -390,12 +395,7 @@ async function renderMyProfile() {
             }).join('');
         }
 
-        const avatarHTML = profile.avatar 
-            ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
-
         const coverBlock = renderCoverHTML(profile, true);
-
         let wallHTML = wallPosts.length ? buildWallHTML(wallPosts) : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
         pageProfile.innerHTML = `
@@ -403,7 +403,7 @@ async function renderMyProfile() {
                 ${coverBlock}
                 <div class="avatar-section">
                     <div class="avatar-wrapper" id="myAvatarWrapper">
-                        ${avatarHTML}
+                        ${avatarBlock}
                         ${onlineDot}
                         <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
                     </div>
@@ -491,7 +491,7 @@ function buildWallHTML(posts) {
     return posts.map(p => `
         <div class="wall-post glass-panel" data-post-id="${p.id}">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
+                ${p.user_avatar && p.user_avatar.trim() ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
                 <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
                 <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
             </div>
@@ -538,7 +538,6 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/* ============ GPX-ВЬЮ С РЕАКЦИЯМИ ============ */
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
@@ -556,14 +555,10 @@ async function renderProfileGpxView(login) {
 
         const isOwnProfile = (currentUser && currentUser.login === login);
         const coverBlock = renderCoverHTML(profile, isOwnProfile);
-
-        const avatarHTML = profile.avatar 
-            ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
+        const avatarBlock = avatarHTML(profile.avatar, 100);
 
         let totalRides = gpxFiles.length;
-        let totalDist = 0;
-        let totalAscent = 0;
+        let totalDist = 0, totalAscent = 0;
         gpxFiles.forEach(f => {
             const stats = getGpxStats(f.content);
             if (stats.dist) totalDist += stats.dist;
@@ -602,7 +597,7 @@ async function renderProfileGpxView(login) {
                 ${coverBlock}
                 <div class="avatar-section" style="display:flex; align-items:center; gap:20px;">
                     <div class="avatar-wrapper" style="flex-shrink:0;">
-                        ${avatarHTML}
+                        ${avatarBlock}
                     </div>
                     <div style="margin-left:auto;">
                         <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
@@ -643,20 +638,17 @@ async function renderProfileGpxView(login) {
             </div>
         `;
 
-        // Привязываем обработчики реакций к GPX-карточкам
         document.querySelectorAll('.gpx-card-reactions .reaction-btn').forEach(btn => {
             btn.addEventListener('click', async function(e) {
                 e.stopPropagation();
                 const fileId = this.closest('.gpx-card').dataset.fileId;
                 const type = this.dataset.type;
                 await toggleGpxReaction(fileId, type);
-                // После обновления перерисовываем эту конкретную карточку реакций
                 const { data: file } = await _supabase.from('gpx_files').select('reactions').eq('id', fileId).maybeSingle();
                 if (file) {
                     const reactionsDiv = document.querySelector(`.gpx-card-reactions[data-file-id="${fileId}"]`);
                     if (reactionsDiv) {
                         reactionsDiv.innerHTML = renderReactions(file.reactions, fileId, 'gpx_');
-                        // Заново навесить обработчики
                         reactionsDiv.querySelectorAll('.reaction-btn').forEach(b => {
                             b.addEventListener('click', async function(ev) {
                                 ev.stopPropagation();
@@ -673,7 +665,6 @@ async function renderProfileGpxView(login) {
                 }
             });
         });
-
     } catch (e) {
         console.error('[DiamKey] Ошибка загрузки GPX-профиля:', e);
         page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
@@ -681,40 +672,22 @@ async function renderProfileGpxView(login) {
 }
 
 async function viewGpxRoute(fileId) {
-    console.log('[DiamKey] Открытие GPX из профиля:', fileId);
     const { data, error } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
     if (error || !data || !data.content) {
-        console.error('[DiamKey] Ошибка загрузки GPX:', error);
         return showToast('Не удалось загрузить маршрут');
     }
     navigateTo(`/add/gpx?id=${fileId}`);
 }
 
-function copyGpxLink(fileId) {
-    const url = `${location.origin}/add/gpx?id=${fileId}`;
-    navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована'));
-}
-
 function renderQrConfirm(ticket) {
     const page = document.getElementById('page-qr-confirm');
     if (!page) return;
-
     const isLoggedIn = !!currentUser;
-    let controlsHTML = '';
-    if (isLoggedIn) {
-        controlsHTML = `
-            <div style="margin-bottom:20px;">
-                <span>Вы вошли как <strong>${escapeHtml(currentUser.login)}</strong></span>
-            </div>
-            <button class="btn btn-success" id="acceptQrBtn"><i class="fas fa-check-circle"></i> Принять</button>
-            <button class="btn btn-danger" id="rejectQrBtn"><i class="fas fa-times-circle"></i> Отклонить</button>
-        `;
-    } else {
-        controlsHTML = `
-            <p>Сначала войдите в DiamKey</p>
-            <button class="btn" onclick="navigateTo('/home')"><i class="fas fa-sign-in-alt"></i> Войти</button>
-        `;
-    }
+    let controlsHTML = isLoggedIn ? `
+        <div style="margin-bottom:20px;"><span>Вы вошли как <strong>${escapeHtml(currentUser.login)}</strong></span></div>
+        <button class="btn btn-success" id="acceptQrBtn"><i class="fas fa-check-circle"></i> Принять</button>
+        <button class="btn btn-danger" id="rejectQrBtn"><i class="fas fa-times-circle"></i> Отклонить</button>
+    ` : `<p>Сначала войдите в DiamKey</p><button class="btn" onclick="navigateTo('/home')"><i class="fas fa-sign-in-alt"></i> Войти</button>`;
 
     page.innerHTML = `
         <div class="glass-panel" style="text-align:center; padding:40px; max-width:400px; margin:0 auto;">
@@ -723,9 +696,7 @@ function renderQrConfirm(ticket) {
             <p class="text-muted">Запрос на вход через QR-код</p>
             <div id="qrConfirmControls">${controlsHTML}</div>
             <p class="error-msg" id="qrConfirmError" style="display:none;"></p>
-        </div>
-    `;
-
+        </div>`;
     if (isLoggedIn) {
         document.getElementById('acceptQrBtn').addEventListener('click', async () => {
             const { error } = await _supabase.from('qr_tickets').update({ login: currentUser.login, status: 'accepted' }).eq('ticket', ticket);
