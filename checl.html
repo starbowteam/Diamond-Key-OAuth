@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проверка связи с Supabase</title>
+    <style>
+        body {
+            background: #0a0a0f;
+            color: #f0f0f0;
+            font-family: 'Inter', sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        h1 { font-size: 24px; margin-bottom: 20px; }
+        .test {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .test h2 { font-size: 18px; margin: 0 0 8px 0; }
+        .ok { color: #2ecc71; }
+        .fail { color: #e05d5d; }
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #9ca3af;
+            margin-top: 10px;
+        }
+        .status { font-weight: 600; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Диагностика связи с Supabase</h1>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const supabaseUrl = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
+
+        function addTest(title) {
+            const div = document.createElement('div');
+            div.className = 'test';
+            div.innerHTML = `<h2>${title}</h2><p class="status">Выполняется...</p>`;
+            resultsDiv.appendChild(div);
+            return div;
+        }
+
+        function setResult(div, success, message, details = '') {
+            const statusP = div.querySelector('.status');
+            statusP.className = `status ${success ? 'ok' : 'fail'}`;
+            statusP.textContent = success ? '✅ Успех' : '❌ Ошибка';
+            if (message) {
+                const msgP = document.createElement('p');
+                msgP.textContent = message;
+                div.appendChild(msgP);
+            }
+            if (details) {
+                const pre = document.createElement('pre');
+                pre.textContent = details;
+                div.appendChild(pre);
+            }
+        }
+
+        async function runTest(title, url) {
+            const div = addTest(title);
+            try {
+                const res = await fetch(url, { method: 'GET', mode: 'cors' });
+                if (res.ok || res.status === 400 || res.status === 401 || res.status === 403) {
+                    // Любой ответ от сервера, даже ошибка авторизации – это успех связи
+                    const text = await res.text();
+                    setResult(div, true, `Статус: ${res.status}. Ответ получен.`, text.substring(0, 300));
+                } else {
+                    setResult(div, false, `Неожиданный статус: ${res.status}`);
+                }
+            } catch (e) {
+                setResult(div, false, 'Соединение не удалось', e.message);
+            }
+        }
+
+        async function runCorsTest() {
+            const div = addTest('CORS-запрос (прямой)');
+            try {
+                const res = await fetch(supabaseUrl + '/rest/v1/', {
+                    method: 'GET',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk'
+                    }
+                });
+                const text = await res.text();
+                setResult(div, true, `Статус: ${res.status}. Ответ получен без CORS-ошибки.`, text.substring(0, 200));
+            } catch (e) {
+                setResult(div, false, 'CORS-ошибка или сеть недоступна', e.message);
+            }
+        }
+
+        (async () => {
+            // 1. Прямой запрос к Supabase
+            await runTest('1. Прямой запрос к Supabase', supabaseUrl + '/rest/v1/');
+
+            // 2. Запрос через наш прокси
+            await runTest('2. Запрос через прокси (/api/supabase)', '/api/supabase/rest/v1/');
+
+            // 3. CORS-тест с заголовком apikey
+            await runCorsTest();
+
+            // 4. Общий вердикт
+            const verdictDiv = addTest('📋 Итог');
+            const allTests = resultsDiv.querySelectorAll('.test .status.fail');
+            if (allTests.length > 0) {
+                setResult(verdictDiv, false, 'Есть проблемы с соединением. Если прокси-тест не прошёл, нужно проверить Vercel-деплой. Если все тесты не прошли – проблема на уровне сети.');
+            } else {
+                setResult(verdictDiv, true, 'Все тесты пройдены. Связь с Supabase работает.');
+            }
+        })();
+    </script>
+</body>
+</html>
