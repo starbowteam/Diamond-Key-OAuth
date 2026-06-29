@@ -350,7 +350,7 @@ body {
     50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
 }
 
-/* ===== ЕДИНЫЙ БЛОК ПРОФИЛЯ (новый лаконичный) ===== */
+/* ===== ЕДИНЫЙ БЛОК ПРОФИЛЯ (без ограничений ширины) ===== */
 .profile-panel {
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
@@ -359,9 +359,7 @@ body {
     border-radius: var(--radius-lg);
     overflow: visible;
     margin-bottom: 32px;
-    max-width: 660px;
-    margin-left: auto;
-    margin-right: auto;
+    /* убраны max-width и автоцентрирование, теперь панель на всю ширину */
 }
 
 .profile-cover {
