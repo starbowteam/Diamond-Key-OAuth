@@ -206,9 +206,12 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const isOwnProfile = (currentUser && currentUser.login === login);
     const showBackBtn = !isOwnProfile;
 
-    const diamondPlusTitle = isOwnProfile ? 'Diamond Plus' : 'Diamond Plus';
+    const diamondPlusTitle = 'Diamond Plus';
     const diamondPlusSubtitle = isOwnProfile ? 'Подписка скоро будет доступна XD' : 'Не подписан, подписки не существует XD';
     const diamondPlusClass = isOwnProfile ? 'diamond-plus-card' : '';
+
+    // На своём профиле — переход на страницу, на чужом — заглушка
+    const diamondPlusAction = isOwnProfile ? `onclick="navigateTo('/diamond-plus')"` : `onclick="showToast('В разработке')"`;
 
     return `
         <div class="profile-panel">
@@ -222,9 +225,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                 <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
             </div>
             <div class="profile-body">
-                <!-- Описание как карточка с полосой -->
                 <div class="description-card" id="profileDescription">${escapeHtml(desc)}</div>
-                <!-- Дополнения -->
                 <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
                     <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
                     <div class="action-card-text">
@@ -233,7 +234,6 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                     </div>
                     <i class="fas fa-chevron-right action-card-arrow"></i>
                 </div>
-                <!-- Бейджи + статус/дата -->
                 <div>
                     <div class="badges-panel">${badgesHTML}</div>
                     <div class="meta-row">
@@ -241,8 +241,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                         <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
                 </div>
-                <!-- Diamond Plus -->
-                <div class="action-card ${diamondPlusClass}" id="diamondPlusCard">
+                <div class="action-card ${diamondPlusClass}" ${diamondPlusAction} id="diamondPlusCard">
                     <div class="action-card-icon"><i class="fas fa-crown"></i></div>
                     <div class="action-card-text">
                         <span class="action-card-title" id="plusTitle">${diamondPlusTitle}</span>
@@ -321,13 +320,6 @@ async function openUserProfile(login) {
 
         if (currentUser && currentUser.login === login) {
             startPlusGlitch();
-        }
-
-        const plusCard = document.getElementById('diamondPlusCard');
-        if (plusCard) {
-            plusCard.addEventListener('click', () => {
-                showToast('В разработке');
-            });
         }
 
         if (userWallSection) {
@@ -487,7 +479,7 @@ async function renderMyProfile() {
                             <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                         </div>
                     </div>
-                    <div class="action-card diamond-plus-card" id="diamondPlusCard">
+                    <div class="action-card diamond-plus-card" onclick="navigateTo('/diamond-plus')" id="diamondPlusCard">
                         <div class="action-card-icon"><i class="fas fa-crown"></i></div>
                         <div class="action-card-text">
                             <span class="action-card-title" id="plusTitle">Diamond Plus</span>
@@ -507,13 +499,6 @@ async function renderMyProfile() {
         `;
 
         startPlusGlitch();
-
-        const plusCard = document.getElementById('diamondPlusCard');
-        if (plusCard) {
-            plusCard.addEventListener('click', () => {
-                showToast('В разработке');
-            });
-        }
 
         document.getElementById('myAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
@@ -637,6 +622,51 @@ function startPlusGlitch() {
         }
         titleEl.textContent = result;
     }, 150);
+}
+
+/* ====== СТРАНИЦА DIAMOND PLUS ====== */
+async function renderDiamondPlusPage() {
+    const page = document.getElementById('page-diamond-plus');
+    if (!page) return;
+
+    page.innerHTML = `
+        <div class="profile-panel">
+            <div class="plus-header">
+                <button class="back-btn-profile" onclick="navigateTo('/profile')"><i class="fas fa-arrow-left"></i> Назад</button>
+                <h1>Diamond Plus</h1>
+                <p class="plus-subtitle">Подписка, открывающая весь потенциал DiamKey</p>
+            </div>
+            <div class="plus-benefits">
+                <div class="benefit-card">
+                    <div class="benefit-icon"><i class="fas fa-brain"></i></div>
+                    <h3 class="benefit-title">Diamond AI без цензуры</h3>
+                    <p class="benefit-desc">Искусственный интеллект, который отвечает прямо и без ограничений. Только вы и чистый разум.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon"><i class="fas fa-sliders-h"></i></div>
+                    <h3 class="benefit-title">Расширенные настройки профиля</h3>
+                    <p class="benefit-desc">Уникальные обложки, эксклюзивные цвета ника, кастомные анимации и многое другое.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon"><i class="fas fa-medal"></i></div>
+                    <h3 class="benefit-title">Свой бейдж на сайте</h3>
+                    <p class="benefit-desc">Премиум значок Diamond Plus, который виден всем. Вас узнают и уважают.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon"><i class="fas fa-rocket"></i></div>
+                    <h3 class="benefit-title">Участие в проектах Diamond Ecosystem</h3>
+                    <p class="benefit-desc">Ранний доступ к новым функциям, голосование за развитие и вклад в будущее экосистемы.</p>
+                </div>
+            </div>
+            <div class="plus-cta">
+                <div class="plus-price">
+                    <span class="amount">₽149</span>
+                    <span class="period">/ месяц</span>
+                </div>
+                <button class="plus-btn" onclick="showToast('Скоро будет!')"><i class="fas fa-crown"></i> Оформить подписку</button>
+            </div>
+        </div>
+    `;
 }
 
 /* ====== GPX-ВЬЮ ====== */
