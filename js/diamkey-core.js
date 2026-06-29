@@ -280,3 +280,35 @@ async function toggleGpxReaction(fileId, type) {
         }
     }
 }
+
+// ======== ОЦЕНКА СЛОЖНОСТИ ПАРОЛЯ ========
+function evaluatePasswordStrength(password) {
+    if (!password || password.length < 6) {
+        return { level: 'none', score: 0, label: 'Минимум 6 символов', color: '#e05d5d' };
+    }
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    if (score <= 1) {
+        return { level: 'weak', score: 1, label: 'Слабый – попробуйте добавить цифры и заглавные буквы', color: '#e05d5d' };
+    } else if (score <= 2) {
+        return { level: 'medium', score: 2, label: 'Средний – добавьте спецсимволы для надёжности', color: '#f0ad4e' };
+    } else if (score <= 3) {
+        return { level: 'strong', score: 3, label: 'Сильный – хорошо, но можно ещё спецсимвол', color: '#5cb85c' };
+    } else {
+        return { level: 'very-strong', score: 4, label: 'Очень сильный – отлично!', color: '#2ecc71' };
+    }
+}
+
+// ======== ГЕНЕРАЦИЯ КАПЧИ ========
+function generateCaptchaCode() {
+    let code = '';
+    for (let i = 0; i < 3; i++) {
+        code += Math.floor(Math.random() * 10).toString();
+    }
+    return code;
+}
