@@ -204,9 +204,8 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     }
 
     const isOwnProfile = (currentUser && currentUser.login === login);
-    const showBackBtn = !isOwnProfile; // кнопка назад только для чужих профилей
+    const showBackBtn = !isOwnProfile;
 
-    // Блок Diamond Plus
     const diamondPlusTitle = isOwnProfile ? 'Diamond Plus' : 'Diamond Plus';
     const diamondPlusSubtitle = isOwnProfile ? 'Подписка скоро будет доступна XD' : 'Не подписан, подписки не существует XD';
     const diamondPlusClass = isOwnProfile ? 'diamond-plus-card' : '';
@@ -223,31 +222,31 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                 <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
             </div>
             <div class="profile-body">
-                <div class="profile-left">
-                    <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
+                <!-- Левая колонка -->
+                <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
+                <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
+                    <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
+                    <div class="action-card-text">
+                        <span class="action-card-title">Дополнения</span>
+                        <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
+                    </div>
+                    <i class="fas fa-chevron-right action-card-arrow"></i>
+                </div>
+                <!-- Вторая строка -->
+                <div style="display:flex; flex-direction:column; justify-content:space-between;">
                     <div class="badges-panel">${badgesHTML}</div>
                     <div class="meta-row">
                         ${statusHTML}
                         <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                     </div>
                 </div>
-                <div class="profile-right">
-                    <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
-                        <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
-                        <div class="action-card-text">
-                            <span class="action-card-title">Дополнения</span>
-                            <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
-                        </div>
-                        <i class="fas fa-chevron-right action-card-arrow"></i>
+                <div class="action-card ${diamondPlusClass}" id="diamondPlusCard">
+                    <div class="action-card-icon"><i class="fas fa-crown"></i></div>
+                    <div class="action-card-text">
+                        <span class="action-card-title" id="plusTitle">${diamondPlusTitle}</span>
+                        <span class="action-card-subtitle">${diamondPlusSubtitle}</span>
                     </div>
-                    <div class="action-card ${diamondPlusClass}" id="diamondPlusCard">
-                        <div class="action-card-icon"><i class="fas fa-crown"></i></div>
-                        <div class="action-card-text">
-                            <span class="action-card-title" id="plusTitle">${diamondPlusTitle}</span>
-                            <span class="action-card-subtitle">${diamondPlusSubtitle}</span>
-                        </div>
-                        <i class="fas fa-chevron-right action-card-arrow"></i>
-                    </div>
+                    <i class="fas fa-chevron-right action-card-arrow"></i>
                 </div>
             </div>
         </div>
@@ -318,12 +317,10 @@ async function openUserProfile(login) {
             };
         }
 
-        // Глитч-эффект для Diamond Plus только на своём профиле
         if (currentUser && currentUser.login === login) {
             startPlusGlitch();
         }
 
-        // Клик по Diamond Plus – заглушка
         const plusCard = document.getElementById('diamondPlusCard');
         if (plusCard) {
             plusCard.addEventListener('click', () => {
@@ -472,31 +469,29 @@ async function renderMyProfile() {
                     <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
                 </div>
                 <div class="profile-body">
-                    <div class="profile-left">
-                        <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
+                    <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
+                    <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
+                        <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
+                        <div class="action-card-text">
+                            <span class="action-card-title">Дополнения</span>
+                            <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
+                        </div>
+                        <i class="fas fa-chevron-right action-card-arrow"></i>
+                    </div>
+                    <div style="display:flex; flex-direction:column; justify-content:space-between;">
                         <div class="badges-panel">${badgesHTML}</div>
                         <div class="meta-row">
                             ${statusHTML}
                             <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                         </div>
                     </div>
-                    <div class="profile-right">
-                        <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
-                            <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
-                            <div class="action-card-text">
-                                <span class="action-card-title">Дополнения</span>
-                                <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
-                            </div>
-                            <i class="fas fa-chevron-right action-card-arrow"></i>
+                    <div class="action-card diamond-plus-card" id="diamondPlusCard">
+                        <div class="action-card-icon"><i class="fas fa-crown"></i></div>
+                        <div class="action-card-text">
+                            <span class="action-card-title" id="plusTitle">Diamond Plus</span>
+                            <span class="action-card-subtitle">Подписка скоро будет доступна XD</span>
                         </div>
-                        <div class="action-card diamond-plus-card" id="diamondPlusCard">
-                            <div class="action-card-icon"><i class="fas fa-crown"></i></div>
-                            <div class="action-card-text">
-                                <span class="action-card-title" id="plusTitle">Diamond Plus</span>
-                                <span class="action-card-subtitle">Подписка скоро будет доступна XD</span>
-                            </div>
-                            <i class="fas fa-chevron-right action-card-arrow"></i>
-                        </div>
+                        <i class="fas fa-chevron-right action-card-arrow"></i>
                     </div>
                 </div>
             </div>
@@ -509,10 +504,8 @@ async function renderMyProfile() {
             </div>
         `;
 
-        // Глитч Diamond Plus
         startPlusGlitch();
 
-        // Заглушка по клику
         const plusCard = document.getElementById('diamondPlusCard');
         if (plusCard) {
             plusCard.addEventListener('click', () => {
@@ -644,7 +637,7 @@ function startPlusGlitch() {
     }, 150);
 }
 
-/* ====== GPX-ВЬЮ (кнопка Назад исправлена) ====== */
+/* ====== GPX-ВЬЮ ====== */
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
@@ -661,7 +654,6 @@ async function renderProfileGpxView(login) {
         }
 
         const isOwnProfile = (currentUser && currentUser.login === login);
-        // В GPX-вью не показываем кнопку Обложка и Назад в обложке, а свою кнопку Назад добавим отдельно
         const coverBlock = renderCoverHTML(profile, false, false); // без кнопок
 
         let totalRides = gpxFiles.length;
