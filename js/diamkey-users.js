@@ -98,16 +98,6 @@ async function loadUsers() {
     await render();
 }
 
-function avatarHTML(src, size = 44) {
-    const defaultIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"></i>`;
-    if (!src || !src.trim()) return defaultIcon;
-
-    return `<img src="${escapeHtml(src)}" 
-                 style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;"
-                 onerror="this.outerHTML='${defaultIcon.replace(/'/g, "\\'")}';" 
-            />`;
-}
-
 function openBadgeFilterModal(badges, onSelect) {
     const existing = document.querySelector('.badge-filter-modal');
     if (existing) existing.remove();
