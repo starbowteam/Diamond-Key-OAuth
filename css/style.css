@@ -361,14 +361,14 @@ body {
     margin-bottom: 32px;
 }
 
-/* Новый баннер с кнопкой Обложка */
+/* Баннер с кнопкой Обложка */
 .profile-cover {
     height: 180px;
     background: linear-gradient(160deg, #1e1e32 0%, #0a0a14 100%);
     position: relative;
     overflow: hidden;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    cursor: default; /* убрали pointer, т.к. клик только по кнопке */
+    cursor: default;
     background-image: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.08) 0%, transparent 20%),
                       radial-gradient(circle at 80% 30%, rgba(255,255,255,0.05) 0%, transparent 30%),
                       linear-gradient(160deg, #1e1e32 0%, #0a0a14 100%);
@@ -382,7 +382,6 @@ body {
     min-width: 100%;
     transform-origin: center;
 }
-/* Кнопка "Обложка" с иконкой карандаша */
 .edit-cover-btn {
     position: absolute;
     top: 16px;
@@ -467,7 +466,7 @@ body {
     opacity: 1;
 }
 
-/* Двухколоночная компоновка */
+/* Двухколоночная компоновка с выравниванием */
 .profile-body {
     display: flex;
     gap: 32px;
@@ -478,7 +477,7 @@ body {
     flex: 1 1 300px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    justify-content: space-between;
 }
 .profile-right {
     flex: 1 1 300px;
@@ -502,6 +501,7 @@ body {
     backdrop-filter: blur(4px);
     letter-spacing: -0.3px;
     width: fit-content;
+    margin-bottom: 12px;
 }
 
 .description-box {
@@ -515,6 +515,8 @@ body {
     line-height: 1.5;
     cursor: pointer;
     transition: text-decoration 0.2s;
+    flex: 1;
+    margin-bottom: 12px;
 }
 .description-box:hover {
     text-decoration: underline;
@@ -525,7 +527,7 @@ body {
     flex-wrap: wrap;
     align-items: center;
     gap: 16px;
-    margin-bottom: 6px;
+    margin-top: auto;
 }
 
 /* Статус */
