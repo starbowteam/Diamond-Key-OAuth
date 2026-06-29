@@ -219,7 +219,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
             <div class="profile-left">
                 <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
                 <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
-                <div class="badges-left">${badgesHTML}</div>
+                <div class="badges-panel">${badgesHTML}</div>
                 <div class="meta-row">
                     ${statusHTML}
                     <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
@@ -464,7 +464,7 @@ async function renderMyProfile() {
                     <div class="profile-left">
                         <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
                         <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
-                        <div class="badges-left">${badgesHTML}</div>
+                        <div class="badges-panel">${badgesHTML}</div>
                         <div class="meta-row">
                             ${statusHTML}
                             <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
@@ -641,7 +641,7 @@ function startPlusGlitch() {
     }, 150);
 }
 
-/* ====== GPX-ВЬЮ (БЕЗ ИЗМЕНЕНИЙ) ====== */
+/* ====== GPX-ВЬЮ (кнопка Назад исправлена) ====== */
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
@@ -676,7 +676,8 @@ async function renderProfileGpxView(login) {
         page.innerHTML = `
             <div class="profile-panel">
                 ${coverBlock}
-                <button class="back-btn" onclick="navigateTo('${backTarget}')"><i class="fas fa-arrow-left"></i> Назад</button>
+                <!-- Кнопка Назад теперь вынесена из обложки и имеет высокий z-index -->
+                <button class="gpx-back-btn" onclick="navigateTo('${backTarget}')"><i class="fas fa-arrow-left"></i> Назад</button>
                 <div class="avatar-section">
                     <div class="avatar-wrapper">
                         ${avatarHTML(profile.avatar, 100)}
