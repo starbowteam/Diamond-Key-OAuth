@@ -143,199 +143,262 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
+// ========== ПОЛНОСТЬЮ НОВАЯ МОДАЛКА ОБЛОЖКИ ==========
 function openCoverSetupModal(profile) {
-    const modal = document.getElementById('coverSetupModal');
-    if (!modal) return;
-    modal.style.display = 'flex';
-    modal.classList.add('active');
+    // Удаляем предыдущую модалку, если есть
+    const container = document.getElementById('coverSetupModalContainer');
+    container.innerHTML = '';
 
-    const tabs = modal.querySelectorAll('[data-cover-tab]');
-    const tabGradients = document.getElementById('coverGradients');
-    const tabColors = document.getElementById('coverColors');
-    const tabUpload = document.getElementById('coverUpload');
-    const saveBtn = document.getElementById('saveCoverSetupBtn');
-    const cancelBtn = document.getElementById('cancelCoverSetupBtn');
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'coverSetupModalDynamic';
+    modal.style.display = 'flex';
+    modal.onclick = function(e) {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+            setTimeout(() => modal.remove(), 300);
+        }
+    };
+
+    modal.innerHTML = `
+        <div class="modal-content glass-panel cover-setup-modal" onclick="event.stopPropagation()">
+            <h3><i class="fas fa-image"></i> Настроить обложку</h3>
+            <div class="auth-tabs" id="coverTabs">
+                <button class="auth-tab active" data-tab="gradients">Градиенты</button>
+                <button class="auth-tab" data-tab="colors">Цвета</button>
+                <button class="auth-tab" data-tab="upload">Загрузить</button>
+            </div>
+            <div id="coverTabContent"></div>
+            <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
+                <button class="btn btn-primary" id="saveCoverBtn"><i class="fas fa-check"></i> Сохранить</button>
+                <button class="btn btn-secondary" id="cancelCoverBtn">Отмена</button>
+            </div>
+            <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
+        </div>
+    `;
+
+    container.appendChild(modal);
+    setTimeout(() => modal.classList.add('active'), 10);
+
+    const tabsContainer = document.getElementById('coverTabs');
+    const contentDiv = document.getElementById('coverTabContent');
+    const saveBtn = document.getElementById('saveCoverBtn');
+    const cancelBtn = document.getElementById('cancelCoverBtn');
+
+    // Данные для вкладок
+    const gradients = [
+        { bg: 'linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%)', value: 'gradient:#2a2a35:#1a1a22' },
+        { bg: 'linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%)', value: 'gradient:#1e3c5c:#0f1e33' },
+        { bg: 'linear-gradient(135deg, #2d4a3e 0%, #1a2e24 100%)', value: 'gradient:#2d4a3e:#1a2e24' },
+        { bg: 'linear-gradient(135deg, #4a2d4a 0%, #2e1a2e 100%)', value: 'gradient:#4a2d4a:#2e1a2e' },
+        { bg: 'linear-gradient(135deg, #3d2d4a 0%, #241a2e 100%)', value: 'gradient:#3d2d4a:#241a2e' },
+        { bg: 'linear-gradient(135deg, #4a3d2d 0%, #2e241a 100%)', value: 'gradient:#4a3d2d:#2e241a' },
+        { bg: 'linear-gradient(135deg, #2d4a4a 0%, #1a2e2e 100%)', value: 'gradient:#2d4a4a:#1a2e2e' },
+        { bg: 'linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%)', value: 'gradient:#4a2d3d:#2e1a24' }
+    ];
+    const colors = [
+        { bg: '#1a1a2e', value: 'color:#1a1a2e' },
+        { bg: '#2d2d44', value: 'color:#2d2d44' },
+        { bg: '#16213e', value: 'color:#16213e' },
+        { bg: '#0f3460', value: 'color:#0f3460' },
+        { bg: '#533483', value: 'color:#533483' },
+        { bg: '#e94560', value: 'color:#e94560' }
+    ];
+
     let selectedCover = null;
     let currentImageSrc = '';
     let posX = profile.cover_pos_x || 0;
     let posY = profile.cover_pos_y || 0;
     let scale = profile.cover_scale || 1;
 
-    // Сброс всех состояний при открытии
-    tabs.forEach(tab => {
-        tab.classList.remove('active');
-    });
-    // Активируем первую вкладку (градиенты) по умолчанию
-    const firstTab = modal.querySelector('[data-cover-tab="gradients"]');
-    if (firstTab) firstTab.classList.add('active');
-    if (tabGradients) tabGradients.style.display = 'grid';
-    if (tabColors) tabColors.style.display = 'none';
-    if (tabUpload) tabUpload.style.display = 'none';
+    // Функция переключения вкладок
+    function showTab(tabName) {
+        contentDiv.innerHTML = '';
+        if (tabName === 'gradients') {
+            contentDiv.innerHTML = '<div class="cover-options-grid" id="coverGrid"></div>';
+            const grid = document.getElementById('coverGrid');
+            gradients.forEach(g => {
+                const div = document.createElement('div');
+                div.className = 'cover-option';
+                div.style.background = g.bg;
+                div.dataset.cover = g.value;
+                div.addEventListener('click', function() {
+                    document.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedCover = this.dataset.cover;
+                });
+                grid.appendChild(div);
+            });
+        } else if (tabName === 'colors') {
+            contentDiv.innerHTML = '<div class="cover-options-grid" id="coverGrid"></div>';
+            const grid = document.getElementById('coverGrid');
+            colors.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'cover-option';
+                div.style.background = c.bg;
+                div.dataset.cover = c.value;
+                div.addEventListener('click', function() {
+                    document.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedCover = this.dataset.cover;
+                });
+                grid.appendChild(div);
+            });
+        } else if (tabName === 'upload') {
+            contentDiv.innerHTML = `
+                <div class="cover-preview-container" id="coverPreviewContainer">
+                    <img id="coverPreviewImage" src="${currentImageSrc}" alt="Preview" draggable="false" style="position:absolute; top:50%; left:50%; transform-origin:center; height:100%; width:auto; min-width:100%;">
+                </div>
+                <div class="cover-controls">
+                    <i class="fas fa-search-minus"></i>
+                    <input type="range" id="coverScaleSlider" min="0.5" max="2" step="0.01" value="${scale}">
+                    <i class="fas fa-search-plus"></i>
+                </div>
+                <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Выбрать изображение</button>
+            `;
+            const uploadBtn = document.getElementById('coverUploadBtn');
+            const fileInput = document.getElementById('coverFileInput');
+            const previewImage = document.getElementById('coverPreviewImage');
+            const scaleSlider = document.getElementById('coverScaleSlider');
+            const previewContainer = document.getElementById('coverPreviewContainer');
 
-    // Удаляем старые обработчики, клонируя элементы, чтобы избежать дублирования
-    tabs.forEach(tab => {
-        const newTab = tab.cloneNode(true);
-        tab.parentNode.replaceChild(newTab, tab);
-    });
-    // Заново получаем свежие копии вкладок
-    const freshTabs = modal.querySelectorAll('[data-cover-tab]');
-    freshTabs.forEach(tab => {
-        tab.addEventListener('click', function(e) {
-            freshTabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            const tabName = this.dataset.coverTab;
-            if (tabGradients) tabGradients.style.display = tabName === 'gradients' ? 'grid' : 'none';
-            if (tabColors) tabColors.style.display = tabName === 'colors' ? 'grid' : 'none';
-            if (tabUpload) tabUpload.style.display = tabName === 'upload' ? 'block' : 'none';
-        });
-    });
+            uploadBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    currentImageSrc = ev.target.result;
+                    previewImage.src = currentImageSrc;
+                    posX = 0; posY = 0; scale = 1;
+                    applyPreviewTransform();
+                };
+                reader.readAsDataURL(file);
+            });
 
-    // Обработчики выбора обложки (градиенты / цвета)
-    modal.querySelectorAll('.cover-option').forEach(opt => {
-        opt.addEventListener('click', function() {
-            modal.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedCover = this.dataset.cover;
-        });
-    });
+            function applyPreviewTransform() {
+                previewImage.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
+                scaleSlider.value = scale;
+            }
 
-    const uploadBtn = document.getElementById('coverUploadBtn');
-    const fileInput = document.getElementById('coverFileInput');
-    const previewContainer = document.getElementById('coverPreviewContainer');
-    const previewImage = document.getElementById('coverPreviewImage');
-    const scaleSlider = document.getElementById('coverScaleSlider');
-
-    if (uploadBtn) uploadBtn.onclick = () => fileInput.click();
-    if (fileInput) {
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                currentImageSrc = ev.target.result;
-                previewImage.src = currentImageSrc;
-                posX = 0; posY = 0; scale = 1;
-                applyPreviewTransform();
-            };
-            reader.readAsDataURL(file);
-        };
-    }
-
-    function applyPreviewTransform() {
-        if (!previewImage) return;
-        previewImage.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
-        if (scaleSlider) scaleSlider.value = scale;
-    }
-
-    // Drag внутри preview
-    if (previewContainer) {
-        let dragging = false, startX, startY, startPosX, startPosY;
-        previewContainer.onmousedown = function(e) {
-            dragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            startPosX = posX;
-            startPosY = posY;
-            e.preventDefault();
-        };
-        window.addEventListener('mousemove', function(e) {
-            if (!dragging) return;
-            const rect = previewContainer.getBoundingClientRect();
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            const percentX = (dx / rect.width) * 100;
-            const percentY = (dy / rect.height) * 100;
-            posX = startPosX + percentX;
-            posY = startPosY + percentY;
-            applyPreviewTransform();
-        });
-        window.addEventListener('mouseup', function() {
-            dragging = false;
-        });
-        previewContainer.ontouchstart = function(e) {
-            if (e.touches.length === 1) {
+            // Перетаскивание
+            let dragging = false, startX, startY, startPosX, startPosY;
+            previewContainer.addEventListener('mousedown', (e) => {
                 dragging = true;
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
+                startX = e.clientX;
+                startY = e.clientY;
                 startPosX = posX;
                 startPosY = posY;
-            }
-        };
-        window.addEventListener('touchmove', function(e) {
-            if (!dragging) return;
-            const rect = previewContainer.getBoundingClientRect();
-            const dx = e.touches[0].clientX - startX;
-            const dy = e.touches[0].clientY - startY;
-            const percentX = (dx / rect.width) * 100;
-            const percentY = (dy / rect.height) * 100;
-            posX = startPosX + percentX;
-            posY = startPosY + percentY;
-            applyPreviewTransform();
-            e.preventDefault();
-        }, { passive: false });
-        window.addEventListener('touchend', function() {
-            dragging = false;
-        });
-    }
+                e.preventDefault();
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                const rect = previewContainer.getBoundingClientRect();
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                const percentX = (dx / rect.width) * 100;
+                const percentY = (dy / rect.height) * 100;
+                posX = startPosX + percentX;
+                posY = startPosY + percentY;
+                applyPreviewTransform();
+            });
+            window.addEventListener('mouseup', () => { dragging = false; });
+            previewContainer.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    dragging = true;
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    startPosX = posX;
+                    startPosY = posY;
+                }
+            });
+            window.addEventListener('touchmove', (e) => {
+                if (!dragging) return;
+                const rect = previewContainer.getBoundingClientRect();
+                const dx = e.touches[0].clientX - startX;
+                const dy = e.touches[0].clientY - startY;
+                const percentX = (dx / rect.width) * 100;
+                const percentY = (dy / rect.height) * 100;
+                posX = startPosX + percentX;
+                posY = startPosY + percentY;
+                applyPreviewTransform();
+                e.preventDefault();
+            }, { passive: false });
+            window.addEventListener('touchend', () => { dragging = false; });
 
-    if (scaleSlider) {
-        scaleSlider.oninput = function() {
-            scale = parseFloat(this.value);
-            applyPreviewTransform();
-        };
-    }
+            scaleSlider.addEventListener('input', () => {
+                scale = parseFloat(scaleSlider.value);
+                applyPreviewTransform();
+            });
 
-    if (saveBtn) {
-        saveBtn.onclick = async function() {
-            if (selectedCover) {
-                await updateProfile({ cover: selectedCover, cover_pos_x: 0, cover_pos_y: 0, cover_scale: 1 });
-                currentUser.cover = selectedCover;
-                currentUser.cover_pos_x = 0;
-                currentUser.cover_pos_y = 0;
-                currentUser.cover_scale = 1;
-            } else if (currentImageSrc) {
-                const coverValue = 'image:' + currentImageSrc;
-                await updateProfile({ cover: coverValue, cover_pos_x: posX, cover_pos_y: posY, cover_scale: scale });
-                currentUser.cover = coverValue;
-                currentUser.cover_pos_x = posX;
-                currentUser.cover_pos_y = posY;
-                currentUser.cover_scale = scale;
-            } else {
-                showToast('Выберите обложку');
-                return;
-            }
-            closeModal('coverSetupModal');
-            if (document.getElementById('page-profile').classList.contains('active')) renderMyProfile();
-            showToast('Обложка обновлена');
-        };
-    }
-
-    if (cancelBtn) {
-        cancelBtn.onclick = function() {
-            closeModal('coverSetupModal');
-        };
-    }
-
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) closeModal('coverSetupModal');
-    });
-
-    // Если у пользователя уже есть кастомное изображение, показать его и переключиться на вкладку загрузки
-    if (profile.cover && profile.cover.startsWith('image:')) {
-        currentImageSrc = profile.cover.replace('image:', '');
-        if (previewImage) {
-            previewImage.src = currentImageSrc;
             applyPreviewTransform();
         }
-        const uploadTab = modal.querySelector('[data-cover-tab="upload"]');
+
+        // После отрисовки любой вкладки, подсвечиваем выбранный градиент/цвет, если он был выбран ранее
+        if (tabName === 'gradients' || tabName === 'colors') {
+            document.querySelectorAll('.cover-option').forEach(opt => {
+                if (opt.dataset.cover === selectedCover) {
+                    opt.classList.add('selected');
+                }
+            });
+        }
+    }
+
+    // Назначаем обработчики вкладок
+    tabsContainer.querySelectorAll('.auth-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            tabsContainer.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            showTab(this.dataset.tab);
+        });
+    });
+
+    // По умолчанию открываем градиенты
+    showTab('gradients');
+
+    // Если у пользователя было изображение, можно переключиться на вкладку загрузки
+    if (profile.cover && profile.cover.startsWith('image:')) {
+        currentImageSrc = profile.cover.replace('image:', '');
+        const uploadTab = tabsContainer.querySelector('[data-tab="upload"]');
         if (uploadTab) uploadTab.click();
     }
+
+    // Сохранение
+    saveBtn.addEventListener('click', async () => {
+        if (selectedCover) {
+            await updateProfile({ cover: selectedCover, cover_pos_x: 0, cover_pos_y: 0, cover_scale: 1 });
+            currentUser.cover = selectedCover;
+            currentUser.cover_pos_x = 0;
+            currentUser.cover_pos_y = 0;
+            currentUser.cover_scale = 1;
+        } else if (currentImageSrc) {
+            const coverValue = 'image:' + currentImageSrc;
+            await updateProfile({ cover: coverValue, cover_pos_x: posX, cover_pos_y: posY, cover_scale: scale });
+            currentUser.cover = coverValue;
+            currentUser.cover_pos_x = posX;
+            currentUser.cover_pos_y = posY;
+            currentUser.cover_scale = scale;
+        } else {
+            showToast('Выберите обложку');
+            return;
+        }
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+        if (document.getElementById('page-profile').classList.contains('active')) renderMyProfile();
+        showToast('Обложка обновлена');
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    });
 }
 
 function openCoverModal() {
     if (currentUser) openCoverSetupModal(currentUser);
 }
 
+// ========== ОСТАЛЬНЫЕ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ ==========
 async function openBadgeModal() {
     const modal = document.getElementById('badgeModal');
     if (!modal) return;
