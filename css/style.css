@@ -944,11 +944,26 @@ body {
     font-size: 16px;
 }
 
-/* Модалка настройки обложки */
+/* Модалка настройки обложки (стили для вкладок) */
 .cover-setup-modal {
     max-width: 700px;
     width: 95%;
 }
+.cover-options-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.cover-option {
+    height: 60px;
+    border-radius: 16px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: 0.2s;
+}
+.cover-option:hover { border-color: var(--accent); }
+.cover-option.selected { border-color: white; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
 .cover-preview-container {
     position: relative;
     width: 100%;
@@ -983,7 +998,7 @@ body {
     max-width: 200px;
 }
 
-/* ===== МОДАЛКА ФИЛЬТРА ПО БЕЙДЖАМ ===== */
+/* Модалка фильтра по бейджам */
 .badge-filter-modal .modal-content {
     max-width: 600px;
 }
