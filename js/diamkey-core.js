@@ -27,10 +27,6 @@ const saved = localStorage.getItem('diamkey_current');
 if (saved) try { currentUser = JSON.parse(saved); } catch(e) { console.log('[DiamKey] Ошибка парсинга сохранённой сессии'); }
 
 // ---------- АВАТАР (глобальная функция) ----------
-/**
- * Аватар без вылезания за рамку.
- * Если src пустой – fa-user, иначе img + скрытая иконка для подмены при ошибке.
- */
 function avatarHTML(src, size = 100) {
     const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>`;
     if (!src || !src.trim()) return fallbackIcon;
