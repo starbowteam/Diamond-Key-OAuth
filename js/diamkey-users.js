@@ -59,9 +59,7 @@ async function loadUsers() {
         );
         container.innerHTML = sorted.map(u => `
             <div class="user-card glass-panel" data-login="${u.login}" style="cursor:pointer;">
-                ${u.avatar && u.avatar.trim()
-                    ? `<img src="${escapeHtml(u.avatar)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
-                    : '<i class="fas fa-user" style="font-size:44px;color:var(--text-muted);width:44px;height:44px;display:flex;align-items:center;justify-content:center;"></i>'}
+                ${avatarHTML(u.avatar, 44)}
                 <div><h4>${escapeHtml(u.name || u.login)}</h4><span>@${u.login}</span></div>
             </div>
         `).join('');
@@ -98,6 +96,12 @@ async function loadUsers() {
     });
 
     await render();
+}
+
+function avatarHTML(src, size = 44) {
+    const fallback = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"></i>`;
+    if (!src || !src.trim()) return fallback;
+    return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" onerror="this.outerHTML = '${fallback.replace(/'/g, "\\'")}';" />`;
 }
 
 function openBadgeFilterModal(badges, onSelect) {
