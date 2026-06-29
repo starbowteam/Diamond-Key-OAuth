@@ -538,7 +538,7 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/* ============ ОБНОВЛЁННАЯ GPX-ВЬЮ ============ */
+/* ============ ОБНОВЛЁННАЯ GPX-ВЬЮ (с общей статистикой и растягивающимися карточками) ============ */
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
@@ -561,33 +561,39 @@ async function renderProfileGpxView(login) {
             ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
             : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
 
-        const hasRides = gpxFiles.length > 0;
-        let cardsHTML = '';
-        if (hasRides) {
-            cardsHTML = gpxFiles.map(f => {
-                const stats = getGpxStats(f.content);
-                let statsHTML = '';
-                if (stats.dist !== null) {
-                    const distStr = stats.dist > 1000 ? (stats.dist/1000).toFixed(1) + ' км' : Math.round(stats.dist) + ' м';
-                    const ascentStr = stats.ascent > 0 ? '+' + Math.round(stats.ascent) + ' м' : '';
-                    statsHTML = `
-                        <div class="gpx-card-stats">
-                            <span>${distStr}</span>
-                            ${ascentStr ? `<span>↑ ${ascentStr}</span>` : ''}
-                        </div>
-                    `;
-                }
-                return `
-                    <div class="gpx-card" onclick="viewGpxRoute('${f.id}')">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <h4>${escapeHtml(f.name)}</h4>
-                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                        ${statsHTML}
+        // Собираем общую статистику
+        let totalRides = gpxFiles.length;
+        let totalDist = 0;
+        let totalAscent = 0;
+        gpxFiles.forEach(f => {
+            const stats = getGpxStats(f.content);
+            if (stats.dist) totalDist += stats.dist;
+            if (stats.ascent) totalAscent += stats.ascent;
+        });
+
+        const distStr = totalDist > 1000 ? (totalDist / 1000).toFixed(1) + ' км' : totalDist.toFixed(0) + ' м';
+        const ascentStr = totalAscent > 0 ? '+' + totalAscent.toFixed(0) + ' м' : '—';
+
+        let statsRowHTML = '';
+        if (totalRides > 0) {
+            statsRowHTML = `
+                <div class="user-stats-row" style="margin: 24px 0 8px;">
+                    <div class="stat-badge">
+                        <div class="number">${totalRides}</div>
+                        <div class="label">Поездки</div>
                     </div>
-                `;
-            }).join('');
+                    <div class="stat-badge">
+                        <div class="number">${distStr}</div>
+                        <div class="label">Общая дистанция</div>
+                    </div>
+                    <div class="stat-badge">
+                        <div class="number">${ascentStr}</div>
+                        <div class="label">Набор высоты</div>
+                    </div>
+                </div>
+            `;
         } else {
-            cardsHTML = '<div class="empty-gpx-message"><p>Поездок пока нет</p></div>';
+            statsRowHTML = '<div class="empty-gpx-message"><p>Поездок пока нет</p></div>';
         }
 
         const backTarget = (currentUser && currentUser.login === login) ? '/profile' : `/users/${login}`;
@@ -595,20 +601,42 @@ async function renderProfileGpxView(login) {
         page.innerHTML = `
             <div class="profile-panel">
                 ${coverBlock}
-                <div class="avatar-section">
-                    <div class="avatar-wrapper">
+                <div class="avatar-section" style="display:flex; align-items:center; gap:20px;">
+                    <div class="avatar-wrapper" style="flex-shrink:0;">
                         ${avatarHTML}
                     </div>
-                </div>
-                <div class="profile-info" style="justify-content: flex-end;">
-                    <div class="profile-actions">
+                    <div style="margin-left:auto;">
                         <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
                     </div>
                 </div>
                 <div style="padding: 0 32px 24px;">
-                    <div class="profile-gpx-grid" id="profileGpxGrid">
-                        ${cardsHTML}
-                    </div>
+                    ${statsRowHTML}
+                    ${totalRides > 0 ? `
+                        <div class="profile-gpx-grid" id="profileGpxGrid" style="display:flex; flex-wrap:wrap; gap:16px; margin-top:24px;">
+                            ${gpxFiles.map(f => {
+                                const stats = getGpxStats(f.content);
+                                let cardStatsHTML = '';
+                                if (stats.dist !== null) {
+                                    const dist = stats.dist > 1000 ? (stats.dist/1000).toFixed(1) + ' км' : Math.round(stats.dist) + ' м';
+                                    const ascent = stats.ascent > 0 ? '+' + Math.round(stats.ascent) + ' м' : '';
+                                    cardStatsHTML = `
+                                        <div class="gpx-card-stats">
+                                            <span>${dist}</span>
+                                            ${ascent ? `<span>↑ ${ascent}</span>` : ''}
+                                        </div>
+                                    `;
+                                }
+                                return `
+                                    <div class="gpx-card" onclick="viewGpxRoute('${f.id}')" style="flex: 1 1 220px;">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <h4>${escapeHtml(f.name)}</h4>
+                                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
+                                        ${cardStatsHTML}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
