@@ -149,20 +149,20 @@ function renderCoverHTML(profile, isOwnProfile) {
 }
 
 /**
- * Надёжная функция аватара: если src пустой или битый — показывает fa-user.
- * Мусорных символов больше не будет.
+ * Аватар без ломания вёрстки.
+ * Если src пустой – сразу fa-user, иначе img + скрытая иконка для подмены при ошибке.
  */
 function avatarHTML(src, size = 100) {
-    const fallbackHTML = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></i>`;
-    if (!src || !src.trim()) return fallbackHTML;
+    const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></i>`;
+    if (!src || !src.trim()) return fallbackIcon;
+
+    const imgStyle = `width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;`;
+    const hiddenIconStyle = `font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:none;align-items:center;justify-content:center;`;
 
     return `
-    <span style="display:inline-block;width:${size}px;height:${size}px;flex-shrink:0;">
-        <img src="${escapeHtml(src)}"
-             style="width:100%;height:100%;border-radius:50%;object-fit:cover;"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-        <span style="display:none;width:100%;height:100%;">${fallbackHTML}</span>
-    </span>`;
+    <img src="${escapeHtml(src)}" style="${imgStyle}"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <i class="fas fa-user" style="${hiddenIconStyle}"></i>`;
 }
 
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
