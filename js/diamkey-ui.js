@@ -143,7 +143,7 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
-// ========== МОДАЛКА ОБЛОЖКИ (градиенты и цвета гарантированно видны) ==========
+// ========== МОДАЛКА ОБЛОЖКИ (8 цветов) ==========
 function openCoverSetupModal(profile) {
     const container = document.getElementById('coverSetupModalContainer');
     container.innerHTML = '';
@@ -159,7 +159,6 @@ function openCoverSetupModal(profile) {
         }
     };
 
-    // Градиенты и цвета сразу в HTML
     modal.innerHTML = `
         <div class="modal-content glass-panel cover-setup-modal" onclick="event.stopPropagation()">
             <h3><i class="fas fa-image"></i> Настроить обложку</h3>
@@ -181,7 +180,7 @@ function openCoverSetupModal(profile) {
                 <div class="cover-option" style="background:linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%);" data-cover="gradient:#4a2d3d:#2e1a24"></div>
             </div>
 
-            <!-- Вкладка Цвета (скрыта) -->
+            <!-- Вкладка Цвета (8 цветов) -->
             <div id="coverColors" class="cover-options-grid" style="display:none;">
                 <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
                 <div class="cover-option" style="background:#2d2d44;" data-cover="color:#2d2d44"></div>
@@ -189,9 +188,11 @@ function openCoverSetupModal(profile) {
                 <div class="cover-option" style="background:#0f3460;" data-cover="color:#0f3460"></div>
                 <div class="cover-option" style="background:#533483;" data-cover="color:#533483"></div>
                 <div class="cover-option" style="background:#e94560;" data-cover="color:#e94560"></div>
+                <div class="cover-option" style="background:#1a3a3a;" data-cover="color:#1a3a3a"></div>
+                <div class="cover-option" style="background:#3a1a3a;" data-cover="color:#3a1a3a"></div>
             </div>
 
-            <!-- Вкладка Загрузка изображения (скрыта) -->
+            <!-- Вкладка Загрузка изображения -->
             <div id="coverUpload" style="display:none;">
                 <div class="cover-preview-container" id="coverPreviewContainer">
                     <img id="coverPreviewImage" src="" alt="Preview" draggable="false" style="position:absolute; top:50%; left:50%; transform-origin:center; height:100%; width:auto; min-width:100%;">
@@ -215,7 +216,6 @@ function openCoverSetupModal(profile) {
     container.appendChild(modal);
     setTimeout(() => modal.classList.add('active'), 10);
 
-    // Элементы
     const tabs = modal.querySelectorAll('#coverTabs .auth-tab');
     const gradientDiv = modal.querySelector('#coverGradients');
     const colorsDiv = modal.querySelector('#coverColors');
@@ -234,7 +234,6 @@ function openCoverSetupModal(profile) {
     let posY = profile.cover_pos_y || 0;
     let scale = profile.cover_scale || 1;
 
-    // Переключение вкладок
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             tabs.forEach(t => t.classList.remove('active'));
@@ -246,7 +245,6 @@ function openCoverSetupModal(profile) {
         });
     });
 
-    // Выбор градиента/цвета
     modal.querySelectorAll('.cover-option').forEach(opt => {
         opt.addEventListener('click', function() {
             modal.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
@@ -255,7 +253,6 @@ function openCoverSetupModal(profile) {
         });
     });
 
-    // Загрузка изображения
     uploadBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -275,7 +272,6 @@ function openCoverSetupModal(profile) {
         scaleSlider.value = scale;
     }
 
-    // Перетаскивание
     let dragging = false, startX, startY, startPosX, startPosY;
     previewContainer.addEventListener('mousedown', (e) => {
         dragging = true;
@@ -325,7 +321,6 @@ function openCoverSetupModal(profile) {
         applyPreviewTransform();
     });
 
-    // Сохранение
     saveBtn.addEventListener('click', async () => {
         if (selectedCover) {
             await updateProfile({ cover: selectedCover, cover_pos_x: 0, cover_pos_y: 0, cover_scale: 1 });
@@ -355,7 +350,6 @@ function openCoverSetupModal(profile) {
         setTimeout(() => modal.remove(), 300);
     });
 
-    // Если уже было изображение – показать его и переключить вкладку
     if (profile.cover && profile.cover.startsWith('image:')) {
         currentImageSrc = profile.cover.replace('image:', '');
         previewImage.src = currentImageSrc;
@@ -369,7 +363,6 @@ function openCoverModal() {
     if (currentUser) openCoverSetupModal(currentUser);
 }
 
-// ========== ОСТАЛЬНЫЕ ФУНКЦИИ ==========
 async function openBadgeModal() {
     const modal = document.getElementById('badgeModal');
     if (!modal) return;
