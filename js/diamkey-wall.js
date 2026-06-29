@@ -149,41 +149,49 @@ function renderCoverHTML(profile, isOwnProfile) {
 }
 
 /**
- * Аватар без вылезаний и сдвигов.
- * Если src пустой – fa-user в том же размере.
+ * Аватар без вылезания за рамку.
+ * Если src пустой – fa-user, иначе img + скрытая иконка для подмены при ошибке.
  */
 function avatarHTML(src, size = 100) {
-    if (!src || !src.trim()) {
-        return `<i class="fas fa-user" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);background:var(--bg-primary);border-radius:50%;font-size:${size*0.5}px;"></i>`;
-    }
-    return `<img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;"
-             onerror="this.outerHTML='<i class=\'fas fa-user\' style=\'width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);background:var(--bg-primary);border-radius:50%;font-size:${size*0.5}px;\'></i>';">`;
+    const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>`;
+    if (!src || !src.trim()) return fallbackIcon;
+
+    return `
+        <img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:none;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>
+    `;
 }
 
 /**
- * Форматирует статус онлайн
+ * Статус онлайн/офлайн – закруглённый прямоугольник под описанием.
  */
-function onlineStatusHTML(online, lastSeen) {
-    if (online) {
-        return '<span class="online-status online"><i class="fas fa-circle"></i> В сети</span>';
+function getStatusHTML(login, lastSeen) {
+    if (!lastSeen) return '';
+    const diff = Date.now() - new Date(lastSeen).getTime();
+    if (diff < 120000) {
+        // Онлайн
+        return `<div class="status-badge online">В сети</div>`;
+    } else {
+        // Офлайн – считаем время
+        const minutes = Math.floor(diff / 60000);
+        if (minutes < 60) {
+            return `<div class="status-badge offline">Был(а) ${minutes} мин. назад</div>`;
+        } else {
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) {
+                return `<div class="status-badge offline">Был(а) ${hours} ч. назад</div>`;
+            } else {
+                const days = Math.floor(hours / 24);
+                return `<div class="status-badge offline">Был(а) ${days} д. назад</div>`;
+            }
+        }
     }
-    if (!lastSeen) return '<span class="online-status offline"><i class="fas fa-circle"></i> Не в сети</span>';
-    const minutes = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 60000);
-    if (minutes < 1) return '<span class="online-status offline"><i class="fas fa-circle"></i> Был только что</span>';
-    if (minutes < 60) return `<span class="online-status offline"><i class="fas fa-circle"></i> Был ${minutes} мин назад</span>`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `<span class="online-status offline"><i class="fas fa-circle"></i> Был ${hours} ч назад</span>`;
-    return `<span class="online-status offline"><i class="fas fa-circle"></i> Был ${new Date(lastSeen).toLocaleDateString()}</span>`;
 }
 
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
-    const online = await isUserOnline(login);
-    let lastSeen = null;
-    if (!online) {
-        const { data } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
-        if (data) lastSeen = data.last_seen;
-    }
-    const statusHTML = onlineStatusHTML(online, lastSeen);
+    const { data: presence } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
+    const statusHTML = getStatusHTML(login, presence?.last_seen);
 
     let badgesHTML = '';
     if (badges && badges.length > 0) {
@@ -401,13 +409,8 @@ async function renderMyProfile() {
 
         if (!profile) return;
 
-        const online = await isUserOnline(login);
-        let lastSeen = null;
-        if (!online) {
-            const { data } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
-            if (data) lastSeen = data.last_seen;
-        }
-        const statusHTML = onlineStatusHTML(online, lastSeen);
+        const { data: presence } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
+        const statusHTML = getStatusHTML(login, presence?.last_seen);
 
         let badgesHTML = '';
         if (badges && badges.length > 0) {
