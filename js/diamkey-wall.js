@@ -624,38 +624,70 @@ function startPlusGlitch() {
     }, 150);
 }
 
-/* ====== СТРАНИЦА DIAMOND PLUS ====== */
+/* ====== СТРАНИЦА DIAMOND PLUS (С ЧАСТИЦАМИ) ====== */
 async function renderDiamondPlusPage() {
     const page = document.getElementById('page-diamond-plus');
     if (!page) return;
 
     page.innerHTML = `
-        <div class="profile-panel">
+        <div class="plus-panel" id="plusPanelContainer">
+            <canvas id="particleCanvas"></canvas>
             <div class="plus-header">
                 <button class="back-btn-profile" onclick="navigateTo('/profile')"><i class="fas fa-arrow-left"></i> Назад</button>
                 <h1>Diamond Plus</h1>
                 <p class="plus-subtitle">Подписка, открывающая весь потенциал DiamKey</p>
             </div>
-            <div class="plus-benefits">
-                <div class="benefit-card">
-                    <div class="benefit-icon"><i class="fas fa-brain"></i></div>
-                    <h3 class="benefit-title">Diamond AI без цензуры</h3>
-                    <p class="benefit-desc">Искусственный интеллект, который отвечает прямо и без ограничений. Только вы и чистый разум.</p>
+            <div class="plus-grid">
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-brain"></i></div>
+                    <h3 class="plus-card-title">Diamond AI без цензуры</h3>
+                    <p class="plus-card-desc">Искусственный интеллект, который отвечает прямо и без ограничений. Только вы и чистый разум.</p>
+                    <p class="plus-card-extra">+ эксклюзивные модели</p>
                 </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon"><i class="fas fa-sliders-h"></i></div>
-                    <h3 class="benefit-title">Расширенные настройки профиля</h3>
-                    <p class="benefit-desc">Уникальные обложки, эксклюзивные цвета ника, кастомные анимации и многое другое.</p>
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-sliders-h"></i></div>
+                    <h3 class="plus-card-title">Расширенные настройки профиля</h3>
+                    <p class="plus-card-desc">Уникальные обложки, кастомные шрифты ника, эксклюзивные рамки аватара.</p>
+                    <p class="plus-card-extra">+ 20 премиум-стилей</p>
                 </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon"><i class="fas fa-medal"></i></div>
-                    <h3 class="benefit-title">Свой бейдж на сайте</h3>
-                    <p class="benefit-desc">Премиум значок Diamond Plus, который виден всем. Вас узнают и уважают.</p>
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-medal"></i></div>
+                    <h3 class="plus-card-title">Премиум-бейдж</h3>
+                    <p class="plus-card-desc">Серебряный значок Diamond Plus, который виден всем. Вас узнают и уважают.</p>
+                    <p class="plus-card-extra">+ приоритетная поддержка</p>
                 </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon"><i class="fas fa-rocket"></i></div>
-                    <h3 class="benefit-title">Участие в проектах Diamond Ecosystem</h3>
-                    <p class="benefit-desc">Ранний доступ к новым функциям, голосование за развитие и вклад в будущее экосистемы.</p>
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-rocket"></i></div>
+                    <h3 class="plus-card-title">Ранний доступ</h3>
+                    <p class="plus-card-desc">Участвуйте в закрытых бета-тестах новых функций DiamKey и влияйте на развитие экосистемы.</p>
+                    <p class="plus-card-extra">+ голос в roadmap</p>
+                </div>
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <h3 class="plus-card-title">Расширенное хранилище</h3>
+                    <p class="plus-card-desc">До 5 ГБ для ваших GPX-треков, обложек и файлов. Никаких ограничений.</p>
+                    <p class="plus-card-extra">+ авто-бэкап данных</p>
+                </div>
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-paint-brush"></i></div>
+                    <h3 class="plus-card-title">Эксклюзивные темы</h3>
+                    <p class="plus-card-desc">Меняйте внешний вид DiamKey под настроение: тёмный, светлый, аметистовый.</p>
+                    <p class="plus-card-extra">+ 6 уникальных тем</p>
+                </div>
+            </div>
+            <div class="faq-section">
+                <h2 class="faq-title">Часто спрашивают</h2>
+                <div class="faq-item" onclick="this.classList.toggle('open')">
+                    <div class="faq-q"><i class="fas fa-chevron-right"></i> Когда спишут деньги?</div>
+                    <div class="faq-a">Когда вы оплатите подписку.</div>
+                </div>
+                <div class="faq-item" onclick="this.classList.toggle('open')">
+                    <div class="faq-q"><i class="fas fa-chevron-right"></i> Можно ли отменить в любой момент?</div>
+                    <div class="faq-a">Да, подписка отключается в один клик. До конца оплаченного периода все преимущества сохраняются.</div>
+                </div>
+                <div class="faq-item" onclick="this.classList.toggle('open')">
+                    <div class="faq-q"><i class="fas fa-chevron-right"></i> Как получить ранний доступ?</div>
+                    <div class="faq-a">Сразу после оформления подписки вы автоматически попадаете в список тестеров.</div>
                 </div>
             </div>
             <div class="plus-cta">
@@ -667,6 +699,67 @@ async function renderDiamondPlusPage() {
             </div>
         </div>
     `;
+
+    // Инициализируем частицы после того, как страница отрисована
+    setTimeout(() => {
+        initParticles();
+    }, 100);
+}
+
+/* ====== ЧАСТИЦЫ ДЛЯ DIAMOND PLUS ====== */
+function initParticles() {
+    const canvas = document.getElementById('particleCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const panel = canvas.parentElement;
+    let particles = [];
+    const maxParticles = 50;
+
+    function resize() {
+        canvas.width = panel.offsetWidth;
+        canvas.height = panel.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', () => {
+        resize();
+        particles = [];
+        for (let i = 0; i < maxParticles; i++) createParticle();
+    });
+
+    function createParticle() {
+        return {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 1.5 + 0.5,
+            speedY: Math.random() * 0.2 + 0.1,
+            speedX: (Math.random() - 0.5) * 0.1,
+            opacity: Math.random() * 0.5 + 0.2
+        };
+    }
+
+    for (let i = 0; i < maxParticles; i++) particles.push(createParticle());
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(192,192,208,${p.opacity})`;
+            ctx.fill();
+            p.y -= p.speedY;
+            p.x += p.speedX;
+            if (p.y < -10) {
+                p.y = canvas.height + 10;
+                p.x = Math.random() * canvas.width;
+            }
+            if (p.x < -10 || p.x > canvas.width + 10) {
+                p.x = Math.random() * canvas.width;
+                p.y = canvas.height + 10;
+            }
+        });
+        requestAnimationFrame(draw);
+    }
+    draw();
 }
 
 /* ====== GPX-ВЬЮ ====== */
