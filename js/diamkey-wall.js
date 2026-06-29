@@ -148,6 +148,10 @@ function renderCoverHTML(profile, isOwnProfile) {
     }
 }
 
+/**
+ * Аватар без вылезания за рамку.
+ * Если src пустой – fa-user, иначе img + скрытая иконка для подмены при ошибке.
+ */
 function avatarHTML(src, size = 100) {
     const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>`;
     if (!src || !src.trim()) return fallbackIcon;
@@ -161,7 +165,6 @@ function avatarHTML(src, size = 100) {
 
 /**
  * Статус онлайн/офлайн – закруглённый прямоугольник под описанием.
- * lastSeen – ISO-дата последней активности из user_presence.
  */
 function getStatusHTML(login, lastSeen) {
     if (!lastSeen) {
@@ -172,7 +175,6 @@ function getStatusHTML(login, lastSeen) {
     const diff = now - last;
 
     if (diff < 120000) {
-        // 2 минуты – онлайн
         return `<div class="status-badge online">В сети</div>`;
     }
 
@@ -227,7 +229,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         </div>
         <div class="profile-info">
             <div class="profile-details">
-                <h2>${escapeHtml(profile.name || login)}</h2>
+                <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
                 <p class="description" id="profileDescription">${escapeHtml(profile.description || 'Нет описания')}</p>
                 ${statusHTML}
                 <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
@@ -449,7 +451,7 @@ async function renderMyProfile() {
                 </div>
                 <div class="profile-info">
                     <div class="profile-details">
-                        <h2>${escapeHtml(profile.name || login)}</h2>
+                        <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
                         <p class="description" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')}</p>
                         ${statusHTML}
                         <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
