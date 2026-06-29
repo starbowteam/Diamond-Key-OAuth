@@ -44,6 +44,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrBlock = document.getElementById('qrFormBlock');
     const qrContainer = document.getElementById('qrContainer');
 
+    // === Ограничение логина 20 символов, без пробелов ===
+    const loginIdentity = document.getElementById('loginIdentity');
+    const regLoginInput = document.getElementById('regLoginInput');
+
+    if (loginIdentity) {
+        loginIdentity.setAttribute('maxlength', '20');
+        loginIdentity.addEventListener('input', function() {
+            this.value = this.value.replace(/\s/g, '').substring(0, 20);
+        });
+    }
+    if (regLoginInput) {
+        regLoginInput.setAttribute('maxlength', '20');
+        regLoginInput.addEventListener('input', function() {
+            this.value = this.value.replace(/\s/g, '').substring(0, 20);
+        });
+    }
+
+    // === Индикатор сложности пароля при регистрации ===
+    const regPasswordInput = document.getElementById('regPasswordInput');
+    const regPasswordConfirm = document.getElementById('regPasswordConfirm');
+    let strengthDiv = null;
+
+    if (regPasswordInput) {
+        strengthDiv = document.createElement('div');
+        strengthDiv.className = 'password-strength';
+        strengthDiv.innerHTML = '<div class="strength-bar"><div class="strength-fill"></div></div><div class="strength-text"></div>';
+        regPasswordInput.parentNode.insertBefore(strengthDiv, regPasswordInput.nextSibling);
+
+        regPasswordInput.addEventListener('input', function() {
+            const strength = evaluatePasswordStrength(this.value);
+            const fill = strengthDiv.querySelector('.strength-fill');
+            const text = strengthDiv.querySelector('.strength-text');
+            fill.style.width = (strength.score * 25) + '%';
+            fill.style.backgroundColor = strength.color;
+            text.textContent = strength.label;
+            text.style.color = strength.color;
+        });
+    }
+
     tabLogin?.addEventListener('click', () => {
         tabLogin.classList.add('active');
         tabRegister.classList.remove('active');
@@ -74,40 +113,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!qrGenerated) generateQrInModal();
     });
 
+    // === Вход с капчей ===
     document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
-        const res = await login(
-            document.getElementById('loginIdentity').value.trim(),
-            document.getElementById('loginPassword').value
-        );
+        const loginVal = document.getElementById('loginIdentity').value.trim();
+        const passwordVal = document.getElementById('loginPassword').value;
+        if (!loginVal || !passwordVal) return showToast('Введите логин и пароль');
+
+        const res = await login(loginVal, passwordVal);
         if (res.error) return showToast(res.error);
-        closeModal('loginModal');
-        smoothLoginSuccess();
+
+        // Запускаем капчу
+        showCaptchaModal(() => {
+            closeModal('loginModal');
+            smoothLoginSuccess();
+        });
     });
 
-    const regLoginInput = document.getElementById('regLoginInput');
-    const regStatus = document.getElementById('regLoginStatus');
-    let checkTimeout;
-    regLoginInput?.addEventListener('input', () => {
-        clearTimeout(checkTimeout);
-        const val = regLoginInput.value.trim();
-        if (val.length < 3) { regStatus.textContent = ''; return; }
-        checkTimeout = setTimeout(async () => {
-            const { data } = await _supabase.from('users').select('login').eq('login', val).maybeSingle();
-            if (data) {
-                regStatus.textContent = '✗ Занят';
-                regStatus.className = 'login-status invalid';
-            } else {
-                regStatus.textContent = '✓ Доступен';
-                regStatus.className = 'login-status valid';
-            }
-        }, 500);
-    });
-
+    // === Регистрация (без капчи, но с проверкой сложности) ===
     document.getElementById('doRegisterBtn')?.addEventListener('click', async () => {
         const loginVal = regLoginInput.value.trim();
-        const pass1 = document.getElementById('regPasswordInput').value;
-        const pass2 = document.getElementById('regPasswordConfirm').value;
+        const pass1 = regPasswordInput.value;
+        const pass2 = regPasswordConfirm.value;
         if (pass1 !== pass2) return showToast('Пароли не совпадают');
+
+        const strength = evaluatePasswordStrength(pass1);
+        if (strength.score < 2) return showToast('Пароль слишком слабый. Следуйте подсказкам.');
+
         const res = await register(loginVal, pass1);
         if (res.error) return showToast(res.error);
         closeModal('loginModal');
@@ -143,6 +174,99 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
+// ===== МОДАЛКА КАПЧИ =====
+function showCaptchaModal(onSuccess) {
+    // Удаляем старую, если есть
+    const old = document.getElementById('captchaModal');
+    if (old) old.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'captchaModal';
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+
+    let captchaCode = generateCaptchaCode();
+    let timerSeconds = 15;
+    let timerInterval = null;
+
+    modal.innerHTML = `
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:400px;">
+            <h3><i class="fas fa-shield-alt"></i> Подтверждение входа</h3>
+            <p>Введите три цифры:</p>
+            <div class="captcha-display">${captchaCode}</div>
+            <input type="text" id="captchaInput" placeholder="Цифры" maxlength="3" style="font-size:24px; text-align:center; letter-spacing:4px;">
+            <div class="captcha-timer">
+                <div class="captcha-timer-bar"><div class="captcha-timer-fill"></div></div>
+                <span id="captchaTimerSeconds">${timerSeconds} сек</span>
+            </div>
+            <button class="btn btn-primary" id="submitCaptchaBtn" style="margin-top:16px;">Подтвердить</button>
+            <p class="error-msg" id="captchaError" style="display:none;"></p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const input = document.getElementById('captchaInput');
+    const submitBtn = document.getElementById('submitCaptchaBtn');
+    const errorEl = document.getElementById('captchaError');
+    const timerFill = modal.querySelector('.captcha-timer-fill');
+    const timerSecondsEl = document.getElementById('captchaTimerSeconds');
+
+    function updateTimer() {
+        timerSeconds--;
+        if (timerSeconds <= 0) {
+            clearInterval(timerInterval);
+            captchaCode = generateCaptchaCode();
+            timerSeconds = 15;
+            modal.querySelector('.captcha-display').textContent = captchaCode;
+            timerSecondsEl.textContent = timerSeconds + ' сек';
+            timerFill.style.width = '100%';
+            startTimer();
+        } else {
+            const percent = (timerSeconds / 15) * 100;
+            timerFill.style.width = percent + '%';
+            timerSecondsEl.textContent = timerSeconds + ' сек';
+        }
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+    startTimer();
+
+    submitBtn.addEventListener('click', () => {
+        const userInput = input.value.trim();
+        if (userInput === captchaCode) {
+            clearInterval(timerInterval);
+            modal.remove();
+            onSuccess();
+        } else {
+            errorEl.textContent = 'Неверно, попробуйте снова';
+            errorEl.style.display = 'block';
+            // Генерируем новый код и сбрасываем таймер
+            captchaCode = generateCaptchaCode();
+            timerSeconds = 15;
+            modal.querySelector('.captcha-display').textContent = captchaCode;
+            timerSecondsEl.textContent = timerSeconds + ' сек';
+            timerFill.style.width = '100%';
+            input.value = '';
+            startTimer();
+        }
+    });
+
+    input.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').substring(0, 3);
+    });
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            clearInterval(timerInterval);
+            modal.remove();
+        }
+    });
+}
+
 // ========== МОДАЛКА ОБЛОЖКИ (8 цветов) ==========
 function openCoverSetupModal(profile) {
     const container = document.getElementById('coverSetupModalContainer');
@@ -167,8 +291,6 @@ function openCoverSetupModal(profile) {
                 <button class="auth-tab" data-tab="colors">Цвета</button>
                 <button class="auth-tab" data-tab="upload">Загрузить</button>
             </div>
-
-            <!-- Вкладка Градиенты -->
             <div id="coverGradients" class="cover-options-grid" style="display:grid;">
                 <div class="cover-option" style="background:linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%);" data-cover="gradient:#2a2a35:#1a1a22"></div>
                 <div class="cover-option" style="background:linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%);" data-cover="gradient:#1e3c5c:#0f1e33"></div>
@@ -179,8 +301,6 @@ function openCoverSetupModal(profile) {
                 <div class="cover-option" style="background:linear-gradient(135deg, #2d4a4a 0%, #1a2e2e 100%);" data-cover="gradient:#2d4a4a:#1a2e2e"></div>
                 <div class="cover-option" style="background:linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%);" data-cover="gradient:#4a2d3d:#2e1a24"></div>
             </div>
-
-            <!-- Вкладка Цвета (8 цветов) -->
             <div id="coverColors" class="cover-options-grid" style="display:none;">
                 <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
                 <div class="cover-option" style="background:#2d2d44;" data-cover="color:#2d2d44"></div>
@@ -191,8 +311,6 @@ function openCoverSetupModal(profile) {
                 <div class="cover-option" style="background:#1a3a3a;" data-cover="color:#1a3a3a"></div>
                 <div class="cover-option" style="background:#3a1a3a;" data-cover="color:#3a1a3a"></div>
             </div>
-
-            <!-- Вкладка Загрузка изображения -->
             <div id="coverUpload" style="display:none;">
                 <div class="cover-preview-container" id="coverPreviewContainer">
                     <img id="coverPreviewImage" src="" alt="Preview" draggable="false" style="position:absolute; top:50%; left:50%; transform-origin:center; height:100%; width:auto; min-width:100%;">
@@ -204,7 +322,6 @@ function openCoverSetupModal(profile) {
                 </div>
                 <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Выбрать изображение</button>
             </div>
-
             <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
                 <button class="btn btn-primary" id="saveCoverBtn"><i class="fas fa-check"></i> Сохранить</button>
                 <button class="btn btn-secondary" id="cancelCoverBtn">Отмена</button>
