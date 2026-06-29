@@ -515,4 +515,64 @@ async function openBadgeModal() {
                 const icon = hasBadge ? 'fa-times' : 'fa-plus';
                 const label = hasBadge ? 'Убрать' : 'Выдать';
                 return `
-                    <div class
+                    <div class="badge-option-card" data-badge-id="${b.id}">
+                        <div class="badge-icon-large"><i class="fas ${b.icon}" style="background:${b.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
+                        <span class="badge-name">${escapeHtml(b.name)}</span>
+                        <button class="${btnClass}" data-action="${action}" data-badge-id="${b.id}">
+                            <i class="fas ${icon}"></i> ${label}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            optionsContainer.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const badgeId = btn.dataset.badgeId;
+                    const action = btn.dataset.action;
+                    if (action === 'assign') {
+                        const { error } = await assignBadge(selectedUser, badgeId);
+                        if (error) showToast(error.message || 'Ошибка');
+                        else showToast('Бейдж выдан');
+                    } else {
+                        const { error } = await removeBadge(selectedUser, badgeId);
+                        if (error) showToast('Ошибка');
+                        else showToast('Бейдж убран');
+                    }
+                    const card = btn.closest('.badge-option-card');
+                    const newAction = action === 'assign' ? 'remove' : 'assign';
+                    const newClass = newAction === 'remove' ? 'remove' : 'assign';
+                    const newIcon = newAction === 'remove' ? 'fa-times' : 'fa-plus';
+                    const newLabel = newAction === 'remove' ? 'Убрать' : 'Выдать';
+                    btn.dataset.action = newAction;
+                    btn.className = newClass;
+                    btn.innerHTML = `<i class="fas ${newIcon}"></i> ${newLabel}`;
+                });
+            });
+        });
+    });
+
+    document.getElementById('badgeUserSearch').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        listContainer.querySelectorAll('.badge-user-row').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+        });
+    });
+}
+
+function updateSidebarVisibility() {
+    const isLoggedIn = !!currentUser;
+    document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
+        const href = btn.getAttribute('href');
+        if (href === '/home' || href === 'https://discord.gg/diamondshop') return;
+        btn.style.display = isLoggedIn ? '' : 'none';
+    });
+    const logoutBtn = document.getElementById('logoutSidebarBtn');
+    const scannerBtn = document.getElementById('qrScannerBtn');
+    const badgeAdminBtn = document.getElementById('badgeAdminBtn');
+    if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'flex' : 'none';
+    if (scannerBtn) scannerBtn.style.display = isLoggedIn ? 'flex' : 'none';
+    if (badgeAdminBtn) {
+        badgeAdminBtn.style.display = (currentUser && currentUser.login === 'viktorshopa') ? 'flex' : 'none';
+    }
+}
