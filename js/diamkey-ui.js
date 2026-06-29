@@ -161,29 +161,41 @@ function openCoverSetupModal(profile) {
     let posY = profile.cover_pos_y || 0;
     let scale = profile.cover_scale || 1;
 
-    // Очищаем предыдущие обработчики
+    // Сброс всех состояний при открытии
     tabs.forEach(tab => {
-        tab.replaceWith(tab.cloneNode(true));
+        tab.classList.remove('active');
     });
-    // Перепривязываем события
-    const newTabs = modal.querySelectorAll('[data-cover-tab]');
-    newTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            newTabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const tabName = tab.dataset.coverTab;
-            tabGradients.style.display = tabName === 'gradients' ? 'grid' : 'none';
-            tabColors.style.display = tabName === 'colors' ? 'grid' : 'none';
-            tabUpload.style.display = tabName === 'upload' ? 'block' : 'none';
+    // Активируем первую вкладку (градиенты) по умолчанию
+    const firstTab = modal.querySelector('[data-cover-tab="gradients"]');
+    if (firstTab) firstTab.classList.add('active');
+    if (tabGradients) tabGradients.style.display = 'grid';
+    if (tabColors) tabColors.style.display = 'none';
+    if (tabUpload) tabUpload.style.display = 'none';
+
+    // Удаляем старые обработчики, клонируя элементы, чтобы избежать дублирования
+    tabs.forEach(tab => {
+        const newTab = tab.cloneNode(true);
+        tab.parentNode.replaceChild(newTab, tab);
+    });
+    // Заново получаем свежие копии вкладок
+    const freshTabs = modal.querySelectorAll('[data-cover-tab]');
+    freshTabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            freshTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            const tabName = this.dataset.coverTab;
+            if (tabGradients) tabGradients.style.display = tabName === 'gradients' ? 'grid' : 'none';
+            if (tabColors) tabColors.style.display = tabName === 'colors' ? 'grid' : 'none';
+            if (tabUpload) tabUpload.style.display = tabName === 'upload' ? 'block' : 'none';
         });
     });
 
-    // Выбор градиента/цвета
+    // Обработчики выбора обложки (градиенты / цвета)
     modal.querySelectorAll('.cover-option').forEach(opt => {
-        opt.addEventListener('click', () => {
+        opt.addEventListener('click', function() {
             modal.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
-            selectedCover = opt.dataset.cover;
+            this.classList.add('selected');
+            selectedCover = this.dataset.cover;
         });
     });
 
@@ -193,106 +205,130 @@ function openCoverSetupModal(profile) {
     const previewImage = document.getElementById('coverPreviewImage');
     const scaleSlider = document.getElementById('coverScaleSlider');
 
-    uploadBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            currentImageSrc = ev.target.result;
-            previewImage.src = currentImageSrc;
-            posX = 0; posY = 0; scale = 1;
-            applyPreviewTransform();
+    if (uploadBtn) uploadBtn.onclick = () => fileInput.click();
+    if (fileInput) {
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                currentImageSrc = ev.target.result;
+                previewImage.src = currentImageSrc;
+                posX = 0; posY = 0; scale = 1;
+                applyPreviewTransform();
+            };
+            reader.readAsDataURL(file);
         };
-        reader.readAsDataURL(file);
-    });
+    }
 
     function applyPreviewTransform() {
+        if (!previewImage) return;
         previewImage.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
-        scaleSlider.value = scale;
+        if (scaleSlider) scaleSlider.value = scale;
     }
 
     // Drag внутри preview
-    let dragging = false, startX, startY, startPosX, startPosY;
-    previewContainer.addEventListener('mousedown', (e) => {
-        dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startPosX = posX;
-        startPosY = posY;
-        e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-        if (!dragging) return;
-        const rect = previewContainer.getBoundingClientRect();
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        const percentX = (dx / rect.width) * 100;
-        const percentY = (dy / rect.height) * 100;
-        posX = startPosX + percentX;
-        posY = startPosY + percentY;
-        applyPreviewTransform();
-    });
-    window.addEventListener('mouseup', () => { dragging = false; });
-    previewContainer.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
+    if (previewContainer) {
+        let dragging = false, startX, startY, startPosX, startPosY;
+        previewContainer.onmousedown = function(e) {
             dragging = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
+            startX = e.clientX;
+            startY = e.clientY;
             startPosX = posX;
             startPosY = posY;
-        }
+            e.preventDefault();
+        };
+        window.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            const rect = previewContainer.getBoundingClientRect();
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            const percentX = (dx / rect.width) * 100;
+            const percentY = (dy / rect.height) * 100;
+            posX = startPosX + percentX;
+            posY = startPosY + percentY;
+            applyPreviewTransform();
+        });
+        window.addEventListener('mouseup', function() {
+            dragging = false;
+        });
+        previewContainer.ontouchstart = function(e) {
+            if (e.touches.length === 1) {
+                dragging = true;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                startPosX = posX;
+                startPosY = posY;
+            }
+        };
+        window.addEventListener('touchmove', function(e) {
+            if (!dragging) return;
+            const rect = previewContainer.getBoundingClientRect();
+            const dx = e.touches[0].clientX - startX;
+            const dy = e.touches[0].clientY - startY;
+            const percentX = (dx / rect.width) * 100;
+            const percentY = (dy / rect.height) * 100;
+            posX = startPosX + percentX;
+            posY = startPosY + percentY;
+            applyPreviewTransform();
+            e.preventDefault();
+        }, { passive: false });
+        window.addEventListener('touchend', function() {
+            dragging = false;
+        });
+    }
+
+    if (scaleSlider) {
+        scaleSlider.oninput = function() {
+            scale = parseFloat(this.value);
+            applyPreviewTransform();
+        };
+    }
+
+    if (saveBtn) {
+        saveBtn.onclick = async function() {
+            if (selectedCover) {
+                await updateProfile({ cover: selectedCover, cover_pos_x: 0, cover_pos_y: 0, cover_scale: 1 });
+                currentUser.cover = selectedCover;
+                currentUser.cover_pos_x = 0;
+                currentUser.cover_pos_y = 0;
+                currentUser.cover_scale = 1;
+            } else if (currentImageSrc) {
+                const coverValue = 'image:' + currentImageSrc;
+                await updateProfile({ cover: coverValue, cover_pos_x: posX, cover_pos_y: posY, cover_scale: scale });
+                currentUser.cover = coverValue;
+                currentUser.cover_pos_x = posX;
+                currentUser.cover_pos_y = posY;
+                currentUser.cover_scale = scale;
+            } else {
+                showToast('Выберите обложку');
+                return;
+            }
+            closeModal('coverSetupModal');
+            if (document.getElementById('page-profile').classList.contains('active')) renderMyProfile();
+            showToast('Обложка обновлена');
+        };
+    }
+
+    if (cancelBtn) {
+        cancelBtn.onclick = function() {
+            closeModal('coverSetupModal');
+        };
+    }
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal('coverSetupModal');
     });
-    window.addEventListener('touchmove', (e) => {
-        if (!dragging) return;
-        const rect = previewContainer.getBoundingClientRect();
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
-        const percentX = (dx / rect.width) * 100;
-        const percentY = (dy / rect.height) * 100;
-        posX = startPosX + percentX;
-        posY = startPosY + percentY;
-        applyPreviewTransform();
-        e.preventDefault();
-    }, { passive: false });
-    window.addEventListener('touchend', () => { dragging = false; });
 
-    scaleSlider.addEventListener('input', () => {
-        scale = parseFloat(scaleSlider.value);
-        applyPreviewTransform();
-    });
-
-    saveBtn.addEventListener('click', async () => {
-        if (selectedCover) {
-            await updateProfile({ cover: selectedCover, cover_pos_x: 0, cover_pos_y: 0, cover_scale: 1 });
-            currentUser.cover = selectedCover;
-            currentUser.cover_pos_x = 0;
-            currentUser.cover_pos_y = 0;
-            currentUser.cover_scale = 1;
-        } else if (currentImageSrc) {
-            const coverValue = 'image:' + currentImageSrc;
-            await updateProfile({ cover: coverValue, cover_pos_x: posX, cover_pos_y: posY, cover_scale: scale });
-            currentUser.cover = coverValue;
-            currentUser.cover_pos_x = posX;
-            currentUser.cover_pos_y = posY;
-            currentUser.cover_scale = scale;
-        } else {
-            showToast('Выберите обложку');
-            return;
-        }
-        closeModal('coverSetupModal');
-        if (document.getElementById('page-profile').classList.contains('active')) renderMyProfile();
-        showToast('Обложка обновлена');
-    });
-
-    cancelBtn.addEventListener('click', () => closeModal('coverSetupModal'));
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal('coverSetupModal'); });
-
+    // Если у пользователя уже есть кастомное изображение, показать его и переключиться на вкладку загрузки
     if (profile.cover && profile.cover.startsWith('image:')) {
         currentImageSrc = profile.cover.replace('image:', '');
-        previewImage.src = currentImageSrc;
-        applyPreviewTransform();
-        document.querySelector('#coverSetupModal [data-cover-tab="upload"]').click();
+        if (previewImage) {
+            previewImage.src = currentImageSrc;
+            applyPreviewTransform();
+        }
+        const uploadTab = modal.querySelector('[data-cover-tab="upload"]');
+        if (uploadTab) uploadTab.click();
     }
 }
 
