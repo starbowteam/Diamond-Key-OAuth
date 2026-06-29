@@ -183,7 +183,7 @@
         </div>
     </div>
 
-    <!-- Модалка выдачи бейджей (переработанная) -->
+    <!-- Модалка выдачи бейджей -->
     <div class="modal" id="badgeModal" onclick="if(event.target===this) closeModal('badgeModal')">
         <div class="modal-content glass-panel badge-modal-content" onclick="event.stopPropagation()">
             <h3><i class="fas fa-medal"></i> Выдать бейдж</h3>
@@ -200,7 +200,7 @@
         </div>
     </div>
 
-    <!-- Модалка настройки обложки (полностью новая) -->
+    <!-- Модалка настройки обложки -->
     <div class="modal" id="coverSetupModal" onclick="if(event.target===this) closeModal('coverSetupModal')">
         <div class="modal-content glass-panel cover-setup-modal" onclick="event.stopPropagation()">
             <h3><i class="fas fa-image"></i> Настроить обложку</h3>
@@ -269,8 +269,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Старая модалка обложки (убрана, заменена #coverSetupModal) -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
