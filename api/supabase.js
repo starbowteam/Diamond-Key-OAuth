@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', 'https://diamkey.ru');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Prefer, apikey, x-client-info');
@@ -34,4 +34,4 @@ export default async function handler(req, res) {
     } catch (error) {
         res.status(500).json({ error: 'Proxy error', details: error.message });
     }
-}
+};
