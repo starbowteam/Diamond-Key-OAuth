@@ -149,18 +149,18 @@ function renderCoverHTML(profile, isOwnProfile) {
 }
 
 /**
- * Простая и надёжная функция аватара.
- * Возвращает <img> со стилями, которые точно вписываются в .avatar-wrapper.
- * При ошибке загрузки заменяет себя на иконку fa-user (без изменения размеров контейнера).
+ * Аватар без лишних обёрток, рамка остаётся ровной.
+ * Если src пустой – fa-user, иначе img + скрытая иконка для подмены при ошибке.
  */
 function avatarHTML(src, size = 100) {
-    const defaultIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"></i>`;
-    if (!src || !src.trim()) return defaultIcon;
-
-    return `<img src="${escapeHtml(src)}" 
-                 style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;"
-                 onerror="this.outerHTML='${defaultIcon.replace(/'/g, "\\'")}';" 
-            />`;
+    if (!src || !src.trim()) {
+        return `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50%;"></i>`;
+    }
+    return `
+        <img src="${escapeHtml(src)}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:none;align-items:center;justify-content:center;border-radius:50%;"></i>
+    `;
 }
 
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
