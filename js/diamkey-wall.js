@@ -127,7 +127,7 @@ function renderCoverHTML(profile, isOwnProfile) {
         return `
             <div class="profile-cover" id="profileCoverBlock">
                 <img class="cover-image" src="${escapeHtml(src)}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">
-                ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
+                ${isOwnProfile ? '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>' : ''}
             </div>
         `;
     } else if (profile.cover && (profile.cover.startsWith('gradient:') || profile.cover.startsWith('color:'))) {
@@ -136,13 +136,13 @@ function renderCoverHTML(profile, isOwnProfile) {
             : `background: ${profile.cover.split(':')[1]};`;
         return `
             <div class="profile-cover" id="profileCoverBlock" style="${bg}">
-                ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
+                ${isOwnProfile ? '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>' : ''}
             </div>
         `;
     } else {
         return `
             <div class="profile-cover" id="profileCoverBlock">
-                ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
+                ${isOwnProfile ? '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>' : ''}
             </div>
         `;
     }
@@ -150,7 +150,6 @@ function renderCoverHTML(profile, isOwnProfile) {
 
 /**
  * Аватар без вылезания за рамку.
- * Если src пустой – fa-user, иначе img + скрытая иконка для подмены при ошибке.
  */
 function avatarHTML(src, size = 100) {
     const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>`;
@@ -163,9 +162,6 @@ function avatarHTML(src, size = 100) {
     `;
 }
 
-/**
- * Статус онлайн/офлайн – закруглённый прямоугольник под описанием.
- */
 function getStatusHTML(login, lastSeen) {
     if (!lastSeen) {
         return `<div class="status-badge offline">Не в сети</div>`;
@@ -232,8 +228,8 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                 ${avatarHTML(profile.avatar, 100)}
             </div>
         </div>
-        <div class="profile-info">
-            <div class="profile-details">
+        <div class="profile-body">
+            <div class="profile-left">
                 <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
                 <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
                 <div class="meta-row">
@@ -241,12 +237,18 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                     <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                 </div>
             </div>
-            <div class="profile-actions">
-                <button class="btn btn-icon back-to-users-btn" onclick="goBackToUsersList()" title="Назад к пользователям"><i class="fas fa-arrow-left"></i></button>
-                <button class="btn" onclick="${navigateAction}" title="Дополнения"><i class="fas fa-puzzle-piece"></i> Дополнения</button>
+            <div class="profile-right">
+                <div class="addons-card" onclick="${navigateAction}">
+                    <div class="addons-icon"><i class="fas fa-puzzle-piece"></i></div>
+                    <div class="addons-text">
+                        <span class="addons-title">Дополнения</span>
+                        <span class="addons-subtitle">Поездки, а в будущем и другое =)</span>
+                    </div>
+                    <i class="fas fa-chevron-right addons-arrow"></i>
+                </div>
+                <div class="badges-row">${badgesHTML}</div>
             </div>
         </div>
-        <div class="badges-row">${badgesHTML}</div>
     `;
 }
 
@@ -457,8 +459,8 @@ async function renderMyProfile() {
                         <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
                     </div>
                 </div>
-                <div class="profile-info">
-                    <div class="profile-details">
+                <div class="profile-body">
+                    <div class="profile-left">
                         <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
                         <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
                         <div class="meta-row">
@@ -466,11 +468,18 @@ async function renderMyProfile() {
                             <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                         </div>
                     </div>
-                    <div class="profile-actions">
-                        <button class="btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Дополнения"><i class="fas fa-puzzle-piece"></i> Дополнения</button>
+                    <div class="profile-right">
+                        <div class="addons-card" onclick="navigateTo('/profile/${login}/gpxview')">
+                            <div class="addons-icon"><i class="fas fa-puzzle-piece"></i></div>
+                            <div class="addons-text">
+                                <span class="addons-title">Дополнения</span>
+                                <span class="addons-subtitle">Поездки, а в будущем и другое =)</span>
+                            </div>
+                            <i class="fas fa-chevron-right addons-arrow"></i>
+                        </div>
+                        <div class="badges-row">${badgesHTML}</div>
                     </div>
                 </div>
-                <div class="badges-row">${badgesHTML}</div>
             </div>
             <div class="glass-panel profile-wall">
                 <div class="wall-input">
@@ -590,7 +599,7 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/* ====== GPX-ВЬЮ С НОВЫМ ДИЗАЙНОМ ====== */
+/* ====== GPX-ВЬЮ ====== */
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
@@ -642,26 +651,26 @@ async function renderProfileGpxView(login) {
                     <div class="stat-badge"><div class="number">${distStr}</div><div class="label">Общая дистанция</div></div>
                     <div class="stat-badge"><div class="number">${ascentStr}</div><div class="label">Набор высоты</div></div>
                 </div>
-                <div class="gpx-grid">
+                <div class="gpx-grid" style="display:flex; flex-wrap:wrap; gap:16px; padding:0 32px 24px;">
                     ${gpxFiles.map(f => {
                         const stats = getGpxStats(f.content);
                         let cardStatsHTML = '';
                         if (stats.dist !== null) {
                             const dist = stats.dist > 1000 ? (stats.dist/1000).toFixed(1) + ' км' : Math.round(stats.dist) + ' м';
                             const ascent = stats.ascent > 0 ? '+' + Math.round(stats.ascent) + ' м' : '';
-                            cardStatsHTML = `<div class="stats"><span>${dist}</span>${ascent ? `<span>↑ ${ascent}</span>` : ''}</div>`;
+                            cardStatsHTML = `<div class="stats" style="font-size:13px; color:var(--text-muted); display:flex; gap:12px;"><span style="color:var(--text-primary);">${dist}</span>${ascent ? `<span>↑ ${ascent}</span>` : ''}</div>`;
                         }
                         return `
-                            <div class="gpx-card" onclick="viewGpxRoute('${f.id}')" data-file-id="${f.id}">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <h4>${escapeHtml(f.name)}</h4>
-                                <div class="date">${new Date(f.created_at).toLocaleDateString()}</div>
+                            <div class="gpx-card" onclick="viewGpxRoute('${f.id}')" style="flex:1 1 200px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:16px; cursor:pointer;" data-file-id="${f.id}">
+                                <i class="fas fa-map-marker-alt" style="font-size:24px; color:var(--accent); margin-bottom:8px;"></i>
+                                <h4 style="font-size:15px; font-weight:600; margin-bottom:6px;">${escapeHtml(f.name)}</h4>
+                                <div class="date" style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">${new Date(f.created_at).toLocaleDateString()}</div>
                                 ${cardStatsHTML}
                             </div>
                         `;
                     }).join('')}
                 </div>
-                ` : '<div class="empty-gpx-message" style="padding: 40px; text-align:center; color:var(--text-muted);">Поездок пока нет</div>'}
+                ` : '<div class="empty-gpx-message" style="padding:40px; text-align:center; color:var(--text-muted);">Поездок пока нет</div>'}
             </div>
         `;
     } catch (e) {
