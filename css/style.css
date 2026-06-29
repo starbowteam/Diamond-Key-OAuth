@@ -415,7 +415,10 @@ body {
     box-shadow: 0 0 20px rgba(160,160,176,0.3);
     background: var(--bg-primary);
     flex-shrink: 0;
-    overflow: hidden;   /* ← ГЛАВНОЕ ИСПРАВЛЕНИЕ: не даём аватару вылезать */
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .avatar-wrapper img {
     width: 100%;
@@ -425,7 +428,13 @@ body {
     display: block;
 }
 .avatar-wrapper i {
-    /* fallback иконка будет отцентрована средствами flex родителя (avatar-section) */
+    font-size: 60px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
 .avatar-overlay {
     position: absolute;
@@ -445,16 +454,32 @@ body {
     opacity: 1;
 }
 
-.online-dot {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    width: 16px;
-    height: 16px;
-    background: #2ecc71;
+/* Статус онлайн/офлайн – прямоугольник с закруглением */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 8px;
+    gap: 6px;
+}
+.status-badge.online {
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+}
+.status-badge.online::before {
+    content: '';
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    border: 2px solid #1e1e1e;
-    box-shadow: 0 0 6px #2ecc71;
+    background: #2ecc71;
+    display: inline-block;
+}
+.status-badge.offline {
+    background: rgba(160, 160, 176, 0.15);
+    color: var(--text-muted);
 }
 
 .profile-info {
@@ -725,391 +750,4 @@ body {
 #diamond-bot-btn img { width: 56px; height: 56px; object-fit: contain; border-radius: 50%; }
 .diamond-bot-modal {
     position: fixed;
-    bottom: 100px;
-    right: 24px;
-    width: 350px;
-    height: 420px;
-    z-index: 260;
-    display: none;
-    flex-direction: column;
-    padding: 20px;
-}
-.diamond-bot-modal.show { display: flex; }
-.bot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.bot-messages {
-    flex: 1;
-    overflow-y: auto;
-    margin-bottom: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px;
-    background: rgba(255,255,255,0.03);
-    border-radius: 16px;
-}
-.bot-msg { padding: 8px 12px; border-radius: 12px; font-size: 14px; max-width: 85%; word-break: break-word; }
-.bot-msg.user { align-self: flex-end; background: var(--accent); color: white; }
-.bot-msg.bot { align-self: flex-start; background: rgba(255,255,255,0.1); }
-.bot-msg.thinking { color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
-.bot-input-area { display: flex; gap: 8px; }
-.bot-input-area input {
-    flex: 1;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--border-glass);
-    border-radius: 12px;
-    padding: 8px 12px;
-    color: var(--text-primary);
-    outline: none;
-}
-
-/* QR */
-.qr-rounded-wrapper {
-    border-radius: 24px;
-    overflow: hidden;
-    display: inline-block;
-    background: transparent;
-}
-.qr-rounded-wrapper canvas { display: block; border-radius: 24px; }
-
-.qr-scanner-modal {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9);
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-}
-.qr-scanner-content {
-    width: 90%;
-    max-width: 400px;
-    padding: 24px;
-    text-align: center;
-    background: var(--bg-glass);
-    border-radius: var(--radius-lg);
-}
-.qr-scanner-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.qr-scanner-header h3 { margin: 0; font-size: 20px; }
-#qr-video { border-radius: 16px; background: #000; }
-
-/* Модалка выдачи бейджей */
-.badge-modal-content {
-    max-width: 700px;
-    width: 95%;
-    padding: 40px 36px;
-    max-height: 85vh;
-    overflow-y: auto;
-}
-.badge-modal-content h3 {
-    font-size: 24px;
-    margin-bottom: 28px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--text-primary);
-}
-.badge-search {
-    margin-bottom: 24px;
-}
-.badge-user-list {
-    max-height: 220px;
-    overflow-y: auto;
-    margin-bottom: 24px;
-}
-.badge-user-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-radius: 16px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.badge-user-row:hover { background: rgba(255,255,255,0.08); }
-.badge-user-row img {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-.badge-options-container {
-    margin-top: 16px;
-}
-.badge-options-scroll {
-    display: flex;
-    gap: 16px;
-    overflow-x: auto;
-    padding-bottom: 12px;
-    scroll-snap-type: x mandatory;
-}
-.badge-option-card {
-    flex: 0 0 auto;
-    width: 160px;
-    padding: 16px;
-    border-radius: 20px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border-glass);
-    text-align: center;
-    scroll-snap-align: start;
-    transition: 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
-.badge-option-card:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: var(--accent);
-}
-.badge-option-card .badge-icon-large {
-    font-size: 28px;
-    width: 44px;
-    height: 44px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.badge-option-card .badge-name {
-    font-weight: 600;
-    font-size: 14px;
-}
-.badge-option-card button {
-    margin-top: auto;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-    border: 1px solid var(--border-glass);
-    background: rgba(255,255,255,0.08);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: 0.2s;
-}
-.badge-option-card button:hover {
-    background: rgba(255,255,255,0.15);
-}
-.badge-option-card button.remove {
-    color: #e05d5d;
-}
-.badge-option-card button.assign {
-    color: #2ecc71;
-}
-
-/* Карточки GPX */
-.profile-gpx-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
-    margin-top: 24px;
-}
-.gpx-card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border-glass);
-    border-radius: var(--radius-md);
-    padding: 20px;
-    cursor: pointer;
-    transition: all var(--transition);
-}
-.gpx-card:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: var(--accent);
-    transform: translateY(-2px);
-}
-.gpx-card i {
-    font-size: 28px;
-    color: var(--accent);
-    margin-bottom: 12px;
-}
-.gpx-card h4 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-.gpx-card-date {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-}
-.gpx-card-stats {
-    display: flex;
-    gap: 16px;
-    font-size: 14px;
-    color: var(--text-muted);
-}
-.gpx-card-stats span:first-child {
-    color: var(--text-primary);
-}
-.empty-gpx-message {
-    text-align: center;
-    padding: 40px;
-    color: var(--text-muted);
-    font-size: 16px;
-}
-
-/* Модалка настройки обложки */
-.cover-setup-modal {
-    max-width: 700px;
-    width: 95%;
-}
-.cover-options-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-}
-.cover-option {
-    height: 60px;
-    border-radius: 16px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: 0.2s;
-}
-.cover-option:hover { border-color: var(--accent); }
-.cover-option.selected { border-color: white; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
-.cover-preview-container {
-    position: relative;
-    width: 100%;
-    height: 250px;
-    overflow: hidden;
-    border-radius: var(--radius-md);
-    margin-bottom: 20px;
-    background: #1a1a1a;
-    cursor: grab;
-    user-select: none;
-}
-.cover-preview-container:active {
-    cursor: grabbing;
-}
-.cover-preview-container img {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform-origin: center;
-    height: 100%;
-    width: auto;
-    min-width: 100%;
-}
-.cover-controls {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    justify-content: center;
-}
-.cover-controls input[type="range"] {
-    flex: 1;
-    max-width: 200px;
-}
-
-/* Модалка фильтра по бейджам */
-.badge-filter-modal .modal-content {
-    max-width: 600px;
-}
-.badge-filter-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
-}
-.badge-filter-item {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border-glass);
-    border-radius: var(--radius-md);
-    padding: 12px 20px;
-    cursor: pointer;
-    transition: 0.2s;
-    font-size: 14px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.badge-filter-item.active {
-    border-color: var(--accent);
-    background: rgba(160,160,176,0.2);
-}
-.badge-filter-item:hover {
-    background: rgba(255,255,255,0.08);
-}
-.reset-filter-btn {
-    margin-top: 20px;
-}
-
-/* Мобильная версия */
-@media (max-width: 768px) {
-    .main-content {
-        margin-left: 0;
-        padding: 20px 20px 140px;
-        max-height: none;
-        overflow-y: visible;
-    }
-    .sidebar {
-        position: fixed;
-        bottom: 0;
-        top: auto;
-        left: 0;
-        right: 0;
-        width: 100%;
-        height: auto;
-        flex-direction: row;
-        justify-content: space-around;
-        align-items: center;
-        padding: 12px 8px;
-        background: rgba(20, 20, 25, 0.95);
-        backdrop-filter: blur(20px);
-        border-right: none;
-        border-top: 1px solid var(--border-glass);
-        gap: 4px;
-    }
-    .sidebar-bottom {
-        position: static;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 4px;
-    }
-    .sidebar-icon {
-        width: 48px;
-        height: 48px;
-        font-size: 24px;
-        margin: 0;
-    }
-    .sidebar-icon img { width: 30px; height: 30px; }
-    .page { padding-bottom: 20px; font-size: 16px; }
-    .hero { padding: 40px 24px; }
-    .hero h1 { font-size: 36px; }
-    .hero-subtitle { font-size: 18px; }
-    .hero-description { font-size: 15px; }
-    .section-title { font-size: 28px; margin: 36px 0 24px; }
-    .btn { padding: 18px 32px; font-size: 18px; border-radius: 40px; }
-    .btn-icon { padding: 18px; }
-    .glass-panel { padding: 28px 24px; margin-bottom: 24px; border-radius: 24px; }
-    .benefits-grid { grid-template-columns: 1fr; gap: 20px; }
-    .benefit-card { padding: 28px 24px; }
-    .benefit-card i { font-size: 40px; }
-    .benefit-card h3 { font-size: 20px; margin-bottom: 12px; }
-    .benefit-card p { font-size: 16px; }
-    .modal-content { max-width: 95%; padding: 28px 24px; flex-direction: column !important; }
-    .login-image { display: none !important; }
-    .login-form { padding: 24px !important; }
-    #gpx-map { height: 300px; }
-    .gpx-stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .gpx-promo { flex-direction: column; padding: 32px 24px; }
-    .gpx-promo-left { text-align: center; align-items: center; padding-left: 0; }
-    .gpx-promo-left i { font-size: 40px; }
-    .gpx-promo-left h3 { font-size: 24px; }
-    .gpx-promo-left p { font-size: 16px; text-align: center; }
-    .gpx-promo-right { display: none; }
-    .profile-header { flex-wrap: wrap; gap: 16px; }
-    .profile-info h2 { font-size: 24px; }
-    .user-card { padding: 18px; }
-    .user-card h4 { font-size: 18px; }
-    #diamond-bot-btn { width: 56px; height: 56px; bottom: 100px; right: 16px; }
-    #diamond-bot-btn img { width: 44px; height: 44px; }
-    .diamond-bot-modal { width: calc(100% - 32px); right: 16px; bottom: 170px; height: 380px; }
-    .cover-preview-container { height: 180px; }
-    .badge-option-card { width: 130px; }
-    .profile-gpx-grid { grid-template-columns: 1fr; }
-}
+    bottom:
