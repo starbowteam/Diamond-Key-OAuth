@@ -1,50 +1,252 @@
-async function loadAnnouncement() {
-    const body = document.getElementById('announcementBody');
-    if (!body) return;
-    body.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
-    const data = await getAnnouncement();
-    if (data && data.length) {
-        const creator = await getProfile('viktorshopa');
-        body.innerHTML = `
-            <img src="${creator?.avatar || ''}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--border-glass);">
-            <div class="announcement-content">
-                <p>${escapeHtml(data[0].content)}</p>
-                <div class="announcement-footer">
-                    <span><strong>viktorshopa</strong> · Создатель Diamond</span>
-                    <span>${new Date(data[0].created_at).toLocaleString()}</span>
-                </div>
-            </div>
-        `;
+const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[m] || m);
+}
+
+function showToast(msg) {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        container.style.cssText = 'position:fixed;top:24px;right:24px;z-index:9999;';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.textContent = msg;
+    toast.style.cssText = 'background:rgba(20,20,25,0.95);color:white;padding:12px 24px;border-radius:30px;margin-bottom:10px;backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);';
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+const saved = localStorage.getItem('diamkey_current');
+if (saved) try { currentUser = JSON.parse(saved); } catch(e) { console.log('[DiamKey] Ошибка парсинга сохранённой сессии'); }
+
+async function login(login, password) {
+    console.log('[DiamKey] Попытка входа:', login);
+    const { data: user, error } = await _supabase.from('users').select('*').eq('login', login).eq('password', password).maybeSingle();
+    if (error) {
+        console.error('[DiamKey] Ошибка входа:', error);
+        return { error: 'Ошибка базы данных' };
+    }
+    if (!user) return { error: 'Неверный логин или пароль' };
+    if (!user.secret_word) {
+        const sw = generateFastSecret();
+        await _supabase.from('users').update({ secret_word: sw }).eq('login', user.login);
+        user.secret_word = sw;
+    }
+    const session = { login: user.login, email: user.email, name: user.name||'', avatar: user.avatar||'', description: user.description||'', created_at: user.created_at };
+    localStorage.setItem('diamkey_current', JSON.stringify(session));
+    currentUser = session;
+    console.log('[DiamKey] Вход успешен:', login);
+    return { success: true };
+}
+
+function generateFastSecret() {
+    return Math.random().toString(36).substring(2,15) + Math.random().toString(36).substring(2,15);
+}
+
+function generateToken() {
+    const adj = ['golden','silver','mystic','shadow','prime','crystal','onyx','brave','frost'];
+    const nouns = ['falcon','tiger','phoenix','dragon','wolf','spark','nexus','core','vault','key'];
+    const a = adj[Math.floor(Math.random()*adj.length)];
+    const b = nouns[Math.floor(Math.random()*nouns.length)];
+    const c = nouns[Math.floor(Math.random()*nouns.length)];
+    const num = Math.floor(1000+Math.random()*9000);
+    return `diamkey_${a}_${b}_${c}_${num}`;
+}
+
+async function register(login, password) {
+    console.log('[DiamKey] Регистрация:', login);
+    if (password.length < 6) return { error: 'Пароль минимум 6 символов' };
+    const { data: exist } = await _supabase.from('users').select('login').eq('login', login).maybeSingle();
+    if (exist) return { error: 'Логин уже занят' };
+    const email = login + '@diamkey.local';
+    const token = generateToken();
+    const secretWord = generateFastSecret();
+    const { error } = await _supabase.from('users').insert([{
+        login, email, password, name: '', avatar: '', description: '', token, secret_word: secretWord
+    }]);
+    if (error) {
+        console.error('[DiamKey] Ошибка регистрации:', error);
+        return { error: error.message };
+    }
+    const session = { login, email, name: '', avatar: '', description: '', created_at: new Date().toISOString() };
+    localStorage.setItem('diamkey_current', JSON.stringify(session));
+    currentUser = session;
+    console.log('[DiamKey] Регистрация успешна:', login);
+    return { success: true };
+}
+
+async function loadProfile() {
+    if (!currentUser) return;
+    const { data } = await _supabase.from('users').select('name, avatar, description, created_at').eq('login', currentUser.login).maybeSingle();
+    if (data) {
+        currentUser.name = data.name || currentUser.login;
+        currentUser.avatar = data.avatar || '';
+        currentUser.description = data.description || '';
+        currentUser.created_at = data.created_at;
     } else {
-        body.innerHTML = '<p class="text-muted">Нет новых объявлений</p>';
+        console.warn('[DiamKey] Профиль не найден в базе');
     }
 }
 
-function renderReactions(reactionsObj, postId) {
-    const reactions = reactionsObj || {};
-    const types = { heart: '❤️', like: '👍', fire: '🔥' };
-    const storageKey = `reacted_${postId}`;
-    const userReaction = localStorage.getItem(storageKey);
-    let html = '';
-    for (const [key, emoji] of Object.entries(types)) {
-        const count = reactions[key] || 0;
-        const activeClass = (userReaction === key) ? ' active' : '';
-        html += `<button class="reaction-btn${activeClass}" data-type="${key}">${emoji} <span>${count}</span></button>`;
+async function updateProfile(updates) {
+    if (!currentUser) return;
+    const { error } = await _supabase.from('users').update(updates).eq('login', currentUser.login);
+    if (error) {
+        console.error('[DiamKey] Ошибка обновления профиля:', error);
+        return;
     }
-    return html;
+    if (updates.name) currentUser.name = updates.name;
+    if (updates.avatar) currentUser.avatar = updates.avatar;
+    if (updates.description) currentUser.description = updates.description;
+    localStorage.setItem('diamkey_current', JSON.stringify(currentUser));
 }
 
-async function toggleReaction(postId, type, btn) {
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.remove('active');
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
+}
+
+function startCipherEffect() {
+    const el = document.getElementById('cipherTitle');
+    if (!el) return;
+    const text = 'DIAMKEY';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    let display = text.split('');
+    setInterval(() => {
+        for (let i = 0; i < display.length; i++) {
+            if (Math.random() < 0.05) display[i] = chars[Math.floor(Math.random() * chars.length)];
+            else display[i] = text[i];
+        }
+        el.textContent = display.join('');
+    }, 150);
+}
+startCipherEffect();
+
+let cachedUsers = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 60000;
+let usersRequestPromise = null;
+
+async function getUsers() {
+    if (cachedUsers && Date.now() - cacheTimestamp < CACHE_DURATION) return cachedUsers;
+    if (usersRequestPromise) return usersRequestPromise;
+    usersRequestPromise = (async () => {
+        try {
+            const { data, error } = await _supabase.from('users').select('login, name, avatar, description, created_at').order('login');
+            if (error) throw error;
+            cachedUsers = data || [];
+            cacheTimestamp = Date.now();
+            return cachedUsers;
+        } catch (e) {
+            console.error('[DiamKey] Ошибка загрузки пользователей:', e);
+            return [];
+        } finally {
+            usersRequestPromise = null;
+        }
+    })();
+    return usersRequestPromise;
+}
+
+async function getProfile(login) {
+    const { data } = await _supabase.from('users').select('name, avatar, description, created_at, cover').eq('login', login).maybeSingle();
+    return data;
+}
+
+async function getWall(login) {
+    const { data } = await _supabase.from('profile_wall').select('*').eq('profile_login', login).order('created_at', { ascending: false });
+    return data || [];
+}
+
+async function getGpxFiles(login) {
+    const { data } = await _supabase.from('gpx_files').select('*').eq('user_login', login).order('created_at', { ascending: false });
+    return data || [];
+}
+
+async function getAnnouncement() {
+    const { data } = await _supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(1);
+    return data || [];
+}
+
+async function loadHomeStats() {
+    const results = {};
+    try {
+        if (currentUser) {
+            const gpxRes = await _supabase.from('gpx_files').select('id', { count: 'exact' }).eq('user_login', currentUser.login);
+            results.gpxCount = gpxRes.count || 0;
+            const wallRes = await _supabase.from('profile_wall').select('id', { count: 'exact' }).eq('profile_login', currentUser.login);
+            results.wallCount = wallRes.count || 0;
+        }
+        const usersCountRes = await _supabase.from('users').select('id', { count: 'exact', head: true });
+        results.totalUsers = usersCountRes.count || 0;
+    } catch (e) {
+        console.error('[DiamKey] Ошибка загрузки статистики:', e);
+    }
+    return results;
+}
+
+// ======== БЕЙДЖИ ========
+async function getAllBadges() {
+    const { data } = await _supabase.from('badges').select('*');
+    return data || [];
+}
+
+async function getUserBadges(login) {
+    const { data } = await _supabase.from('user_badges').select('badge_id, badges(*)').eq('user_login', login);
+    return data || [];
+}
+
+async function assignBadge(userLogin, badgeId) {
+    const existing = await _supabase.from('user_badges').select('id').eq('user_login', userLogin).eq('badge_id', badgeId).maybeSingle();
+    if (existing.data) return { error: 'Уже выдан' };
+    const { error } = await _supabase.from('user_badges').insert({
+        user_login: userLogin,
+        badge_id: badgeId,
+        assigned_by: currentUser?.login
+    });
+    return { error };
+}
+
+async function removeBadge(userLogin, badgeId) {
+    const { error } = await _supabase.from('user_badges').delete().eq('user_login', userLogin).eq('badge_id', badgeId);
+    return { error };
+}
+
+// ======== ОНЛАЙН-СТАТУС ========
+async function updatePresence() {
+    if (!currentUser) return;
+    await _supabase.from('user_presence').upsert({ login: currentUser.login, last_seen: new Date().toISOString() }, { onConflict: 'login' });
+}
+setInterval(updatePresence, 30000);
+if (currentUser) updatePresence();
+
+async function isUserOnline(login) {
+    const { data } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
+    if (!data) return false;
+    const diff = Date.now() - new Date(data.last_seen).getTime();
+    return diff < 120000;
+}
+
+// ======== РЕАКЦИИ НА GPX ========
+async function toggleGpxReaction(fileId, type) {
     if (!currentUser) return showToast('Войдите');
-    const storageKey = `reacted_${postId}`;
+    const storageKey = `gpx_reacted_${fileId}`;
     const previousType = localStorage.getItem(storageKey);
 
-    const { data: post, error } = await _supabase.from('profile_wall').select('reactions').eq('id', postId).maybeSingle();
-    if (error || !post) {
-        console.error('[DiamKey] Ошибка получения поста для реакции:', error);
+    const { data: file, error } = await _supabase.from('gpx_files').select('reactions').eq('id', fileId).maybeSingle();
+    if (error || !file) {
+        console.error('[DiamKey] Ошибка получения GPX для реакции:', error);
         return showToast('Ошибка');
     }
-    let reactions = post.reactions || {};
+    let reactions = file.reactions || {};
 
     if (previousType === type) {
         reactions[type] = Math.max((reactions[type] || 0) - 1, 0);
@@ -57,654 +259,18 @@ async function toggleReaction(postId, type, btn) {
         localStorage.setItem(storageKey, type);
     }
 
-    const { error: updateError } = await _supabase.from('profile_wall').update({ reactions }).eq('id', postId);
+    const { error: updateError } = await _supabase.from('gpx_files').update({ reactions }).eq('id', fileId);
     if (updateError) {
-        console.error('[DiamKey] Ошибка обновления реакций:', updateError);
+        console.error('[DiamKey] Ошибка обновления реакций GPX:', updateError);
         return showToast('Ошибка');
     }
 
-    const { data: owner } = await _supabase.from('profile_wall').select('profile_login').eq('id', postId).maybeSingle();
-    if (owner && owner.profile_login !== currentUser.login) {
-        await _supabase.from('notifications').insert({
-            user_login: owner.profile_login,
-            type: 'wall_reaction',
-            from_login: currentUser.login,
-            content: `${currentUser.name || currentUser.login} поставил(а) реакцию на вашу запись`,
-            read: false
-        });
-    }
-
-    const postEl = btn.closest('.wall-post');
-    if (postEl) {
-        const footer = postEl.querySelector('.wall-post-footer');
-        if (footer) {
-            footer.innerHTML = renderReactions(reactions, postId);
-            footer.querySelectorAll('.reaction-btn').forEach(b => {
-                b.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    toggleReaction(postId, this.dataset.type, this);
-                });
-            });
+    // Обновить отображение в карточках (просто перерисовать страницу)
+    if (typeof renderProfileGpxView === 'function' && currentUser) {
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/profile/') && currentPath.endsWith('/gpxview')) {
+            const login = currentPath.split('/profile/')[1].split('/gpxview')[0];
+            renderProfileGpxView(login);
         }
-    }
-}
-
-function getBadgeGradientClass(badgeName) {
-    const map = {
-        'Bronze Buyer': 'badge-bronze',
-        'Silver Buyer': 'badge-silver',
-        'Gold Buyer': 'badge-gold',
-        'Diamond Buyer': 'badge-diamond',
-        'Emerald Buyer': 'badge-emerald',
-        'Amethyst Buyer': 'badge-amethyst',
-        'Legendary Buyer': 'badge-legendary',
-        'Покупатель Века!': 'badge-century',
-        'Creator | Seller': 'badge-creator-seller',
-        'Diamond Lady': 'badge-diamond-lady',
-        'Control Diamond': 'badge-control-diamond',
-        'Bot Manager': 'badge-bot-manager',
-        'Assistant': 'badge-assistant',
-        'Ticket Hold': 'badge-ticket-hold',
-        'Sales Manager': 'badge-sales-manager',
-        'Partner Manager': 'badge-partner-manager',
-        'Advertiser': 'badge-advertiser',
-        'Diamond Richest': 'badge-diamond-richest',
-        'Work': 'badge-work'
-    };
-    return map[badgeName] || '';
-}
-
-function applyCoverTransform(img, posX, posY, scale) {
-    img.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
-}
-
-function renderCoverHTML(profile, isOwnProfile) {
-    if (profile.cover && profile.cover.startsWith('image:')) {
-        const src = profile.cover.replace('image:', '');
-        const scale = profile.cover_scale || 1;
-        const posX = profile.cover_pos_x || 0;
-        const posY = profile.cover_pos_y || 0;
-        return `
-            <div class="profile-cover" id="profileCoverBlock">
-                <img class="cover-image" src="${escapeHtml(src)}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">
-                ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
-            </div>
-        `;
-    } else if (profile.cover && (profile.cover.startsWith('gradient:') || profile.cover.startsWith('color:'))) {
-        const bg = profile.cover.startsWith('gradient:')
-            ? `background: linear-gradient(135deg, ${profile.cover.split(':')[1]}, ${profile.cover.split(':')[2]});`
-            : `background: ${profile.cover.split(':')[1]};`;
-        return `
-            <div class="profile-cover" id="profileCoverBlock" style="${bg}">
-                ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="profile-cover" id="profileCoverBlock">
-                ${isOwnProfile ? '<div class="cover-hover"><i class="fas fa-pen"></i></div>' : ''}
-            </div>
-        `;
-    }
-}
-
-async function renderUserProfileHTML(login, profile, wallPosts, badges) {
-    const avatarHTML = profile.avatar 
-        ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-        : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
-
-    const online = await isUserOnline(login);
-    const onlineDot = online ? '<div class="online-dot"></div>' : '';
-
-    let badgesHTML = '';
-    if (badges && badges.length > 0) {
-        badgesHTML = badges.map(b => {
-            const badge = b.badges;
-            const gradientClass = getBadgeGradientClass(badge.name);
-            return `
-                <div class="badge-item">
-                    <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
-                    <span class="${gradientClass}">${escapeHtml(badge.name)}</span>
-                </div>
-            `;
-        }).join('');
-    }
-
-    const isOwnProfile = (currentUser && currentUser.login === login);
-    const navigateAction = isOwnProfile
-        ? `navigateTo('/profile/${login}/gpxview')`
-        : `navigateTo('/profile/${login}/gpxview', true)`;
-
-    const coverBlock = renderCoverHTML(profile, isOwnProfile);
-
-    return `
-        ${coverBlock}
-        <div class="avatar-section">
-            <div class="avatar-wrapper">
-                ${avatarHTML}
-                ${onlineDot}
-            </div>
-        </div>
-        <div class="profile-info">
-            <div class="profile-details">
-                <h2>${escapeHtml(profile.name || login)}</h2>
-                <p class="description" id="profileDescription">${escapeHtml(profile.description || 'Нет описания')}</p>
-                <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
-            </div>
-            <div class="profile-actions">
-                <button class="btn btn-icon back-to-users-btn" onclick="goBackToUsersList()" title="Назад к пользователям"><i class="fas fa-arrow-left"></i></button>
-                <button class="btn btn-icon puzzle-btn" onclick="${navigateAction}" title="Поездки GPX"><i class="fas fa-puzzle-piece"></i></button>
-            </div>
-        </div>
-        <div class="badges-row">${badgesHTML}</div>
-    `;
-}
-
-async function openUserProfile(login) {
-    console.log('[DiamKey] openUserProfile для', login);
-    const usersPanel = document.getElementById('usersPanel');
-    const userView = document.getElementById('userProfileView');
-    const userWallSection = document.getElementById('userWallSection');
-    const pageUsers = document.getElementById('page-users');
-    if (!pageUsers || !usersPanel || !userView) {
-        console.error('[DiamKey] Не найдены контейнеры профиля');
-        return;
-    }
-
-    if (!pageUsers.classList.contains('active')) {
-        await new Promise(resolve => {
-            const observer = new MutationObserver(mutations => {
-                if (pageUsers.classList.contains('active')) {
-                    observer.disconnect();
-                    resolve();
-                }
-            });
-            observer.observe(pageUsers, { attributes: true, attributeFilter: ['class'] });
-            setTimeout(() => { observer.disconnect(); resolve(); }, 500);
-        });
-    }
-
-    usersPanel.style.display = 'none';
-    userView.style.display = 'block';
-    userView.innerHTML = `
-        <div style="text-align:center; padding:40px;">
-            <i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i>
-            <p class="text-muted">Загрузка профиля ${escapeHtml(login)}...</p>
-        </div>
-    `;
-
-    try {
-        const [profile, wallPosts, badges] = await Promise.all([
-            getProfile(login),
-            getWall(login),
-            getUserBadges(login)
-        ]);
-
-        if (!profile) {
-            userView.innerHTML = `<div style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>`;
-            return;
-        }
-
-        const profileHTML = await renderUserProfileHTML(login, profile, wallPosts, badges);
-
-        userView.innerHTML = profileHTML;
-        userView.className = 'profile-panel';
-
-        const coverBlock = document.getElementById('profileCoverBlock');
-        if (coverBlock && currentUser && currentUser.login === login) {
-            coverBlock.addEventListener('click', () => {
-                openCoverSetupModal(profile);
-            });
-        }
-
-        const descEl = document.getElementById('profileDescription');
-        if (descEl && currentUser && currentUser.login === login) {
-            descEl.addEventListener('click', () => {
-                document.getElementById('editDescriptionInput').value = profile.description || '';
-                document.getElementById('editDescriptionModal').style.display = 'flex';
-                document.getElementById('editDescriptionModal').classList.add('active');
-            });
-            document.getElementById('saveDescriptionBtn').onclick = async () => {
-                const desc = document.getElementById('editDescriptionInput').value.trim();
-                await updateProfile({ description: desc });
-                descEl.textContent = desc || 'Нет описания';
-                closeModal('editDescriptionModal');
-                showToast('Описание сохранено');
-            };
-        }
-
-        if (userWallSection) {
-            userWallSection.style.display = 'block';
-            let wallHTML = '';
-            if (wallPosts && wallPosts.length) {
-                wallHTML = wallPosts.map(p => `
-                    <div class="wall-post glass-panel" data-post-id="${p.id}">
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                            ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
-                            <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
-                            <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
-                        </div>
-                        <p>${escapeHtml(p.content)}</p>
-                        <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
-                    </div>
-                `).join('');
-            } else {
-                wallHTML = '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
-            }
-            userWallSection.innerHTML = `
-                <div class="wall-input" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border-radius:18px; padding:8px 16px;">
-                    <div style="width:36px; height:36px; border-radius:50%; overflow:hidden; flex-shrink:0;">
-                        ${currentUser && currentUser.avatar ? `<img src="${escapeHtml(currentUser.avatar)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
-                    </div>
-                    <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:transparent; border:none; color:var(--text-primary); resize:none; font-size:15px; outline:none; padding:8px 0;"></textarea>
-                    <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
-                </div>
-                <div id="userWallPosts">${wallHTML}</div>
-            `;
-
-            const postBtn = document.getElementById('postUserWallBtn');
-            if (postBtn) {
-                postBtn.onclick = async () => {
-                    const msg = document.getElementById('userWallMessage')?.value.trim();
-                    if (!msg || !currentUser) return;
-                    await _supabase.from('profile_wall').insert([{ 
-                        user_login: currentUser.login, 
-                        user_name: currentUser.name || currentUser.login, 
-                        user_avatar: currentUser.avatar || '', 
-                        profile_login: login, 
-                        content: msg,
-                        reactions: {}
-                    }]);
-                    if (login !== currentUser.login) {
-                        await _supabase.from('notifications').insert({
-                            user_login: login,
-                            type: 'wall_post',
-                            from_login: currentUser.login,
-                            content: `${currentUser.name || currentUser.login} написал на вашей стене`,
-                            read: false
-                        });
-                    }
-                    showToast('Запись добавлена');
-                    openUserProfile(login);
-                };
-            }
-
-            userWallSection.querySelectorAll('.reaction-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const postId = this.closest('.wall-post').dataset.postId;
-                    toggleReaction(postId, this.dataset.type, this);
-                });
-            });
-        }
-    } catch (e) {
-        console.error('[DiamKey] Ошибка в openUserProfile:', e);
-        userView.innerHTML = `<div style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>`;
-    }
-}
-
-function goBackToUsersList() {
-    const usersPanel = document.getElementById('usersPanel');
-    const userView = document.getElementById('userProfileView');
-    const userWallSection = document.getElementById('userWallSection');
-    if (usersPanel) usersPanel.style.display = 'block';
-    if (userView) {
-        userView.style.display = 'none';
-        userView.className = 'glass-panel profile-top';
-    }
-    if (userWallSection) userWallSection.style.display = 'none';
-    navigateTo('/users');
-    if (typeof loadUsers === 'function') loadUsers();
-}
-
-async function renderMyProfile() {
-    const pageProfile = document.getElementById('page-profile');
-    if (!pageProfile || !currentUser) return;
-
-    pageProfile.innerHTML = `<div class="glass-panel" style="text-align:center; padding:40px;"><i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i> Загрузка...</div>`;
-
-    try {
-        const login = currentUser.login;
-        const [profile, wallPosts, badges] = await Promise.all([
-            getProfile(login),
-            getWall(login),
-            getUserBadges(login)
-        ]);
-
-        if (!profile) return;
-
-        const online = await isUserOnline(login);
-        const onlineDot = online ? '<div class="online-dot"></div>' : '';
-
-        let badgesHTML = '';
-        if (badges && badges.length > 0) {
-            badgesHTML = badges.map(b => {
-                const badge = b.badges;
-                const gradientClass = getBadgeGradientClass(badge.name);
-                return `
-                    <div class="badge-item">
-                        <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
-                        <span class="${gradientClass}">${escapeHtml(badge.name)}</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        const avatarHTML = profile.avatar 
-            ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
-
-        const coverBlock = renderCoverHTML(profile, true);
-
-        let wallHTML = wallPosts.length ? buildWallHTML(wallPosts) : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
-
-        pageProfile.innerHTML = `
-            <div class="profile-panel">
-                ${coverBlock}
-                <div class="avatar-section">
-                    <div class="avatar-wrapper" id="myAvatarWrapper">
-                        ${avatarHTML}
-                        ${onlineDot}
-                        <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
-                    </div>
-                </div>
-                <div class="profile-info">
-                    <div class="profile-details">
-                        <h2>${escapeHtml(profile.name || login)}</h2>
-                        <p class="description" id="myDescription">${escapeHtml(profile.description || 'Нажмите, чтобы добавить описание')}</p>
-                        <span class="regdate">${profile.created_at ? 'Создан: ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
-                    </div>
-                    <div class="profile-actions">
-                        <button class="btn btn-icon puzzle-btn" onclick="navigateTo('/profile/${login}/gpxview')" title="Мои GPX-поездки"><i class="fas fa-puzzle-piece"></i></button>
-                    </div>
-                </div>
-                <div class="badges-row">${badgesHTML}</div>
-            </div>
-            <div class="glass-panel profile-wall">
-                <div class="wall-input">
-                    <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:18px; padding:14px 18px; color:var(--text-primary); resize:none; font-size:15px;"></textarea>
-                    <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
-                </div>
-                <div id="myWallPosts">${wallHTML}</div>
-            </div>
-        `;
-
-        const coverBlockEl = document.getElementById('profileCoverBlock');
-        if (coverBlockEl) {
-            coverBlockEl.addEventListener('click', () => {
-                openCoverSetupModal(profile);
-            });
-        }
-
-        document.getElementById('myAvatarWrapper').onclick = () => {
-            const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
-            input.onchange = async (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); renderMyProfile(); showToast('Аватар обновлён'); };
-                reader.readAsDataURL(file);
-            };
-            input.click();
-        };
-
-        const descEl = document.getElementById('myDescription');
-        if (descEl) {
-            descEl.addEventListener('click', () => {
-                document.getElementById('editDescriptionInput').value = profile.description || '';
-                document.getElementById('editDescriptionModal').style.display = 'flex';
-                document.getElementById('editDescriptionModal').classList.add('active');
-            });
-        }
-
-        document.getElementById('saveDescriptionBtn').onclick = async () => {
-            const desc = document.getElementById('editDescriptionInput').value.trim();
-            await updateProfile({ description: desc });
-            if (descEl) descEl.textContent = desc || 'Нажмите, чтобы добавить описание';
-            closeModal('editDescriptionModal');
-            showToast('Описание сохранено');
-        };
-
-        attachReactionListeners(pageProfile);
-
-        document.getElementById('postMyWallBtn').onclick = async () => {
-            const msg = document.getElementById('myWallMessage').value.trim();
-            if (!msg) return;
-            await _supabase.from('profile_wall').insert([{ 
-                user_login: currentUser.login, 
-                user_name: currentUser.name || currentUser.login, 
-                user_avatar: currentUser.avatar || '', 
-                profile_login: login, 
-                content: msg,
-                reactions: {}
-            }]);
-            document.getElementById('myWallMessage').value = '';
-            showToast('Запись добавлена');
-            renderMyProfile();
-        };
-    } catch (e) {
-        console.error('[DiamKey] Ошибка загрузки своего профиля:', e);
-        pageProfile.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
-    }
-}
-
-function buildWallHTML(posts) {
-    return posts.map(p => `
-        <div class="wall-post glass-panel" data-post-id="${p.id}">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                ${p.user_avatar ? `<img src="${escapeHtml(p.user_avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:28px;color:var(--text-muted);"></i>'}
-                <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
-                <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
-            </div>
-            <p>${escapeHtml(p.content)}</p>
-            <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
-        </div>
-    `).join('');
-}
-
-function attachReactionListeners(container) {
-    container.querySelectorAll('.reaction-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const postId = this.closest('.wall-post').dataset.postId;
-            toggleReaction(postId, this.dataset.type, this);
-        });
-    });
-}
-
-function getGpxStats(content) {
-    try {
-        const parsed = parseGPX(content);
-        let allPoints = [];
-        parsed.tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
-        if (allPoints.length < 2) return { dist: null, ascent: null };
-        let totalDist = 0, ascent = 0;
-        for (let i = 1; i < allPoints.length; i++) {
-            const prev = allPoints[i-1], pt = allPoints[i];
-            const d = haversine(prev.lat, prev.lon, pt.lat, pt.lon);
-            totalDist += d;
-            if (prev.ele !== null && pt.ele !== null && pt.ele > prev.ele) ascent += pt.ele - prev.ele;
-        }
-        return { dist: totalDist, ascent: ascent };
-    } catch (e) {
-        return { dist: null, ascent: null };
-    }
-}
-
-function haversine(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-/* ============ ОБНОВЛЁННАЯ GPX-ВЬЮ (с общей статистикой и растягивающимися карточками) ============ */
-async function renderProfileGpxView(login) {
-    const page = document.getElementById('page-profile-gpx');
-    if (!page) return;
-
-    try {
-        const [profile, gpxFiles] = await Promise.all([
-            getProfile(login),
-            getGpxFiles(login)
-        ]);
-
-        if (!profile) {
-            page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>';
-            return;
-        }
-
-        const isOwnProfile = (currentUser && currentUser.login === login);
-        const coverBlock = renderCoverHTML(profile, isOwnProfile);
-
-        const avatarHTML = profile.avatar 
-            ? `<img src="${escapeHtml(profile.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-            : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></i>';
-
-        // Собираем общую статистику
-        let totalRides = gpxFiles.length;
-        let totalDist = 0;
-        let totalAscent = 0;
-        gpxFiles.forEach(f => {
-            const stats = getGpxStats(f.content);
-            if (stats.dist) totalDist += stats.dist;
-            if (stats.ascent) totalAscent += stats.ascent;
-        });
-
-        const distStr = totalDist > 1000 ? (totalDist / 1000).toFixed(1) + ' км' : totalDist.toFixed(0) + ' м';
-        const ascentStr = totalAscent > 0 ? '+' + totalAscent.toFixed(0) + ' м' : '—';
-
-        let statsRowHTML = '';
-        if (totalRides > 0) {
-            statsRowHTML = `
-                <div class="user-stats-row" style="margin: 24px 0 8px;">
-                    <div class="stat-badge">
-                        <div class="number">${totalRides}</div>
-                        <div class="label">Поездки</div>
-                    </div>
-                    <div class="stat-badge">
-                        <div class="number">${distStr}</div>
-                        <div class="label">Общая дистанция</div>
-                    </div>
-                    <div class="stat-badge">
-                        <div class="number">${ascentStr}</div>
-                        <div class="label">Набор высоты</div>
-                    </div>
-                </div>
-            `;
-        } else {
-            statsRowHTML = '<div class="empty-gpx-message"><p>Поездок пока нет</p></div>';
-        }
-
-        const backTarget = (currentUser && currentUser.login === login) ? '/profile' : `/users/${login}`;
-
-        page.innerHTML = `
-            <div class="profile-panel">
-                ${coverBlock}
-                <div class="avatar-section" style="display:flex; align-items:center; gap:20px;">
-                    <div class="avatar-wrapper" style="flex-shrink:0;">
-                        ${avatarHTML}
-                    </div>
-                    <div style="margin-left:auto;">
-                        <button class="btn btn-icon" onclick="navigateTo('${backTarget}')" title="Назад к профилю"><i class="fas fa-arrow-left"></i></button>
-                    </div>
-                </div>
-                <div style="padding: 0 32px 24px;">
-                    ${statsRowHTML}
-                    ${totalRides > 0 ? `
-                        <div class="profile-gpx-grid" id="profileGpxGrid" style="display:flex; flex-wrap:wrap; gap:16px; margin-top:24px;">
-                            ${gpxFiles.map(f => {
-                                const stats = getGpxStats(f.content);
-                                let cardStatsHTML = '';
-                                if (stats.dist !== null) {
-                                    const dist = stats.dist > 1000 ? (stats.dist/1000).toFixed(1) + ' км' : Math.round(stats.dist) + ' м';
-                                    const ascent = stats.ascent > 0 ? '+' + Math.round(stats.ascent) + ' м' : '';
-                                    cardStatsHTML = `
-                                        <div class="gpx-card-stats">
-                                            <span>${dist}</span>
-                                            ${ascent ? `<span>↑ ${ascent}</span>` : ''}
-                                        </div>
-                                    `;
-                                }
-                                return `
-                                    <div class="gpx-card" onclick="viewGpxRoute('${f.id}')" style="flex: 1 1 220px;">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <h4>${escapeHtml(f.name)}</h4>
-                                        <div class="gpx-card-date">${new Date(f.created_at).toLocaleDateString()}</div>
-                                        ${cardStatsHTML}
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    } catch (e) {
-        console.error('[DiamKey] Ошибка загрузки GPX-профиля:', e);
-        page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
-    }
-}
-
-async function viewGpxRoute(fileId) {
-    console.log('[DiamKey] Открытие GPX из профиля:', fileId);
-    const { data, error } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
-    if (error || !data || !data.content) {
-        console.error('[DiamKey] Ошибка загрузки GPX:', error);
-        return showToast('Не удалось загрузить маршрут');
-    }
-    navigateTo(`/add/gpx?id=${fileId}`);
-}
-
-function copyGpxLink(fileId) {
-    const url = `${location.origin}/add/gpx?id=${fileId}`;
-    navigator.clipboard.writeText(url).then(() => showToast('Ссылка скопирована'));
-}
-
-function renderQrConfirm(ticket) {
-    const page = document.getElementById('page-qr-confirm');
-    if (!page) return;
-
-    const isLoggedIn = !!currentUser;
-    let controlsHTML = '';
-    if (isLoggedIn) {
-        controlsHTML = `
-            <div style="margin-bottom:20px;">
-                <span>Вы вошли как <strong>${escapeHtml(currentUser.login)}</strong></span>
-            </div>
-            <button class="btn btn-success" id="acceptQrBtn"><i class="fas fa-check-circle"></i> Принять</button>
-            <button class="btn btn-danger" id="rejectQrBtn"><i class="fas fa-times-circle"></i> Отклонить</button>
-        `;
-    } else {
-        controlsHTML = `
-            <p>Сначала войдите в DiamKey</p>
-            <button class="btn" onclick="navigateTo('/home')"><i class="fas fa-sign-in-alt"></i> Войти</button>
-        `;
-    }
-
-    page.innerHTML = `
-        <div class="glass-panel" style="text-align:center; padding:40px; max-width:400px; margin:0 auto;">
-            <img src="/assets/favicon.ico" style="width:64px;height:64px;border-radius:50%;margin-bottom:20px;animation: float 3s ease-in-out infinite;">
-            <h2>Подтверждение входа</h2>
-            <p class="text-muted">Запрос на вход через QR-код</p>
-            <div id="qrConfirmControls">${controlsHTML}</div>
-            <p class="error-msg" id="qrConfirmError" style="display:none;"></p>
-        </div>
-    `;
-
-    if (isLoggedIn) {
-        document.getElementById('acceptQrBtn').addEventListener('click', async () => {
-            const { error } = await _supabase.from('qr_tickets').update({ login: currentUser.login, status: 'accepted' }).eq('ticket', ticket);
-            if (error) {
-                document.getElementById('qrConfirmError').textContent = 'Ошибка';
-                document.getElementById('qrConfirmError').style.display = 'block';
-                return;
-            }
-            page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход подтверждён!</h2></div>';
-        });
-        document.getElementById('rejectQrBtn').addEventListener('click', async () => {
-            await _supabase.from('qr_tickets').update({ status: 'rejected' }).eq('ticket', ticket);
-            page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход отклонён</h2></div>';
-        });
     }
 }
