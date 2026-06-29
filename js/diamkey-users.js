@@ -150,5 +150,3 @@ function openBadgeFilterModal(badges, onSelect) {
         setTimeout(() => modal.remove(), 300);
     });
 }
-
-// 1112
