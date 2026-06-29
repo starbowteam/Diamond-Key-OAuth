@@ -520,43 +520,16 @@ body {
     padding: 0 32px;
 }
 
-/* Двухколоночная компоновка */
+/* Двухколоночная компоновка через Grid */
 .profile-body {
-    display: flex;
-    gap: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px 32px;
     padding: 20px 32px 24px;
-    flex-wrap: wrap;
-    align-items: stretch;
-}
-.profile-left {
-    flex: 1 1 300px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-.profile-right {
-    flex: 1 1 300px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    justify-content: center;
 }
 
-/* Никнейм в рамке */
-.nickname-badge {
-    display: inline-flex;
-    align-items: center;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 12px;
-    padding: 4px 16px;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text-primary);
-    backdrop-filter: blur(4px);
-    letter-spacing: -0.3px;
-}
-
+/* Описание */
 .description-box {
     background: rgba(255,255,255,0.02);
     border-left: 2px solid var(--accent);
@@ -567,6 +540,7 @@ body {
     line-height: 1.5;
     cursor: pointer;
     transition: text-decoration 0.2s;
+    /* высота автоматически подстроится под высоту первой action-card */
 }
 .description-box:hover {
     text-decoration: underline;
@@ -731,6 +705,21 @@ body {
 }
 .action-card:hover .action-card-arrow {
     transform: translateX(4px);
+}
+
+/* Никнейм в рамке */
+.nickname-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 4px 16px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    backdrop-filter: blur(4px);
+    letter-spacing: -0.3px;
 }
 
 /* Градиенты */
