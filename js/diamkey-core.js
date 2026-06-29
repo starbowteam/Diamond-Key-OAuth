@@ -234,3 +234,43 @@ async function isUserOnline(login) {
     const diff = Date.now() - new Date(data.last_seen).getTime();
     return diff < 120000;
 }
+
+// ======== РЕАКЦИИ НА GPX ========
+async function toggleGpxReaction(fileId, type) {
+    if (!currentUser) return showToast('Войдите');
+    const storageKey = `gpx_reacted_${fileId}`;
+    const previousType = localStorage.getItem(storageKey);
+
+    const { data: file, error } = await _supabase.from('gpx_files').select('reactions').eq('id', fileId).maybeSingle();
+    if (error || !file) {
+        console.error('[DiamKey] Ошибка получения GPX для реакции:', error);
+        return showToast('Ошибка');
+    }
+    let reactions = file.reactions || {};
+
+    if (previousType === type) {
+        reactions[type] = Math.max((reactions[type] || 0) - 1, 0);
+        localStorage.removeItem(storageKey);
+    } else {
+        if (previousType) {
+            reactions[previousType] = Math.max((reactions[previousType] || 0) - 1, 0);
+        }
+        reactions[type] = (reactions[type] || 0) + 1;
+        localStorage.setItem(storageKey, type);
+    }
+
+    const { error: updateError } = await _supabase.from('gpx_files').update({ reactions }).eq('id', fileId);
+    if (updateError) {
+        console.error('[DiamKey] Ошибка обновления реакций GPX:', updateError);
+        return showToast('Ошибка');
+    }
+
+    // Обновить отображение в карточках (просто перерисовать страницу)
+    if (typeof renderProfileGpxView === 'function' && currentUser) {
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/profile/') && currentPath.endsWith('/gpxview')) {
+            const login = currentPath.split('/profile/')[1].split('/gpxview')[0];
+            renderProfileGpxView(login);
+        }
+    }
+}
