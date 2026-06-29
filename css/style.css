@@ -350,7 +350,7 @@ body {
     50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
 }
 
-/* ===== ЕДИНЫЙ БЛОК ПРОФИЛЯ (без ограничений ширины) ===== */
+/* ===== ЕДИНЫЙ БЛОК ПРОФИЛЯ ===== */
 .profile-panel {
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
@@ -359,16 +359,16 @@ body {
     border-radius: var(--radius-lg);
     overflow: visible;
     margin-bottom: 32px;
-    /* убраны max-width и автоцентрирование, теперь панель на всю ширину */
 }
 
+/* Новый баннер с кнопкой Обложка */
 .profile-cover {
     height: 180px;
     background: linear-gradient(160deg, #1e1e32 0%, #0a0a14 100%);
     position: relative;
     overflow: hidden;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    cursor: pointer;
+    cursor: default; /* убрали pointer, т.к. клик только по кнопке */
     background-image: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.08) 0%, transparent 20%),
                       radial-gradient(circle at 80% 30%, rgba(255,255,255,0.05) 0%, transparent 30%),
                       linear-gradient(160deg, #1e1e32 0%, #0a0a14 100%);
@@ -382,24 +382,8 @@ body {
     min-width: 100%;
     transform-origin: center;
 }
-.profile-cover .cover-hover {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: 2;
-    color: white;
-    font-size: 24px;
-}
-.profile-cover:hover .cover-hover {
-    opacity: 1;
-}
-.edit-cover-btn, .back-btn {
+/* Кнопка "Обложка" с иконкой карандаша */
+.edit-cover-btn {
     position: absolute;
     top: 16px;
     right: 24px;
@@ -418,7 +402,7 @@ body {
     z-index: 2;
     opacity: 0.7;
 }
-.edit-cover-btn:hover, .back-btn:hover { background: rgba(0,0,0,0.6); opacity: 1; }
+.edit-cover-btn:hover { background: rgba(0,0,0,0.6); opacity: 1; }
 
 .avatar-section {
     display: flex;
@@ -483,17 +467,25 @@ body {
     opacity: 1;
 }
 
-.profile-info {
+/* Двухколоночная компоновка */
+.profile-body {
     display: flex;
-    gap: 28px;
-    align-items: flex-start;
+    gap: 32px;
     padding: 20px 32px 24px;
     flex-wrap: wrap;
 }
-
-.profile-details {
-    flex: 1;
-    min-width: 200px;
+.profile-left {
+    flex: 1 1 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.profile-right {
+    flex: 1 1 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    justify-content: center;
 }
 
 /* Никнейм в рамке */
@@ -509,7 +501,7 @@ body {
     color: var(--text-primary);
     backdrop-filter: blur(4px);
     letter-spacing: -0.3px;
-    margin-bottom: 12px;
+    width: fit-content;
 }
 
 .description-box {
@@ -536,7 +528,7 @@ body {
     margin-bottom: 6px;
 }
 
-/* Статус онлайн/офлайн */
+/* Статус */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -575,12 +567,76 @@ body {
 }
 .regdate i { font-size: 12px; }
 
-.profile-actions {
+/* Большая интерактивная кнопка Дополнений */
+.addons-card {
     display: flex;
-    gap: 12px;
     align-items: center;
+    gap: 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--radius-md);
+    padding: 24px 28px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+.addons-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.addons-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.4), 0 0 24px rgba(192,192,208,0.25);
+}
+.addons-card:hover::before {
+    opacity: 1;
+}
+.addons-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: var(--accent);
+    flex-shrink: 0;
+    transition: 0.3s;
+}
+.addons-card:hover .addons-icon {
+    color: #fff;
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.1) rotate(-5deg);
+}
+.addons-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.addons-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.addons-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+.addons-arrow {
     margin-left: auto;
-    padding-top: 6px;
+    font-size: 22px;
+    color: var(--accent);
+    transition: transform 0.3s;
+}
+.addons-card:hover .addons-arrow {
+    transform: translateX(6px);
 }
 
 .badges-row {
@@ -589,6 +645,7 @@ body {
     flex-wrap: wrap;
     gap: 10px;
     align-items: center;
+    justify-content: center;
 }
 
 .badge-item {
@@ -983,32 +1040,40 @@ body {
     color: #2ecc71;
 }
 
-/* Карточки GPX (новый стиль) */
-.gpx-grid {
-    display: flex;
-    flex-wrap: wrap;
+/* Карточки GPX */
+.profile-gpx-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 16px;
-    padding: 0 32px 24px;
+    margin-top: 24px;
 }
 .gpx-card {
-    flex: 1 1 200px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-glass);
     border-radius: var(--radius-md);
-    padding: 16px;
+    padding: 20px;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all var(--transition);
 }
 .gpx-card:hover {
-    background: rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.08);
     border-color: var(--accent);
     transform: translateY(-2px);
 }
-.gpx-card i { font-size: 24px; color: var(--accent); margin-bottom: 8px; }
-.gpx-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-.gpx-card .date { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
-.gpx-card .stats { font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; }
-.gpx-card .stats span:first-child { color: var(--text-primary); }
+.gpx-card i { font-size: 28px; color: var(--accent); margin-bottom: 12px; }
+.gpx-card h4 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.gpx-card-date {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+.gpx-card-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+.gpx-card-stats span:first-child { color: var(--text-primary); }
 .empty-gpx-message {
     text-align: center;
     padding: 40px;
@@ -1047,9 +1112,7 @@ body {
     cursor: grab;
     user-select: none;
 }
-.cover-preview-container:active {
-    cursor: grabbing;
-}
+.cover-preview-container:active { cursor: grabbing; }
 .cover-preview-container img {
     position: absolute;
     top: 50%;
@@ -1097,12 +1160,8 @@ body {
     border-color: var(--accent);
     background: rgba(160,160,176,0.2);
 }
-.badge-filter-item:hover {
-    background: rgba(255,255,255,0.08);
-}
-.reset-filter-btn {
-    margin-top: 20px;
-}
+.badge-filter-item:hover { background: rgba(255,255,255,0.08); }
+.reset-filter-btn { margin-top: 20px; }
 
 /* Мобильная версия */
 @media (max-width: 768px) {
@@ -1138,8 +1197,7 @@ body {
         gap: 4px;
     }
     .sidebar-icon {
-        width: 48px;
-        height: 48px;
+        width: 48px; height: 48px;
         font-size: 24px;
         margin: 0;
     }
