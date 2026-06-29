@@ -1,578 +1,697 @@
-function updateHeroButton() {
-    const btn = document.getElementById('heroActionBtn');
-    const statsRow = document.getElementById('homeStatsRow');
-    if (!btn) return;
-    if (currentUser) {
-        btn.innerHTML = '<i class="fas fa-user"></i> Мой профиль';
-        btn.onclick = () => { navigateTo('/profile'); };
-        if (statsRow) {
-            loadHomeStats().then(stats => {
-                if (stats) {
-                    statsRow.innerHTML = `
-                        <div class="stat-badge"><div class="number">${stats.gpxCount}</div><div class="label">GPX-поездок</div></div>
-                        <div class="stat-badge"><div class="number">${stats.wallCount}</div><div class="label">Записей на стене</div></div>
-                        <div class="stat-badge"><div class="number">${stats.totalUsers}</div><div class="label">Пользователей</div></div>
-                    `;
-                    statsRow.style.display = 'flex';
-                }
+async function loadAnnouncement() {
+    const body = document.getElementById('announcementBody');
+    if (!body) return;
+    body.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>';
+    const data = await getAnnouncement();
+    if (data && data.length) {
+        const creator = await getProfile('viktorshopa');
+        body.innerHTML = `
+            ${avatarHTML(creator?.avatar, 48)}
+            <div class="announcement-content">
+                <p>${escapeHtml(data[0].content)}</p>
+                <div class="announcement-footer">
+                    <span><strong>viktorshopa</strong> · Создатель Diamond</span>
+                    <span>${new Date(data[0].created_at).toLocaleString()}</span>
+                </div>
+            </div>
+        `;
+    } else {
+        body.innerHTML = '<p class="text-muted">Нет новых объявлений</p>';
+    }
+}
+
+function renderReactions(reactionsObj, postId, typePrefix = '') {
+    const reactions = reactionsObj || {};
+    const types = { heart: '❤️', like: '👍', fire: '🔥' };
+    const storageKey = `${typePrefix}reacted_${postId}`;
+    const userReaction = localStorage.getItem(storageKey);
+    let html = '';
+    for (const [key, emoji] of Object.entries(types)) {
+        const count = reactions[key] || 0;
+        const activeClass = (userReaction === key) ? ' active' : '';
+        html += `<button class="reaction-btn${activeClass}" data-type="${key}">${emoji} <span>${count}</span></button>`;
+    }
+    return html;
+}
+
+async function toggleReaction(postId, type, btn) {
+    if (!currentUser) return showToast('Войдите');
+    const storageKey = `reacted_${postId}`;
+    const previousType = localStorage.getItem(storageKey);
+
+    const { data: post, error } = await _supabase.from('profile_wall').select('reactions').eq('id', postId).maybeSingle();
+    if (error || !post) {
+        console.error('[DiamKey] Ошибка получения поста для реакции:', error);
+        return showToast('Ошибка');
+    }
+    let reactions = post.reactions || {};
+
+    if (previousType === type) {
+        reactions[type] = Math.max((reactions[type] || 0) - 1, 0);
+        localStorage.removeItem(storageKey);
+    } else {
+        if (previousType) {
+            reactions[previousType] = Math.max((reactions[previousType] || 0) - 1, 0);
+        }
+        reactions[type] = (reactions[type] || 0) + 1;
+        localStorage.setItem(storageKey, type);
+    }
+
+    const { error: updateError } = await _supabase.from('profile_wall').update({ reactions }).eq('id', postId);
+    if (updateError) {
+        console.error('[DiamKey] Ошибка обновления реакций:', updateError);
+        return showToast('Ошибка');
+    }
+
+    const { data: owner } = await _supabase.from('profile_wall').select('profile_login').eq('id', postId).maybeSingle();
+    if (owner && owner.profile_login !== currentUser.login) {
+        await _supabase.from('notifications').insert({
+            user_login: owner.profile_login,
+            type: 'wall_reaction',
+            from_login: currentUser.login,
+            content: `${currentUser.name || currentUser.login} поставил(а) реакцию на вашу запись`,
+            read: false
+        });
+    }
+
+    const postEl = btn.closest('.wall-post');
+    if (postEl) {
+        const footer = postEl.querySelector('.wall-post-footer');
+        if (footer) {
+            footer.innerHTML = renderReactions(reactions, postId);
+            footer.querySelectorAll('.reaction-btn').forEach(b => {
+                b.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleReaction(postId, this.dataset.type, this);
+                });
             });
         }
-    } else {
-        btn.innerHTML = '<i class="fas fa-user-plus"></i> Войти / Создать DiamKey';
-        btn.onclick = () => {
-            const modal = document.getElementById('loginModal');
-            if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
-        };
-        if (statsRow) statsRow.style.display = 'none';
     }
 }
 
-function loadHomeData() {
-    updateHeroButton();
-    if (typeof loadAnnouncement === 'function') loadAnnouncement();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const loginModal = document.getElementById('loginModal');
-    if (!loginModal) return;
-
-    const tabLogin = document.getElementById('tabLogin');
-    const tabRegister = document.getElementById('tabRegister');
-    const tabQr = document.getElementById('tabQr');
-    const loginBlock = document.getElementById('loginFormBlock');
-    const registerBlock = document.getElementById('registerFormBlock');
-    const qrBlock = document.getElementById('qrFormBlock');
-    const qrContainer = document.getElementById('qrContainer');
-
-    const loginIdentity = document.getElementById('loginIdentity');
-    const regLoginInput = document.getElementById('regLoginInput');
-
-    if (loginIdentity) {
-        loginIdentity.setAttribute('maxlength', '20');
-        loginIdentity.addEventListener('input', function() {
-            this.value = this.value.replace(/\s/g, '').substring(0, 20);
-        });
-    }
-    if (regLoginInput) {
-        regLoginInput.setAttribute('maxlength', '20');
-        regLoginInput.addEventListener('input', function() {
-            this.value = this.value.replace(/\s/g, '').substring(0, 20);
-        });
-    }
-
-    const regPasswordInput = document.getElementById('regPasswordInput');
-    const regPasswordConfirm = document.getElementById('regPasswordConfirm');
-    let strengthDiv = null;
-
-    if (regPasswordInput) {
-        strengthDiv = document.createElement('div');
-        strengthDiv.className = 'password-strength';
-        strengthDiv.innerHTML = '<div class="strength-bar"><div class="strength-fill"></div></div><div class="strength-text"></div>';
-        regPasswordInput.parentNode.insertBefore(strengthDiv, regPasswordInput.nextSibling);
-
-        regPasswordInput.addEventListener('input', function() {
-            const strength = evaluatePasswordStrength(this.value);
-            const fill = strengthDiv.querySelector('.strength-fill');
-            const text = strengthDiv.querySelector('.strength-text');
-            fill.style.width = (strength.score * 25) + '%';
-            fill.style.backgroundColor = strength.color;
-            text.textContent = strength.label;
-            text.style.color = strength.color;
-        });
-    }
-
-    tabLogin?.addEventListener('click', () => {
-        tabLogin.classList.add('active');
-        tabRegister.classList.remove('active');
-        tabQr?.classList.remove('active');
-        loginBlock.style.display = 'block';
-        registerBlock.style.display = 'none';
-        if (qrBlock) qrBlock.style.display = 'none';
-        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); qrGenerated = false; }
-    });
-
-    tabRegister?.addEventListener('click', () => {
-        tabRegister.classList.add('active');
-        tabLogin.classList.remove('active');
-        tabQr?.classList.remove('active');
-        registerBlock.style.display = 'block';
-        loginBlock.style.display = 'none';
-        if (qrBlock) qrBlock.style.display = 'none';
-        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); qrGenerated = false; }
-    });
-
-    tabQr?.addEventListener('click', () => {
-        tabQr.classList.add('active');
-        tabLogin.classList.remove('active');
-        tabRegister.classList.remove('active');
-        loginBlock.style.display = 'none';
-        registerBlock.style.display = 'none';
-        if (qrBlock) qrBlock.style.display = 'block';
-        if (!qrGenerated) generateQrInModal();
-    });
-
-    document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
-        const loginVal = document.getElementById('loginIdentity').value.trim();
-        const passwordVal = document.getElementById('loginPassword').value;
-        if (!loginVal || !passwordVal) return showToast('Введите логин и пароль');
-
-        const res = await login(loginVal, passwordVal);
-        if (res.error) return showToast(res.error);
-
-        showCaptchaModal(() => {
-            closeModal('loginModal');
-            smoothLoginSuccess();
-        });
-    });
-
-    document.getElementById('doRegisterBtn')?.addEventListener('click', async () => {
-        const loginVal = regLoginInput.value.trim();
-        const pass1 = regPasswordInput.value;
-        const pass2 = regPasswordConfirm.value;
-        if (!loginVal || !pass1 || !pass2) return showToast('Заполните все поля');
-        if (pass1 !== pass2) return showToast('Пароли не совпадают');
-
-        const strength = evaluatePasswordStrength(pass1);
-        if (strength.score < 2) return showToast('Пароль слишком слабый. Следуйте подсказкам.');
-
-        showCaptchaModal(async () => {
-            const res = await register(loginVal, pass1);
-            if (res.error) {
-                showToast(res.error);
-                return;
-            }
-            closeModal('loginModal');
-            smoothLoginSuccess();
-        });
-    });
-
-    const scrollBtn = document.createElement('button');
-    scrollBtn.id = 'scrollToTopBtn';
-    scrollBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
-    document.body.appendChild(scrollBtn);
-    window.addEventListener('scroll', () => {
-        scrollBtn.classList.toggle('visible', window.scrollY > 400);
-    });
-    scrollBtn.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-
-    document.getElementById('badgeAdminBtn')?.addEventListener('click', () => {
-        if (currentUser && currentUser.login === 'viktorshopa') {
-            openBadgeModal();
-        }
-    });
-});
-
-function smoothLoginSuccess() {
-    const loader = document.getElementById('smoothLoader');
-    if (!loader) return;
-    loader.classList.add('show');
-    setTimeout(() => {
-        navigateTo('/home');
-        loader.classList.remove('show');
-        updateSidebarVisibility();
-    }, 1200);
-}
-
-function showCaptchaModal(onSuccess) {
-    const old = document.getElementById('captchaModal');
-    if (old) old.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'captchaModal';
-    modal.className = 'modal';
-    modal.style.display = 'flex';
-    modal.classList.add('active');
-
-    let captchaCode = generateCaptchaCode();
-    let timerSeconds = 15;
-    let timerInterval = null;
-
-    modal.innerHTML = `
-        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:400px;">
-            <h3><i class="fas fa-shield-alt"></i> Подтверждение входа</h3>
-            <p>Введите три цифры:</p>
-            <div class="captcha-display">${captchaCode}</div>
-            <input type="text" id="captchaInput" placeholder="Цифры" maxlength="3" style="font-size:24px; text-align:center; letter-spacing:4px;">
-            <div class="captcha-timer">
-                <div class="captcha-timer-bar"><div class="captcha-timer-fill"></div></div>
-                <span id="captchaTimerSeconds">${timerSeconds} сек</span>
-            </div>
-            <button class="btn btn-primary" id="submitCaptchaBtn" style="margin-top:16px;">Подтвердить</button>
-            <p class="error-msg" id="captchaError" style="display:none;"></p>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    const input = document.getElementById('captchaInput');
-    const submitBtn = document.getElementById('submitCaptchaBtn');
-    const errorEl = document.getElementById('captchaError');
-    const timerFill = modal.querySelector('.captcha-timer-fill');
-    const timerSecondsEl = document.getElementById('captchaTimerSeconds');
-
-    function updateTimer() {
-        timerSeconds--;
-        if (timerSeconds <= 0) {
-            clearInterval(timerInterval);
-            captchaCode = generateCaptchaCode();
-            timerSeconds = 15;
-            modal.querySelector('.captcha-display').textContent = captchaCode;
-            timerSecondsEl.textContent = timerSeconds + ' сек';
-            timerFill.style.width = '100%';
-            startTimer();
-        } else {
-            const percent = (timerSeconds / 15) * 100;
-            timerFill.style.width = percent + '%';
-            timerSecondsEl.textContent = timerSeconds + ' сек';
-        }
-    }
-
-    function startTimer() {
-        clearInterval(timerInterval);
-        timerInterval = setInterval(updateTimer, 1000);
-    }
-    startTimer();
-
-    submitBtn.addEventListener('click', () => {
-        const userInput = input.value.trim();
-        if (userInput === captchaCode) {
-            clearInterval(timerInterval);
-            modal.remove();
-            onSuccess();
-        } else {
-            errorEl.textContent = 'Неверно, попробуйте снова';
-            errorEl.style.display = 'block';
-            captchaCode = generateCaptchaCode();
-            timerSeconds = 15;
-            modal.querySelector('.captcha-display').textContent = captchaCode;
-            timerSecondsEl.textContent = timerSeconds + ' сек';
-            timerFill.style.width = '100%';
-            input.value = '';
-            startTimer();
-        }
-    });
-
-    input.addEventListener('input', function() {
-        this.value = this.value.replace(/\D/g, '').substring(0, 3);
-    });
-
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            clearInterval(timerInterval);
-            modal.remove();
-        }
-    });
-}
-
-function openCoverSetupModal(profile) {
-    const container = document.getElementById('coverSetupModalContainer');
-    container.innerHTML = '';
-
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.id = 'coverSetupModalDynamic';
-    modal.style.display = 'flex';
-    modal.onclick = function(e) {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-            setTimeout(() => modal.remove(), 300);
-        }
+function getBadgeGradientClass(badgeName) {
+    const map = {
+        'Bronze Buyer': 'badge-bronze',
+        'Silver Buyer': 'badge-silver',
+        'Gold Buyer': 'badge-gold',
+        'Diamond Buyer': 'badge-diamond',
+        'Emerald Buyer': 'badge-emerald',
+        'Amethyst Buyer': 'badge-amethyst',
+        'Legendary Buyer': 'badge-legendary',
+        'Покупатель Века!': 'badge-century',
+        'Creator | Seller': 'badge-creator-seller',
+        'Diamond Lady': 'badge-diamond-lady',
+        'Control Diamond': 'badge-control-diamond',
+        'Bot Manager': 'badge-bot-manager',
+        'Assistant': 'badge-assistant',
+        'Ticket Hold': 'badge-ticket-hold',
+        'Sales Manager': 'badge-sales-manager',
+        'Partner Manager': 'badge-partner-manager',
+        'Advertiser': 'badge-advertiser',
+        'Diamond Richest': 'badge-diamond-richest',
+        'Work': 'badge-work'
     };
+    return map[badgeName] || '';
+}
 
-    modal.innerHTML = `
-        <div class="modal-content glass-panel cover-setup-modal" onclick="event.stopPropagation()">
-            <h3><i class="fas fa-image"></i> Настроить обложку</h3>
-            <div class="auth-tabs" id="coverTabs">
-                <button class="auth-tab active" data-tab="gradients">Градиенты</button>
-                <button class="auth-tab" data-tab="colors">Цвета</button>
-                <button class="auth-tab" data-tab="upload">Загрузить</button>
+function applyCoverTransform(img, posX, posY, scale) {
+    img.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
+}
+
+function renderCoverHTML(profile, isOwnProfile) {
+    if (profile.cover && profile.cover.startsWith('image:')) {
+        const src = profile.cover.replace('image:', '');
+        const scale = profile.cover_scale || 1;
+        const posX = profile.cover_pos_x || 0;
+        const posY = profile.cover_pos_y || 0;
+        return `
+            <div class="profile-cover" id="profileCoverBlock">
+                <img class="cover-image" src="${escapeHtml(src)}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">
+                ${isOwnProfile ? '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>' : ''}
             </div>
-
-            <div id="coverGradients" class="cover-options-grid" style="display:grid;">
-                <div class="cover-option" style="background:linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%);" data-cover="gradient:#2a2a35:#1a1a22"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%);" data-cover="gradient:#1e3c5c:#0f1e33"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a3e 0%, #1a2e24 100%);" data-cover="gradient:#2d4a3e:#1a2e24"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d4a 0%, #2e1a2e 100%);" data-cover="gradient:#4a2d4a:#2e1a2e"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #3d2d4a 0%, #241a2e 100%);" data-cover="gradient:#3d2d4a:#241a2e"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #4a3d2d 0%, #2e241a 100%);" data-cover="gradient:#4a3d2d:#2e241a"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a4a 0%, #1a2e2e 100%);" data-cover="gradient:#2d4a4a:#1a2e2e"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%);" data-cover="gradient:#4a2d3d:#2e1a24"></div>
+        `;
+    } else if (profile.cover && (profile.cover.startsWith('gradient:') || profile.cover.startsWith('color:'))) {
+        const bg = profile.cover.startsWith('gradient:')
+            ? `background: linear-gradient(135deg, ${profile.cover.split(':')[1]}, ${profile.cover.split(':')[2]});`
+            : `background: ${profile.cover.split(':')[1]};`;
+        return `
+            <div class="profile-cover" id="profileCoverBlock" style="${bg}">
+                ${isOwnProfile ? '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>' : ''}
             </div>
-
-            <div id="coverColors" class="cover-options-grid" style="display:none;">
-                <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
-                <div class="cover-option" style="background:#2d2d44;" data-cover="color:#2d2d44"></div>
-                <div class="cover-option" style="background:#16213e;" data-cover="color:#16213e"></div>
-                <div class="cover-option" style="background:#0f3460;" data-cover="color:#0f3460"></div>
-                <div class="cover-option" style="background:#533483;" data-cover="color:#533483"></div>
-                <div class="cover-option" style="background:#e94560;" data-cover="color:#e94560"></div>
-                <div class="cover-option" style="background:#1a3a3a;" data-cover="color:#1a3a3a"></div>
-                <div class="cover-option" style="background:#3a1a3a;" data-cover="color:#3a1a3a"></div>
+        `;
+    } else {
+        return `
+            <div class="profile-cover" id="profileCoverBlock">
+                ${isOwnProfile ? '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>' : ''}
             </div>
+        `;
+    }
+}
 
-            <div id="coverUpload" style="display:none;">
-                <div class="cover-preview-container" id="coverPreviewContainer">
-                    <img id="coverPreviewImage" src="" alt="Preview" draggable="false" style="position:absolute; top:50%; left:50%; transform-origin:center; height:100%; width:auto; min-width:100%;">
+// avatarHTML теперь берётся из diamkey-core.js (глобальная)
+
+function getStatusHTML(login, lastSeen) {
+    if (!lastSeen) {
+        return `<div class="status-badge offline">Не в сети</div>`;
+    }
+    const now = Date.now();
+    const last = new Date(lastSeen).getTime();
+    const diff = now - last;
+
+    if (diff < 120000) {
+        return `<div class="status-badge online">В сети</div>`;
+    }
+
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 60) {
+        return `<div class="status-badge offline">Был(а) ${minutes} мин. назад</div>`;
+    }
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return `<div class="status-badge offline">Был(а) ${hours} ч. назад</div>`;
+    }
+    const days = Math.floor(hours / 24);
+    return `<div class="status-badge offline">Был(а) ${days} д. назад</div>`;
+}
+
+function defaultDescription(login) {
+    return `Я ${login}, пришёл к вам в DiamKey! Надеюсь подружиться!`;
+}
+
+async function renderUserProfileHTML(login, profile, wallPosts, badges) {
+    const { data: presence } = await _supabase
+        .from('user_presence')
+        .select('last_seen')
+        .eq('login', login)
+        .maybeSingle();
+
+    const statusHTML = getStatusHTML(login, presence?.last_seen);
+    const desc = profile.description || defaultDescription(profile.name || login);
+
+    let badgesHTML = '';
+    if (badges && badges.length > 0) {
+        badgesHTML = badges.map(b => {
+            const badge = b.badges;
+            const gradientClass = getBadgeGradientClass(badge.name);
+            return `
+                <div class="badge-item">
+                    <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
+                    <span class="${gradientClass}">${escapeHtml(badge.name)}</span>
                 </div>
-                <div class="cover-controls">
-                    <i class="fas fa-search-minus"></i>
-                    <input type="range" id="coverScaleSlider" min="0.5" max="2" step="0.01" value="1">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-                <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Выбрать изображение</button>
-            </div>
+            `;
+        }).join('');
+    }
 
-            <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
-                <button class="btn btn-primary" id="saveCoverBtn"><i class="fas fa-check"></i> Сохранить</button>
-                <button class="btn btn-secondary" id="cancelCoverBtn">Отмена</button>
+    const isOwnProfile = (currentUser && currentUser.login === login);
+    const navigateAction = isOwnProfile
+        ? `navigateTo('/profile/${login}/gpxview')`
+        : `navigateTo('/profile/${login}/gpxview', true)`;
+
+    const coverBlock = renderCoverHTML(profile, isOwnProfile);
+
+    return `
+        ${coverBlock}
+        <div class="avatar-section">
+            <div class="avatar-wrapper">
+                ${avatarHTML(profile.avatar, 100)}
             </div>
-            <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
+        </div>
+        <div class="profile-body">
+            <div class="profile-left">
+                <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
+                <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
+                <div class="meta-row">
+                    ${statusHTML}
+                    <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                </div>
+            </div>
+            <div class="profile-right">
+                <div class="addons-card" onclick="${navigateAction}">
+                    <div class="addons-icon"><i class="fas fa-puzzle-piece"></i></div>
+                    <div class="addons-text">
+                        <span class="addons-title">Дополнения</span>
+                        <span class="addons-subtitle">Поездки, а в будущем и другое =)</span>
+                    </div>
+                    <i class="fas fa-chevron-right addons-arrow"></i>
+                </div>
+                <div class="badges-row">${badgesHTML}</div>
+            </div>
+        </div>
+    `;
+}
+
+async function openUserProfile(login) {
+    console.log('[DiamKey] openUserProfile для', login);
+    const usersPanel = document.getElementById('usersPanel');
+    const userView = document.getElementById('userProfileView');
+    const userWallSection = document.getElementById('userWallSection');
+    const pageUsers = document.getElementById('page-users');
+    if (!pageUsers || !usersPanel || !userView) {
+        console.error('[DiamKey] Не найдены контейнеры профиля');
+        return;
+    }
+
+    if (!pageUsers.classList.contains('active')) {
+        await new Promise(resolve => {
+            const observer = new MutationObserver(mutations => {
+                if (pageUsers.classList.contains('active')) {
+                    observer.disconnect();
+                    resolve();
+                }
+            });
+            observer.observe(pageUsers, { attributes: true, attributeFilter: ['class'] });
+            setTimeout(() => { observer.disconnect(); resolve(); }, 500);
+        });
+    }
+
+    usersPanel.style.display = 'none';
+    userView.style.display = 'block';
+    userView.innerHTML = `
+        <div style="text-align:center; padding:40px;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i>
+            <p class="text-muted">Загрузка профиля ${escapeHtml(login)}...</p>
         </div>
     `;
 
-    container.appendChild(modal);
-    setTimeout(() => modal.classList.add('active'), 10);
+    try {
+        const [profile, wallPosts, badges] = await Promise.all([
+            getProfile(login),
+            getWall(login),
+            getUserBadges(login)
+        ]);
 
-    const tabs = modal.querySelectorAll('#coverTabs .auth-tab');
-    const gradientDiv = modal.querySelector('#coverGradients');
-    const colorsDiv = modal.querySelector('#coverColors');
-    const uploadDiv = modal.querySelector('#coverUpload');
-    const saveBtn = modal.querySelector('#saveCoverBtn');
-    const cancelBtn = modal.querySelector('#cancelCoverBtn');
-    const fileInput = modal.querySelector('#coverFileInput');
-    const previewImage = modal.querySelector('#coverPreviewImage');
-    const previewContainer = modal.querySelector('#coverPreviewContainer');
-    const scaleSlider = modal.querySelector('#coverScaleSlider');
-    const uploadBtn = modal.querySelector('#coverUploadBtn');
-
-    let selectedCover = null;
-    let currentImageSrc = '';
-    let posX = profile.cover_pos_x || 0;
-    let posY = profile.cover_pos_y || 0;
-    let scale = profile.cover_scale || 1;
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const tabName = tab.dataset.tab;
-            gradientDiv.style.display = tabName === 'gradients' ? 'grid' : 'none';
-            colorsDiv.style.display = tabName === 'colors' ? 'grid' : 'none';
-            uploadDiv.style.display = tabName === 'upload' ? 'block' : 'none';
-        });
-    });
-
-    modal.querySelectorAll('.cover-option').forEach(opt => {
-        opt.addEventListener('click', function() {
-            modal.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedCover = this.dataset.cover;
-        });
-    });
-
-    uploadBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            currentImageSrc = ev.target.result;
-            previewImage.src = currentImageSrc;
-            posX = 0; posY = 0; scale = 1;
-            applyPreviewTransform();
-        };
-        reader.readAsDataURL(file);
-    });
-
-    function applyPreviewTransform() {
-        previewImage.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
-        scaleSlider.value = scale;
-    }
-
-    let dragging = false, startX, startY, startPosX, startPosY;
-    previewContainer.addEventListener('mousedown', (e) => {
-        dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startPosX = posX;
-        startPosY = posY;
-        e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-        if (!dragging) return;
-        const rect = previewContainer.getBoundingClientRect();
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        const percentX = (dx / rect.width) * 100;
-        const percentY = (dy / rect.height) * 100;
-        posX = startPosX + percentX;
-        posY = startPosY + percentY;
-        applyPreviewTransform();
-    });
-    window.addEventListener('mouseup', () => { dragging = false; });
-    previewContainer.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-            dragging = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            startPosX = posX;
-            startPosY = posY;
-        }
-    });
-    window.addEventListener('touchmove', (e) => {
-        if (!dragging) return;
-        const rect = previewContainer.getBoundingClientRect();
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
-        const percentX = (dx / rect.width) * 100;
-        const percentY = (dy / rect.height) * 100;
-        posX = startPosX + percentX;
-        posY = startPosY + percentY;
-        applyPreviewTransform();
-        e.preventDefault();
-    }, { passive: false });
-    window.addEventListener('touchend', () => { dragging = false; });
-
-    scaleSlider.addEventListener('input', () => {
-        scale = parseFloat(scaleSlider.value);
-        applyPreviewTransform();
-    });
-
-    saveBtn.addEventListener('click', async () => {
-        if (selectedCover) {
-            await updateProfile({ cover: selectedCover, cover_pos_x: 0, cover_pos_y: 0, cover_scale: 1 });
-            currentUser.cover = selectedCover;
-            currentUser.cover_pos_x = 0;
-            currentUser.cover_pos_y = 0;
-            currentUser.cover_scale = 1;
-        } else if (currentImageSrc) {
-            const coverValue = 'image:' + currentImageSrc;
-            await updateProfile({ cover: coverValue, cover_pos_x: posX, cover_pos_y: posY, cover_scale: scale });
-            currentUser.cover = coverValue;
-            currentUser.cover_pos_x = posX;
-            currentUser.cover_pos_y = posY;
-            currentUser.cover_scale = scale;
-        } else {
-            showToast('Выберите обложку');
+        if (!profile) {
+            userView.innerHTML = `<div style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>`;
             return;
         }
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-        if (document.getElementById('page-profile').classList.contains('active')) renderMyProfile();
-        showToast('Обложка обновлена');
-    });
 
-    cancelBtn.addEventListener('click', () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    });
+        const profileHTML = await renderUserProfileHTML(login, profile, wallPosts, badges);
+        userView.innerHTML = profileHTML;
+        userView.className = 'profile-panel';
 
-    if (profile.cover && profile.cover.startsWith('image:')) {
-        currentImageSrc = profile.cover.replace('image:', '');
-        previewImage.src = currentImageSrc;
-        applyPreviewTransform();
-        const uploadTab = modal.querySelector('[data-tab="upload"]');
-        if (uploadTab) uploadTab.click();
+        const descEl = document.getElementById('profileDescription');
+        if (descEl && currentUser && currentUser.login === login) {
+            descEl.addEventListener('click', () => {
+                document.getElementById('editDescriptionInput').value = profile.description || '';
+                document.getElementById('editDescriptionModal').style.display = 'flex';
+                document.getElementById('editDescriptionModal').classList.add('active');
+            });
+            document.getElementById('saveDescriptionBtn').onclick = async () => {
+                const desc = document.getElementById('editDescriptionInput').value.trim();
+                await updateProfile({ description: desc });
+                descEl.textContent = desc || defaultDescription(profile.name || login);
+                closeModal('editDescriptionModal');
+                showToast('Описание сохранено');
+            };
+        }
+
+        if (userWallSection) {
+            userWallSection.style.display = 'block';
+            let wallHTML = '';
+            if (wallPosts && wallPosts.length) {
+                wallHTML = wallPosts.map(p => `
+                    <div class="wall-post glass-panel" data-post-id="${p.id}">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                            ${avatarHTML(p.user_avatar, 32)}
+                            <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
+                            <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
+                        </div>
+                        <p>${escapeHtml(p.content)}</p>
+                        <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
+                    </div>
+                `).join('');
+            } else {
+                wallHTML = '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
+            }
+            userWallSection.innerHTML = `
+                <div class="wall-input" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border-radius:18px; padding:8px 16px;">
+                    <div style="width:36px; height:36px; border-radius:50%; overflow:hidden; flex-shrink:0;">
+                        ${avatarHTML(currentUser?.avatar, 36)}
+                    </div>
+                    <textarea id="userWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:transparent; border:none; color:var(--text-primary); resize:none; font-size:15px; outline:none; padding:8px 0;"></textarea>
+                    <button class="btn btn-send" id="postUserWallBtn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <div id="userWallPosts">${wallHTML}</div>
+            `;
+
+            const postBtn = document.getElementById('postUserWallBtn');
+            if (postBtn) {
+                postBtn.onclick = async () => {
+                    const msg = document.getElementById('userWallMessage')?.value.trim();
+                    if (!msg || !currentUser) return;
+                    await _supabase.from('profile_wall').insert([{ 
+                        user_login: currentUser.login, 
+                        user_name: currentUser.name || currentUser.login, 
+                        user_avatar: currentUser.avatar || '', 
+                        profile_login: login, 
+                        content: msg,
+                        reactions: {}
+                    }]);
+                    if (login !== currentUser.login) {
+                        await _supabase.from('notifications').insert({
+                            user_login: login,
+                            type: 'wall_post',
+                            from_login: currentUser.login,
+                            content: `${currentUser.name || currentUser.login} написал на вашей стене`,
+                            read: false
+                        });
+                    }
+                    showToast('Запись добавлена');
+                    openUserProfile(login);
+                };
+            }
+
+            userWallSection.querySelectorAll('.reaction-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const postId = this.closest('.wall-post').dataset.postId;
+                    toggleReaction(postId, this.dataset.type, this);
+                });
+            });
+        }
+    } catch (e) {
+        console.error('[DiamKey] Ошибка в openUserProfile:', e);
+        userView.innerHTML = `<div style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>`;
     }
 }
 
-function openCoverModal() {
-    if (currentUser) openCoverSetupModal(currentUser);
+function goBackToUsersList() {
+    const usersPanel = document.getElementById('usersPanel');
+    const userView = document.getElementById('userProfileView');
+    const userWallSection = document.getElementById('userWallSection');
+    if (usersPanel) usersPanel.style.display = 'block';
+    if (userView) {
+        userView.style.display = 'none';
+        userView.className = 'glass-panel profile-top';
+    }
+    if (userWallSection) userWallSection.style.display = 'none';
+    navigateTo('/users');
+    if (typeof loadUsers === 'function') loadUsers();
 }
 
-async function openBadgeModal() {
-    const modal = document.getElementById('badgeModal');
-    if (!modal) return;
-    modal.style.display = 'flex';
-    modal.classList.add('active');
+async function renderMyProfile() {
+    const pageProfile = document.getElementById('page-profile');
+    if (!pageProfile || !currentUser) return;
 
-    const users = await getUsers();
-    const listContainer = document.getElementById('badgeUserList');
-    listContainer.innerHTML = users.map(u => `
-        <div class="badge-user-row" data-login="${u.login}">
-            ${u.avatar ? `<img src="${u.avatar}" alt="${u.login}">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
-            <span>${escapeHtml(u.login)}</span>
-        </div>
-    `).join('');
+    pageProfile.innerHTML = `<div class="glass-panel" style="text-align:center; padding:40px;"><i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i> Загрузка...</div>`;
 
-    let selectedUser = null;
-    listContainer.querySelectorAll('.badge-user-row').forEach(row => {
-        row.addEventListener('click', async () => {
-            selectedUser = row.dataset.login;
-            document.getElementById('selectedBadgeUser').textContent = selectedUser;
-            document.getElementById('badgeListContainer').style.display = 'block';
+    try {
+        const login = currentUser.login;
+        const [profile, wallPosts, badges] = await Promise.all([
+            getProfile(login),
+            getWall(login),
+            getUserBadges(login)
+        ]);
 
-            const badges = await getAllBadges();
-            const userBadges = await getUserBadges(selectedUser);
-            const userBadgeIds = userBadges.map(b => b.badge_id);
+        if (!profile) return;
 
-            const optionsContainer = document.getElementById('badgeOptions');
-            optionsContainer.innerHTML = badges.map(b => {
-                const hasBadge = userBadgeIds.includes(b.id);
-                const action = hasBadge ? 'remove' : 'assign';
-                const btnClass = hasBadge ? 'remove' : 'assign';
-                const icon = hasBadge ? 'fa-times' : 'fa-plus';
-                const label = hasBadge ? 'Убрать' : 'Выдать';
+        const { data: presence } = await _supabase
+            .from('user_presence')
+            .select('last_seen')
+            .eq('login', login)
+            .maybeSingle();
+
+        const statusHTML = getStatusHTML(login, presence?.last_seen);
+        const desc = profile.description || defaultDescription(profile.name || login);
+
+        let badgesHTML = '';
+        if (badges && badges.length > 0) {
+            badgesHTML = badges.map(b => {
+                const badge = b.badges;
+                const gradientClass = getBadgeGradientClass(badge.name);
                 return `
-                    <div class="badge-option-card" data-badge-id="${b.id}">
-                        <div class="badge-icon-large"><i class="fas ${b.icon}" style="background:${b.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
-                        <span class="badge-name">${escapeHtml(b.name)}</span>
-                        <button class="${btnClass}" data-action="${action}" data-badge-id="${b.id}">
-                            <i class="fas ${icon}"></i> ${label}
-                        </button>
+                    <div class="badge-item">
+                        <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
+                        <span class="${gradientClass}">${escapeHtml(badge.name)}</span>
                     </div>
                 `;
             }).join('');
+        }
 
-            optionsContainer.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const badgeId = btn.dataset.badgeId;
-                    const action = btn.dataset.action;
-                    if (action === 'assign') {
-                        const { error } = await assignBadge(selectedUser, badgeId);
-                        if (error) showToast(error.message || 'Ошибка');
-                        else showToast('Бейдж выдан');
-                    } else {
-                        const { error } = await removeBadge(selectedUser, badgeId);
-                        if (error) showToast('Ошибка');
-                        else showToast('Бейдж убран');
-                    }
-                    const card = btn.closest('.badge-option-card');
-                    const newAction = action === 'assign' ? 'remove' : 'assign';
-                    const newClass = newAction === 'remove' ? 'remove' : 'assign';
-                    const newIcon = newAction === 'remove' ? 'fa-times' : 'fa-plus';
-                    const newLabel = newAction === 'remove' ? 'Убрать' : 'Выдать';
-                    btn.dataset.action = newAction;
-                    btn.className = newClass;
-                    btn.innerHTML = `<i class="fas ${newIcon}"></i> ${newLabel}`;
-                });
+        const coverBlock = renderCoverHTML(profile, true);
+        let wallHTML = wallPosts.length ? buildWallHTML(wallPosts) : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
+
+        pageProfile.innerHTML = `
+            <div class="profile-panel">
+                ${coverBlock}
+                <div class="avatar-section">
+                    <div class="avatar-wrapper" id="myAvatarWrapper">
+                        ${avatarHTML(profile.avatar, 100)}
+                        <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
+                    </div>
+                </div>
+                <div class="profile-body">
+                    <div class="profile-left">
+                        <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
+                        <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
+                        <div class="meta-row">
+                            ${statusHTML}
+                            <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                        </div>
+                    </div>
+                    <div class="profile-right">
+                        <div class="addons-card" onclick="navigateTo('/profile/${login}/gpxview')">
+                            <div class="addons-icon"><i class="fas fa-puzzle-piece"></i></div>
+                            <div class="addons-text">
+                                <span class="addons-title">Дополнения</span>
+                                <span class="addons-subtitle">Поездки, а в будущем и другое =)</span>
+                            </div>
+                            <i class="fas fa-chevron-right addons-arrow"></i>
+                        </div>
+                        <div class="badges-row">${badgesHTML}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-panel profile-wall">
+                <div class="wall-input">
+                    <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:18px; padding:14px 18px; color:var(--text-primary); resize:none; font-size:15px;"></textarea>
+                    <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <div id="myWallPosts">${wallHTML}</div>
+            </div>
+        `;
+
+        document.getElementById('myAvatarWrapper').onclick = () => {
+            const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); renderMyProfile(); showToast('Аватар обновлён'); };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        };
+
+        const descEl = document.getElementById('myDescription');
+        if (descEl) {
+            descEl.addEventListener('click', () => {
+                document.getElementById('editDescriptionInput').value = profile.description || '';
+                document.getElementById('editDescriptionModal').style.display = 'flex';
+                document.getElementById('editDescriptionModal').classList.add('active');
             });
-        });
-    });
+        }
 
-    document.getElementById('badgeUserSearch').addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        listContainer.querySelectorAll('.badge-user-row').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+        document.getElementById('saveDescriptionBtn').onclick = async () => {
+            const newDesc = document.getElementById('editDescriptionInput').value.trim();
+            await updateProfile({ description: newDesc });
+            if (descEl) descEl.textContent = newDesc || defaultDescription(profile.name || login);
+            closeModal('editDescriptionModal');
+            showToast('Описание сохранено');
+        };
+
+        attachReactionListeners(pageProfile);
+
+        document.getElementById('postMyWallBtn').onclick = async () => {
+            const msg = document.getElementById('myWallMessage').value.trim();
+            if (!msg) return;
+            await _supabase.from('profile_wall').insert([{ 
+                user_login: currentUser.login, 
+                user_name: currentUser.name || currentUser.login, 
+                user_avatar: currentUser.avatar || '', 
+                profile_login: login, 
+                content: msg,
+                reactions: {}
+            }]);
+            document.getElementById('myWallMessage').value = '';
+            showToast('Запись добавлена');
+            renderMyProfile();
+        };
+    } catch (e) {
+        console.error('[DiamKey] Ошибка загрузки своего профиля:', e);
+        pageProfile.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
+    }
+}
+
+function buildWallHTML(posts) {
+    return posts.map(p => `
+        <div class="wall-post glass-panel" data-post-id="${p.id}">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                ${avatarHTML(p.user_avatar, 32)}
+                <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
+                <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
+            </div>
+            <p>${escapeHtml(p.content)}</p>
+            <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
+        </div>
+    `).join('');
+}
+
+function attachReactionListeners(container) {
+    container.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const postId = this.closest('.wall-post').dataset.postId;
+            toggleReaction(postId, this.dataset.type, this);
         });
     });
 }
 
-function updateSidebarVisibility() {
+function getGpxStats(content) {
+    try {
+        const parsed = parseGPX(content);
+        let allPoints = [];
+        parsed.tracks.forEach(t => t.segments.forEach(seg => allPoints.push(...seg)));
+        if (allPoints.length < 2) return { dist: null, ascent: null };
+        let totalDist = 0, ascent = 0;
+        for (let i = 1; i < allPoints.length; i++) {
+            const prev = allPoints[i-1], pt = allPoints[i];
+            const d = haversine(prev.lat, prev.lon, pt.lat, pt.lon);
+            totalDist += d;
+            if (prev.ele !== null && pt.ele !== null && pt.ele > prev.ele) ascent += pt.ele - prev.ele;
+        }
+        return { dist: totalDist, ascent: ascent };
+    } catch (e) {
+        return { dist: null, ascent: null };
+    }
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/* ====== GPX-ВЬЮ ====== */
+async function renderProfileGpxView(login) {
+    const page = document.getElementById('page-profile-gpx');
+    if (!page) return;
+
+    try {
+        const [profile, gpxFiles] = await Promise.all([
+            getProfile(login),
+            getGpxFiles(login)
+        ]);
+
+        if (!profile) {
+            page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Пользователь не найден</p></div>';
+            return;
+        }
+
+        const isOwnProfile = (currentUser && currentUser.login === login);
+        const coverBlock = renderCoverHTML(profile, isOwnProfile);
+
+        let totalRides = gpxFiles.length;
+        let totalDist = 0, totalAscent = 0;
+        gpxFiles.forEach(f => {
+            const stats = getGpxStats(f.content);
+            if (stats.dist) totalDist += stats.dist;
+            if (stats.ascent) totalAscent += stats.ascent;
+        });
+
+        const distStr = totalDist > 1000 ? (totalDist / 1000).toFixed(1) + ' км' : totalDist.toFixed(0) + ' м';
+        const ascentStr = totalAscent > 0 ? '+' + totalAscent.toFixed(0) + ' м' : '—';
+
+        const backTarget = (currentUser && currentUser.login === login) ? '/profile' : `/users/${login}`;
+
+        page.innerHTML = `
+            <div class="profile-panel">
+                ${coverBlock}
+                <button class="back-btn" onclick="navigateTo('${backTarget}')"><i class="fas fa-arrow-left"></i> Назад</button>
+                <div class="avatar-section">
+                    <div class="avatar-wrapper">
+                        ${avatarHTML(profile.avatar, 100)}
+                    </div>
+                </div>
+                <div class="path-row" style="display:flex; align-items:center; gap:12px; padding: 12px 32px 0;">
+                    <div class="nickname-badge" style="margin-bottom:0; font-size:18px;">${escapeHtml(profile.name || login)}</div>
+                    <i class="fas fa-chevron-right" style="color:var(--accent);"></i>
+                    <div class="nickname-badge" style="margin-bottom:0; font-size:18px; background:rgba(160,160,176,0.1); border-color:var(--accent);">Дополнения ${escapeHtml(profile.name || login)}</div>
+                </div>
+                ${totalRides > 0 ? `
+                <div class="gpx-stats-row" style="display:flex; gap:16px; justify-content:center; padding: 20px 32px; flex-wrap:wrap;">
+                    <div class="stat-badge"><div class="number">${totalRides}</div><div class="label">Поездки</div></div>
+                    <div class="stat-badge"><div class="number">${distStr}</div><div class="label">Общая дистанция</div></div>
+                    <div class="stat-badge"><div class="number">${ascentStr}</div><div class="label">Набор высоты</div></div>
+                </div>
+                <div class="gpx-grid" style="display:flex; flex-wrap:wrap; gap:16px; padding:0 32px 24px;">
+                    ${gpxFiles.map(f => {
+                        const stats = getGpxStats(f.content);
+                        let cardStatsHTML = '';
+                        if (stats.dist !== null) {
+                            const dist = stats.dist > 1000 ? (stats.dist/1000).toFixed(1) + ' км' : Math.round(stats.dist) + ' м';
+                            const ascent = stats.ascent > 0 ? '+' + Math.round(stats.ascent) + ' м' : '';
+                            cardStatsHTML = `<div class="stats" style="font-size:13px; color:var(--text-muted); display:flex; gap:12px;"><span style="color:var(--text-primary);">${dist}</span>${ascent ? `<span>↑ ${ascent}</span>` : ''}</div>`;
+                        }
+                        return `
+                            <div class="gpx-card" onclick="viewGpxRoute('${f.id}')" style="flex:1 1 200px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:16px; cursor:pointer;" data-file-id="${f.id}">
+                                <i class="fas fa-map-marker-alt" style="font-size:24px; color:var(--accent); margin-bottom:8px;"></i>
+                                <h4 style="font-size:15px; font-weight:600; margin-bottom:6px;">${escapeHtml(f.name)}</h4>
+                                <div class="date" style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">${new Date(f.created_at).toLocaleDateString()}</div>
+                                ${cardStatsHTML}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                ` : '<div class="empty-gpx-message" style="padding:40px; text-align:center; color:var(--text-muted);">Поездок пока нет</div>'}
+            </div>
+        `;
+    } catch (e) {
+        console.error('[DiamKey] Ошибка загрузки GPX-профиля:', e);
+        page.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
+    }
+}
+
+async function viewGpxRoute(fileId) {
+    const { data, error } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
+    if (error || !data || !data.content) {
+        return showToast('Не удалось загрузить маршрут');
+    }
+    navigateTo(`/add/gpx?id=${fileId}`);
+}
+
+function renderQrConfirm(ticket) {
+    const page = document.getElementById('page-qr-confirm');
+    if (!page) return;
     const isLoggedIn = !!currentUser;
-    document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
-        const href = btn.getAttribute('href');
-        if (href === '/home' || href === 'https://discord.gg/diamondshop') return;
-        btn.style.display = isLoggedIn ? '' : 'none';
-    });
-    const logoutBtn = document.getElementById('logoutSidebarBtn');
-    const scannerBtn = document.getElementById('qrScannerBtn');
-    const badgeAdminBtn = document.getElementById('badgeAdminBtn');
-    if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'flex' : 'none';
-    if (scannerBtn) scannerBtn.style.display = isLoggedIn ? 'flex' : 'none';
-    if (badgeAdminBtn) {
-        badgeAdminBtn.style.display = (currentUser && currentUser.login === 'viktorshopa') ? 'flex' : 'none';
+    let controlsHTML = isLoggedIn ? `
+        <div style="margin-bottom:20px;"><span>Вы вошли как <strong>${escapeHtml(currentUser.login)}</strong></span></div>
+        <button class="btn btn-success" id="acceptQrBtn"><i class="fas fa-check-circle"></i> Принять</button>
+        <button class="btn btn-danger" id="rejectQrBtn"><i class="fas fa-times-circle"></i> Отклонить</button>
+    ` : `<p>Сначала войдите в DiamKey</p><button class="btn" onclick="navigateTo('/home')"><i class="fas fa-sign-in-alt"></i> Войти</button>`;
+
+    page.innerHTML = `
+        <div class="glass-panel" style="text-align:center; padding:40px; max-width:400px; margin:0 auto;">
+            <img src="/assets/favicon.ico" style="width:64px;height:64px;border-radius:50%;margin-bottom:20px;animation: float 3s ease-in-out infinite;">
+            <h2>Подтверждение входа</h2>
+            <p class="text-muted">Запрос на вход через QR-код</p>
+            <div id="qrConfirmControls">${controlsHTML}</div>
+            <p class="error-msg" id="qrConfirmError" style="display:none;"></p>
+        </div>`;
+    if (isLoggedIn) {
+        document.getElementById('acceptQrBtn').addEventListener('click', async () => {
+            const { error } = await _supabase.from('qr_tickets').update({ login: currentUser.login, status: 'accepted' }).eq('ticket', ticket);
+            if (error) {
+                document.getElementById('qrConfirmError').textContent = 'Ошибка';
+                document.getElementById('qrConfirmError').style.display = 'block';
+                return;
+            }
+            page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход подтверждён!</h2></div>';
+        });
+        document.getElementById('rejectQrBtn').addEventListener('click', async () => {
+            await _supabase.from('qr_tickets').update({ status: 'rejected' }).eq('ticket', ticket);
+            page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход отклонён</h2></div>';
+        });
     }
 }
