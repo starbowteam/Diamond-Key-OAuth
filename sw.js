@@ -1,31 +1,29 @@
-const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
-const PROXY_URL = 'https://corsproxy.io/?url='; // публичный CORS-прокси
+const CACHE_NAME = 'diamkey-v1';
+const urlsToCache = [
+    '/home',
+    '/css/style.css',
+    '/js/diamkey-core.js',
+    '/js/diamkey-router.js',
+    '/js/diamkey-ui.js',
+    '/js/diamkey-wall.js',
+    '/js/diamkey-gpx.js',
+    '/js/diamkey-qr.js',
+    '/js/diamkey-bot.js',
+    '/js/diamkey-users.js',
+    '/js/diamkey-scanner.js',
+    '/assets/favicon.ico',
+    '/assets/logo-192.png',
+    '/assets/logo-512.png'
+];
 
 self.addEventListener('install', event => {
-    // принудительно активируем SW без ожидания
-    self.skipWaiting();
-});
-
-self.addEventListener('activate', event => {
-    // берём под контроль все страницы сраз
-    event.waitUntil(clients.claim());
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+    );
 });
 
 self.addEventListener('fetch', event => {
-    const url = event.request.url;
-
-    // Перехватываем только запросы к Supabase
-    if (url.startsWith(SUPABASE_URL)) {
-        const encodedUrl = encodeURIComponent(url);
-        const proxyUrl = PROXY_URL + encodedUrl;
-
-        event.respondWith(
-            fetch(proxyUrl, {
-                method: event.request.method,
-                headers: event.request.headers,
-                body: event.request.body,
-                mode: 'cors',
-            })
-        );
-    }
+    event.respondWith(
+        caches.match(event.request).then(response => response || fetch(event.request))
+    );
 });
