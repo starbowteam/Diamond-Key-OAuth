@@ -648,7 +648,7 @@ async function renderDiamondPlusPage() {
                     <div class="plus-card-icon"><i class="fas fa-sliders-h"></i></div>
                     <h3 class="plus-card-title">Расширенные настройки профиля</h3>
                     <p class="plus-card-desc">Уникальные обложки, кастомные шрифты ника, эксклюзивные рамки аватара.</p>
-                    <p class="plus-card-extra">+ 20 премиум-стилей</p>
+                    <p class="plus-card-extra">+ безумная фантазия к ним</p>
                 </div>
                 <div class="plus-card">
                     <div class="plus-card-icon"><i class="fas fa-medal"></i></div>
@@ -660,20 +660,14 @@ async function renderDiamondPlusPage() {
                     <div class="plus-card-icon"><i class="fas fa-rocket"></i></div>
                     <h3 class="plus-card-title">Ранний доступ</h3>
                     <p class="plus-card-desc">Участвуйте в закрытых бета-тестах новых функций DiamKey и влияйте на развитие экосистемы.</p>
-                    <p class="plus-card-extra">+ голос в roadmap</p>
+                    <p class="plus-card-extra">+ возможность взлететь</p>
                 </div>
                 <div class="plus-card">
                     <div class="plus-card-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                     <h3 class="plus-card-title">Расширенное хранилище</h3>
-                    <p class="plus-card-desc">До 5 ГБ для ваших GPX-треков, обложек и файлов. Никаких ограничений.</p>
+                    <p class="plus-card-desc">До 5 ГБ для ваших данных в дополнениях. Никаких ограничений.</p>
                     <p class="plus-card-extra">+ авто-бэкап данных</p>
-                </div>
-                <div class="plus-card">
-                    <div class="plus-card-icon"><i class="fas fa-paint-brush"></i></div>
-                    <h3 class="plus-card-title">Эксклюзивные темы</h3>
-                    <p class="plus-card-desc">Меняйте внешний вид DiamKey под настроение: тёмный, светлый, аметистовый.</p>
-                    <p class="plus-card-extra">+ 6 уникальных тем</p>
-                </div>
+                </div>  
             </div>
             <div class="faq-section">
                 <h2 class="faq-title">Часто спрашивают</h2>
