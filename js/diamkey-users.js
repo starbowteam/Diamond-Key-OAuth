@@ -19,19 +19,19 @@ async function loadUsers() {
     document.getElementById('usersLoaderStatus').textContent = 'Готово!';
     await new Promise(r => setTimeout(r, 400));
 
-    sortContainer.innerHTML = `<span class="text-muted">Сортировка:</span> <button class="sort-btn active" data-sort="login">По нику</button> <button class="sort-btn" data-sort="created_at">По дате</button>`;
-
-    // Добавляем фильтр по бейджам
-    const badges = await getAllBadges();
-    let badgeFilterHTML = '<span class="text-muted" style="margin-left:auto;">Бейдж:</span> <select id="badgeFilterSelect" style="background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary); padding:8px 12px; font-size:14px; margin-left:8px;"><option value="">Все</option>';
-    badges.forEach(b => {
-        badgeFilterHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`;
-    });
-    badgeFilterHTML += '</select>';
-    sortContainer.innerHTML += badgeFilterHTML;
+    // Сортирующие кнопки + кнопка фильтра бейджей
+    sortContainer.innerHTML = `
+        <span class="text-muted">Сортировка:</span>
+        <button class="sort-btn active" data-sort="login">По нику</button>
+        <button class="sort-btn" data-sort="created_at">По дате</button>
+        <button class="sort-btn" id="badgeFilterBtn" style="margin-left:auto;">
+            <i class="fas fa-filter"></i> Фильтр по бейджу
+        </button>
+    `;
 
     let currentSort = 'login';
-    let activeBadgeFilter = null;
+    let activeBadgeFilter = null; // объект {id, name} или null
+    const allBadges = await getAllBadges();
 
     async function filterUsersByBadge(badgeId) {
         if (!badgeId) return users;
@@ -40,12 +40,29 @@ async function loadUsers() {
         return users.filter(u => logins.includes(u.login));
     }
 
+    function updateFilterButton() {
+        const btn = document.getElementById('badgeFilterBtn');
+        if (activeBadgeFilter) {
+            btn.innerHTML = `<i class="fas fa-filter"></i> ${escapeHtml(activeBadgeFilter.name)}`;
+            btn.classList.add('badge-active');
+        } else {
+            btn.innerHTML = `<i class="fas fa-filter"></i> Фильтр по бейджу`;
+            btn.classList.remove('badge-active');
+        }
+    }
+
     async function render() {
-        let filtered = await filterUsersByBadge(activeBadgeFilter);
-        const sorted = [...filtered].sort((a, b) => currentSort === 'created_at' ? new Date(b.created_at) - new Date(a.created_at) : a.login.localeCompare(b.login));
+        let filtered = await filterUsersByBadge(activeBadgeFilter?.id);
+        const sorted = [...filtered].sort((a, b) =>
+            currentSort === 'created_at'
+                ? new Date(b.created_at) - new Date(a.created_at)
+                : a.login.localeCompare(b.login)
+        );
         container.innerHTML = sorted.map(u => `
             <div class="user-card glass-panel" data-login="${u.login}" style="cursor:pointer;">
-                ${u.avatar ? `<img src="${u.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:44px;color:var(--text-muted);width:44px;height:44px;display:flex;align-items:center;justify-content:center;"></i>'}
+                ${u.avatar
+                    ? `<img src="${u.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">`
+                    : '<i class="fas fa-user" style="font-size:44px;color:var(--text-muted);width:44px;height:44px;display:flex;align-items:center;justify-content:center;"></i>'}
                 <div><h4>${escapeHtml(u.name || u.login)}</h4><span>@${u.login}</span></div>
             </div>
         `).join('');
@@ -56,24 +73,88 @@ async function loadUsers() {
                 navigateTo('/users/' + login);
             });
         });
+        updateFilterButton();
     }
 
-    sortContainer.querySelectorAll('.sort-btn').forEach(btn => btn.addEventListener('click', () => {
-        sortContainer.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentSort = btn.dataset.sort;
-        render();
-    }));
-
-    document.getElementById('badgeFilterSelect').addEventListener('change', async (e) => {
-        activeBadgeFilter = e.target.value || null;
-        render();
+    // Обработчики сортировки
+    sortContainer.querySelectorAll('.sort-btn[data-sort]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            sortContainer.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentSort = btn.dataset.sort;
+            render();
+        });
     });
 
-    render();
+    // Кнопка фильтра
+    document.getElementById('badgeFilterBtn').addEventListener('click', () => {
+        openBadgeFilterModal(allBadges, (badge) => {
+            activeBadgeFilter = badge; // {id, name} или null
+            render();
+        });
+    });
 
     document.getElementById('userSearch').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
-        container.querySelectorAll('.user-card').forEach(c => c.style.display = c.textContent.toLowerCase().includes(term) ? '' : 'none');
+        container.querySelectorAll('.user-card').forEach(c =>
+            c.style.display = c.textContent.toLowerCase().includes(term) ? '' : 'none'
+        );
+    });
+
+    await render();
+}
+
+function openBadgeFilterModal(badges, onSelect) {
+    // Удаляем предыдущую, если есть
+    const existing = document.querySelector('.badge-filter-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'modal badge-filter-modal';
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('active'), 10);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+            setTimeout(() => modal.remove(), 300);
+        }
+    });
+
+    const content = document.createElement('div');
+    content.className = 'modal-content glass-panel';
+    content.innerHTML = `
+        <h3><i class="fas fa-filter"></i> Фильтр по бейджу</h3>
+        <div class="badge-filter-grid" id="badgeFilterGrid"></div>
+        <button class="btn reset-filter-btn" id="resetBadgeFilterBtn"><i class="fas fa-times"></i> Сбросить фильтр</button>
+        <button class="btn btn-secondary" style="margin-top:8px;" id="closeBadgeFilterBtn">Закрыть</button>
+    `;
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    const grid = document.getElementById('badgeFilterGrid');
+    badges.forEach(badge => {
+        const item = document.createElement('div');
+        item.className = 'badge-filter-item';
+        item.innerHTML = `
+            <div class="badge-icon"><i class="fas ${badge.icon}" style="background:${badge.gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i></div>
+            <span>${escapeHtml(badge.name)}</span>
+        `;
+        item.addEventListener('click', () => {
+            modal.classList.remove('active');
+            setTimeout(() => modal.remove(), 300);
+            onSelect({ id: badge.id, name: badge.name });
+        });
+        grid.appendChild(item);
+    });
+
+    document.getElementById('resetBadgeFilterBtn').addEventListener('click', () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+        onSelect(null);
+    });
+
+    document.getElementById('closeBadgeFilterBtn').addEventListener('click', () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
     });
 }
