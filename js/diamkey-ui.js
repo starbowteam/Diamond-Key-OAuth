@@ -161,9 +161,15 @@ function openCoverSetupModal(profile) {
     let posY = profile.cover_pos_y || 0;
     let scale = profile.cover_scale || 1;
 
+    // Очищаем предыдущие обработчики
     tabs.forEach(tab => {
+        tab.replaceWith(tab.cloneNode(true));
+    });
+    // Перепривязываем события
+    const newTabs = modal.querySelectorAll('[data-cover-tab]');
+    newTabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
+            newTabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             const tabName = tab.dataset.coverTab;
             tabGradients.style.display = tabName === 'gradients' ? 'grid' : 'none';
@@ -172,6 +178,7 @@ function openCoverSetupModal(profile) {
         });
     });
 
+    // Выбор градиента/цвета
     modal.querySelectorAll('.cover-option').forEach(opt => {
         opt.addEventListener('click', () => {
             modal.querySelectorAll('.cover-option').forEach(o => o.classList.remove('selected'));
@@ -205,6 +212,7 @@ function openCoverSetupModal(profile) {
         scaleSlider.value = scale;
     }
 
+    // Drag внутри preview
     let dragging = false, startX, startY, startPosX, startPosY;
     previewContainer.addEventListener('mousedown', (e) => {
         dragging = true;
@@ -350,7 +358,6 @@ async function openBadgeModal() {
                         if (error) showToast('Ошибка');
                         else showToast('Бейдж убран');
                     }
-                    // Обновляем кнопку на месте
                     const card = btn.closest('.badge-option-card');
                     const newAction = action === 'assign' ? 'remove' : 'assign';
                     const newClass = newAction === 'remove' ? 'remove' : 'assign';
