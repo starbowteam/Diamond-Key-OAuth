@@ -1032,6 +1032,67 @@ body {
     margin-top: 20px;
 }
 
+/* ===== ИНДИКАТОР СЛОЖНОСТИ ПАРОЛЯ ===== */
+.password-strength {
+    margin-bottom: 12px;
+    text-align: left;
+}
+.strength-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+.strength-fill {
+    height: 100%;
+    width: 0%;
+    background: #e05d5d;
+    transition: width 0.3s, background-color 0.3s;
+}
+.strength-text {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ===== КАПЧА ===== */
+.captcha-display {
+    font-size: 28px;
+    letter-spacing: 8px;
+    margin: 16px 0;
+    color: var(--text-primary);
+    user-select: none;
+}
+.captcha-timer {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.captcha-timer-bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.captcha-timer-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--accent);
+    transition: width 0.1s linear;
+}
+#captchaTimerSeconds {
+    font-size: 13px;
+    color: var(--text-muted);
+    min-width: 40px;
+}
+.error-msg {
+    color: #e05d5d;
+    font-size: 14px;
+    margin-top: 8px;
+}
+
 /* Мобильная версия */
 @media (max-width: 768px) {
     .main-content {
