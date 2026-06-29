@@ -68,14 +68,15 @@ async function register(login, password) {
     const email = login + '@diamkey.local';
     const token = generateToken();
     const secretWord = generateFastSecret();
+    const defaultDesc = `Я ${login}, пришёл к вам в DiamKey! Надеюсь подружиться!`;
     const { error } = await _supabase.from('users').insert([{
-        login, email, password, name: '', avatar: '', description: '', token, secret_word: secretWord
+        login, email, password, name: '', avatar: '', description: defaultDesc, token, secret_word: secretWord
     }]);
     if (error) {
         console.error('[DiamKey] Ошибка регистрации:', error);
         return { error: error.message };
     }
-    const session = { login, email, name: '', avatar: '', description: '', created_at: new Date().toISOString() };
+    const session = { login, email, name: '', avatar: '', description: defaultDesc, created_at: new Date().toISOString() };
     localStorage.setItem('diamkey_current', JSON.stringify(session));
     currentUser = session;
     console.log('[DiamKey] Регистрация успешна:', login);
@@ -266,36 +267,4 @@ async function toggleGpxReaction(fileId, type) {
             renderProfileGpxView(login);
         }
     }
-}
-
-// ======== ОЦЕНКА СЛОЖНОСТИ ПАРОЛЯ ========
-function evaluatePasswordStrength(password) {
-    if (!password || password.length < 6) {
-        return { level: 'none', score: 0, label: 'Минимум 6 символов', color: '#e05d5d' };
-    }
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (password.length >= 12) score++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-
-    if (score <= 1) {
-        return { level: 'weak', score: 1, label: 'Слабый – попробуйте добавить цифры и заглавные буквы', color: '#e05d5d' };
-    } else if (score <= 2) {
-        return { level: 'medium', score: 2, label: 'Средний – добавьте спецсимволы для надёжности', color: '#f0ad4e' };
-    } else if (score <= 3) {
-        return { level: 'strong', score: 3, label: 'Сильный – хорошо, но можно ещё спецсимвол', color: '#5cb85c' };
-    } else {
-        return { level: 'very-strong', score: 4, label: 'Очень сильный – отлично!', color: '#2ecc71' };
-    }
-}
-
-// ======== ГЕНЕРАЦИЯ КАПЧИ ========
-function generateCaptchaCode() {
-    let code = '';
-    for (let i = 0; i < 3; i++) {
-        code += Math.floor(Math.random() * 10).toString();
-    }
-    return code;
 }
