@@ -1,6 +1,6 @@
 // api/supabase.js
 export default async function handler(req, res) {
-    // Разрешаем CORS для нашего домена
+    // Разрешаем CORS для нашего домена ПЖ!!!
     res.setHeader('Access-Control-Allow-Origin', 'https://diamkey.ru');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Prefer, apikey, x-client-info');
