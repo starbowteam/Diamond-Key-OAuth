@@ -148,8 +148,6 @@ function renderCoverHTML(profile, isOwnProfile) {
     }
 }
 
-// avatarHTML теперь берётся из diamkey-core.js (глобальная)
-
 function getStatusHTML(login, lastSeen) {
     if (!lastSeen) {
         return `<div class="status-badge offline">Не в сети</div>`;
@@ -218,8 +216,10 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         </div>
         <div class="profile-body">
             <div class="profile-left">
-                <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
-                <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
+                <div>
+                    <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
+                    <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
+                </div>
                 <div class="meta-row">
                     ${statusHTML}
                     <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
@@ -442,8 +442,10 @@ async function renderMyProfile() {
                 </div>
                 <div class="profile-body">
                     <div class="profile-left">
-                        <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
-                        <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
+                        <div>
+                            <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
+                            <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
+                        </div>
                         <div class="meta-row">
                             ${statusHTML}
                             <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
