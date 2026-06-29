@@ -454,6 +454,49 @@ body {
     opacity: 1;
 }
 
+.profile-info {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 0 32px 24px;
+    flex-wrap: wrap;
+}
+
+.profile-details {
+    flex: 1;
+    min-width: 200px;
+    margin-top: 12px;
+}
+/* Рамка для никнейма */
+.nickname-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    padding: 4px 16px;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+.profile-details .description {
+    color: var(--text-muted);
+    font-size: 15px;
+    margin-bottom: 6px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: text-decoration 0.2s;
+}
+.profile-details .description:hover {
+    text-decoration: underline;
+}
+.profile-details .regdate {
+    font-size: 13px;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 6px;
+}
+
 /* Статус онлайн/офлайн – прямоугольник с закруглением */
 .status-badge {
     display: inline-flex;
@@ -462,7 +505,7 @@ body {
     border-radius: 20px;
     font-size: 13px;
     font-weight: 600;
-    margin-top: 8px;
+    margin-bottom: 6px;
     gap: 6px;
 }
 .status-badge.online {
@@ -479,39 +522,6 @@ body {
 }
 .status-badge.offline {
     background: rgba(160, 160, 176, 0.15);
-    color: var(--text-muted);
-}
-
-.profile-info {
-    display: flex;
-    gap: 24px;
-    align-items: flex-start;
-    padding: 0 32px 24px;
-    flex-wrap: wrap;
-}
-
-.profile-details {
-    flex: 1;
-    min-width: 200px;
-}
-.profile-details h2 {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 4px;
-}
-.profile-details .description {
-    color: var(--text-muted);
-    font-size: 15px;
-    margin-bottom: 8px;
-    line-height: 1.4;
-    cursor: pointer;
-    transition: text-decoration 0.2s;
-}
-.profile-details .description:hover {
-    text-decoration: underline;
-}
-.profile-details .regdate {
-    font-size: 13px;
     color: var(--text-muted);
 }
 
