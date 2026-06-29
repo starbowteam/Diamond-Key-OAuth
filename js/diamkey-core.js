@@ -1,7 +1,6 @@
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 
-// Кастомный fetch, который направляет все запросы к Supabase через наш прокси
 const customFetch = (url, options) => {
     const original = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
     if (typeof url === 'string' && url.startsWith(original)) {
