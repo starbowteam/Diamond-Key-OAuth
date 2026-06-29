@@ -200,51 +200,8 @@
         </div>
     </div>
 
-    <!-- Модалка настройки обложки -->
-    <div class="modal" id="coverSetupModal" onclick="if(event.target===this) closeModal('coverSetupModal')">
-        <div class="modal-content glass-panel cover-setup-modal" onclick="event.stopPropagation()">
-            <h3><i class="fas fa-image"></i> Настроить обложку</h3>
-            <div class="auth-tabs" style="margin-bottom:20px;">
-                <button class="auth-tab active" data-cover-tab="gradients">Градиенты</button>
-                <button class="auth-tab" data-cover-tab="colors">Цвета</button>
-                <button class="auth-tab" data-cover-tab="upload">Загрузить</button>
-            </div>
-            <div id="coverGradients" class="cover-options-grid">
-                <div class="cover-option" style="background:linear-gradient(135deg, #2a2a35 0%, #1a1a22 100%);" data-cover="gradient:#2a2a35:#1a1a22"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #1e3c5c 0%, #0f1e33 100%);" data-cover="gradient:#1e3c5c:#0f1e33"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a3e 0%, #1a2e24 100%);" data-cover="gradient:#2d4a3e:#1a2e24"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d4a 0%, #2e1a2e 100%);" data-cover="gradient:#4a2d4a:#2e1a2e"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #3d2d4a 0%, #241a2e 100%);" data-cover="gradient:#3d2d4a:#241a2e"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #4a3d2d 0%, #2e241a 100%);" data-cover="gradient:#4a3d2d:#2e241a"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #2d4a4a 0%, #1a2e2e 100%);" data-cover="gradient:#2d4a4a:#1a2e2e"></div>
-                <div class="cover-option" style="background:linear-gradient(135deg, #4a2d3d 0%, #2e1a24 100%);" data-cover="gradient:#4a2d3d:#2e1a24"></div>
-            </div>
-            <div id="coverColors" class="cover-options-grid" style="display:none;">
-                <div class="cover-option" style="background:#1a1a2e;" data-cover="color:#1a1a2e"></div>
-                <div class="cover-option" style="background:#2d2d44;" data-cover="color:#2d2d44"></div>
-                <div class="cover-option" style="background:#16213e;" data-cover="color:#16213e"></div>
-                <div class="cover-option" style="background:#0f3460;" data-cover="color:#0f3460"></div>
-                <div class="cover-option" style="background:#533483;" data-cover="color:#533483"></div>
-                <div class="cover-option" style="background:#e94560;" data-cover="color:#e94560"></div>
-            </div>
-            <div id="coverUpload" style="display:none;">
-                <div class="cover-preview-container" id="coverPreviewContainer">
-                    <img id="coverPreviewImage" src="" alt="Preview" draggable="false">
-                </div>
-                <div class="cover-controls">
-                    <i class="fas fa-search-minus"></i>
-                    <input type="range" id="coverScaleSlider" min="0.5" max="2" step="0.01" value="1">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-                <button class="btn btn-icon" id="coverUploadBtn"><i class="fas fa-upload"></i> Выбрать изображение</button>
-            </div>
-            <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
-                <button class="btn btn-primary" id="saveCoverSetupBtn"><i class="fas fa-check"></i> Сохранить</button>
-                <button class="btn btn-secondary" id="cancelCoverSetupBtn">Отмена</button>
-            </div>
-            <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
-        </div>
-    </div>
+    <!-- Модалка настройки обложки – теперь строится динамически в JS, этот контейнер просто placeholder -->
+    <div id="coverSetupModalContainer"></div>
 
     <!-- Модалка названия GPX -->
     <div class="modal" id="gpxNameModal" onclick="if(event.target===this) closeModal('gpxNameModal')">
