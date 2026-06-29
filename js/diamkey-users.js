@@ -21,9 +21,28 @@ async function loadUsers() {
 
     sortContainer.innerHTML = `<span class="text-muted">Сортировка:</span> <button class="sort-btn active" data-sort="login">По нику</button> <button class="sort-btn" data-sort="created_at">По дате</button>`;
 
+    // Добавляем фильтр по бейджам
+    const badges = await getAllBadges();
+    let badgeFilterHTML = '<span class="text-muted" style="margin-left:auto;">Бейдж:</span> <select id="badgeFilterSelect" style="background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary); padding:8px 12px; font-size:14px; margin-left:8px;"><option value="">Все</option>';
+    badges.forEach(b => {
+        badgeFilterHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`;
+    });
+    badgeFilterHTML += '</select>';
+    sortContainer.innerHTML += badgeFilterHTML;
+
     let currentSort = 'login';
-    function render() {
-        const sorted = [...users].sort((a, b) => currentSort === 'created_at' ? new Date(b.created_at) - new Date(a.created_at) : a.login.localeCompare(b.login));
+    let activeBadgeFilter = null;
+
+    async function filterUsersByBadge(badgeId) {
+        if (!badgeId) return users;
+        const { data } = await _supabase.from('user_badges').select('user_login').eq('badge_id', badgeId);
+        const logins = data ? data.map(d => d.user_login) : [];
+        return users.filter(u => logins.includes(u.login));
+    }
+
+    async function render() {
+        let filtered = await filterUsersByBadge(activeBadgeFilter);
+        const sorted = [...filtered].sort((a, b) => currentSort === 'created_at' ? new Date(b.created_at) - new Date(a.created_at) : a.login.localeCompare(b.login));
         container.innerHTML = sorted.map(u => `
             <div class="user-card glass-panel" data-login="${u.login}" style="cursor:pointer;">
                 ${u.avatar ? `<img src="${u.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">` : '<i class="fas fa-user" style="font-size:44px;color:var(--text-muted);width:44px;height:44px;display:flex;align-items:center;justify-content:center;"></i>'}
@@ -46,7 +65,13 @@ async function loadUsers() {
         render();
     }));
 
+    document.getElementById('badgeFilterSelect').addEventListener('change', async (e) => {
+        activeBadgeFilter = e.target.value || null;
+        render();
+    });
+
     render();
+
     document.getElementById('userSearch').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
         container.querySelectorAll('.user-card').forEach(c => c.style.display = c.textContent.toLowerCase().includes(term) ? '' : 'none');
