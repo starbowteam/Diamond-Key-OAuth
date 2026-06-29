@@ -148,10 +148,6 @@ function renderCoverHTML(profile, isOwnProfile) {
     }
 }
 
-/**
- * Аватар без вылезания за рамку.
- * Если src пустой – fa-user, иначе img + скрытая иконка для подмены при ошибке.
- */
 function avatarHTML(src, size = 100) {
     const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>`;
     if (!src || !src.trim()) return fallbackIcon;
@@ -165,32 +161,40 @@ function avatarHTML(src, size = 100) {
 
 /**
  * Статус онлайн/офлайн – закруглённый прямоугольник под описанием.
+ * lastSeen – ISO-дата последней активности из user_presence.
  */
 function getStatusHTML(login, lastSeen) {
-    if (!lastSeen) return '';
-    const diff = Date.now() - new Date(lastSeen).getTime();
-    if (diff < 120000) {
-        // Онлайн
-        return `<div class="status-badge online">В сети</div>`;
-    } else {
-        // Офлайн – считаем время
-        const minutes = Math.floor(diff / 60000);
-        if (minutes < 60) {
-            return `<div class="status-badge offline">Был(а) ${minutes} мин. назад</div>`;
-        } else {
-            const hours = Math.floor(minutes / 60);
-            if (hours < 24) {
-                return `<div class="status-badge offline">Был(а) ${hours} ч. назад</div>`;
-            } else {
-                const days = Math.floor(hours / 24);
-                return `<div class="status-badge offline">Был(а) ${days} д. назад</div>`;
-            }
-        }
+    if (!lastSeen) {
+        return `<div class="status-badge offline">Не в сети</div>`;
     }
+    const now = Date.now();
+    const last = new Date(lastSeen).getTime();
+    const diff = now - last;
+
+    if (diff < 120000) {
+        // 2 минуты – онлайн
+        return `<div class="status-badge online">В сети</div>`;
+    }
+
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 60) {
+        return `<div class="status-badge offline">Был(а) ${minutes} мин. назад</div>`;
+    }
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return `<div class="status-badge offline">Был(а) ${hours} ч. назад</div>`;
+    }
+    const days = Math.floor(hours / 24);
+    return `<div class="status-badge offline">Был(а) ${days} д. назад</div>`;
 }
 
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
-    const { data: presence } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
+    const { data: presence } = await _supabase
+        .from('user_presence')
+        .select('last_seen')
+        .eq('login', login)
+        .maybeSingle();
+
     const statusHTML = getStatusHTML(login, presence?.last_seen);
 
     let badgesHTML = '';
@@ -409,7 +413,12 @@ async function renderMyProfile() {
 
         if (!profile) return;
 
-        const { data: presence } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
+        const { data: presence } = await _supabase
+            .from('user_presence')
+            .select('last_seen')
+            .eq('login', login)
+            .maybeSingle();
+
         const statusHTML = getStatusHTML(login, presence?.last_seen);
 
         let badgesHTML = '';
