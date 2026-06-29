@@ -99,16 +99,13 @@ async function loadUsers() {
 }
 
 function avatarHTML(src, size = 44) {
-    const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></i>`;
-    if (!src || !src.trim()) return fallbackIcon;
+    const defaultIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"></i>`;
+    if (!src || !src.trim()) return defaultIcon;
 
-    const imgStyle = `width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;`;
-    const hiddenIconStyle = `font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:none;align-items:center;justify-content:center;`;
-
-    return `
-    <img src="${escapeHtml(src)}" style="${imgStyle}"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-    <i class="fas fa-user" style="${hiddenIconStyle}"></i>`;
+    return `<img src="${escapeHtml(src)}" 
+                 style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;"
+                 onerror="this.outerHTML='${defaultIcon.replace(/'/g, "\\'")}';" 
+            />`;
 }
 
 function openBadgeFilterModal(badges, onSelect) {
