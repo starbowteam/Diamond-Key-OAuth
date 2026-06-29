@@ -593,6 +593,7 @@ body {
     color: var(--text-muted);
 }
 .sort-btn.active { background: var(--accent); color: #1a1a1a; border-color: transparent; }
+.sort-btn.badge-active { background: rgba(160,160,176,0.15); color: var(--text-primary); border-color: var(--accent); }
 
 .user-card {
     display: flex;
@@ -892,7 +893,7 @@ body {
     color: #2ecc71;
 }
 
-/* Карточки GPX в профиле – теперь тянутся */
+/* Карточки GPX */
 .profile-gpx-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -980,6 +981,40 @@ body {
 .cover-controls input[type="range"] {
     flex: 1;
     max-width: 200px;
+}
+
+/* ===== МОДАЛКА ФИЛЬТРА ПО БЕЙДЖАМ ===== */
+.badge-filter-modal .modal-content {
+    max-width: 600px;
+}
+.badge-filter-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+.badge-filter-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.badge-filter-item.active {
+    border-color: var(--accent);
+    background: rgba(160,160,176,0.2);
+}
+.badge-filter-item:hover {
+    background: rgba(255,255,255,0.08);
+}
+.reset-filter-btn {
+    margin-top: 20px;
 }
 
 /* Мобильная версия */
