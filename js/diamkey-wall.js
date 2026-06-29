@@ -201,11 +201,12 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     }
 
     const isOwnProfile = (currentUser && currentUser.login === login);
-    const navigateAction = isOwnProfile
-        ? `navigateTo('/profile/${login}/gpxview')`
-        : `navigateTo('/profile/${login}/gpxview', true)`;
-
     const coverBlock = renderCoverHTML(profile, isOwnProfile);
+
+    // Блок Diamond Plus
+    const diamondPlusTitle = isOwnProfile ? 'Diamond Plus' : 'Diamond Plus';
+    const diamondPlusSubtitle = isOwnProfile ? 'Подписка скоро будет доступна XD' : 'Не подписан, подписки не существует XD';
+    const diamondPlusClass = isOwnProfile ? 'diamond-plus-card' : '';
 
     return `
         ${coverBlock}
@@ -216,25 +217,31 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         </div>
         <div class="profile-body">
             <div class="profile-left">
-                <div>
-                    <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
-                    <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
-                </div>
+                <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
+                <div class="description-box" id="profileDescription">${escapeHtml(desc)}</div>
+                <div class="badges-left">${badgesHTML}</div>
                 <div class="meta-row">
                     ${statusHTML}
                     <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                 </div>
             </div>
             <div class="profile-right">
-                <div class="addons-card" onclick="${navigateAction}">
-                    <div class="addons-icon"><i class="fas fa-puzzle-piece"></i></div>
-                    <div class="addons-text">
-                        <span class="addons-title">Дополнения</span>
-                        <span class="addons-subtitle">Поездки, а в будущем и другое =)</span>
+                <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
+                    <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
+                    <div class="action-card-text">
+                        <span class="action-card-title">Дополнения</span>
+                        <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
                     </div>
-                    <i class="fas fa-chevron-right addons-arrow"></i>
+                    <i class="fas fa-chevron-right action-card-arrow"></i>
                 </div>
-                <div class="badges-row">${badgesHTML}</div>
+                <div class="action-card ${diamondPlusClass}" id="diamondPlusCard">
+                    <div class="action-card-icon"><i class="fas fa-crown"></i></div>
+                    <div class="action-card-text">
+                        <span class="action-card-title" id="plusTitle">${diamondPlusTitle}</span>
+                        <span class="action-card-subtitle">${diamondPlusSubtitle}</span>
+                    </div>
+                    <i class="fas fa-chevron-right action-card-arrow"></i>
+                </div>
             </div>
         </div>
     `;
@@ -303,6 +310,19 @@ async function openUserProfile(login) {
                 closeModal('editDescriptionModal');
                 showToast('Описание сохранено');
             };
+        }
+
+        // Глитч-эффект для Diamond Plus только на своём профиле
+        if (currentUser && currentUser.login === login) {
+            startPlusGlitch();
+        }
+
+        // Клик по Diamond Plus – заглушка
+        const plusCard = document.getElementById('diamondPlusCard');
+        if (plusCard) {
+            plusCard.addEventListener('click', () => {
+                showToast('В разработке');
+            });
         }
 
         if (userWallSection) {
@@ -442,25 +462,31 @@ async function renderMyProfile() {
                 </div>
                 <div class="profile-body">
                     <div class="profile-left">
-                        <div>
-                            <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
-                            <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
-                        </div>
+                        <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
+                        <div class="description-box" id="myDescription">${escapeHtml(desc)}</div>
+                        <div class="badges-left">${badgesHTML}</div>
                         <div class="meta-row">
                             ${statusHTML}
                             <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                         </div>
                     </div>
                     <div class="profile-right">
-                        <div class="addons-card" onclick="navigateTo('/profile/${login}/gpxview')">
-                            <div class="addons-icon"><i class="fas fa-puzzle-piece"></i></div>
-                            <div class="addons-text">
-                                <span class="addons-title">Дополнения</span>
-                                <span class="addons-subtitle">Поездки, а в будущем и другое =)</span>
+                        <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
+                            <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
+                            <div class="action-card-text">
+                                <span class="action-card-title">Дополнения</span>
+                                <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
                             </div>
-                            <i class="fas fa-chevron-right addons-arrow"></i>
+                            <i class="fas fa-chevron-right action-card-arrow"></i>
                         </div>
-                        <div class="badges-row">${badgesHTML}</div>
+                        <div class="action-card diamond-plus-card" id="diamondPlusCard">
+                            <div class="action-card-icon"><i class="fas fa-crown"></i></div>
+                            <div class="action-card-text">
+                                <span class="action-card-title" id="plusTitle">Diamond Plus</span>
+                                <span class="action-card-subtitle">Подписка скоро будет доступна XD</span>
+                            </div>
+                            <i class="fas fa-chevron-right action-card-arrow"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -472,6 +498,24 @@ async function renderMyProfile() {
                 <div id="myWallPosts">${wallHTML}</div>
             </div>
         `;
+
+        // Глитч Diamond Plus
+        startPlusGlitch();
+
+        // Заглушка по клику
+        const plusCard = document.getElementById('diamondPlusCard');
+        if (plusCard) {
+            plusCard.addEventListener('click', () => {
+                showToast('В разработке');
+            });
+        }
+
+        const coverBlockEl = document.getElementById('profileCoverBlock');
+        if (coverBlockEl) {
+            coverBlockEl.addEventListener('click', () => {
+                openCoverSetupModal(profile);
+            });
+        }
 
         document.getElementById('myAvatarWrapper').onclick = () => {
             const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
@@ -575,7 +619,29 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/* ====== GPX-ВЬЮ ====== */
+/* ====== ГЛИТЧ-ЭФФЕКТ для Diamond Plus ====== */
+let plusGlitchInterval = null;
+function startPlusGlitch() {
+    if (plusGlitchInterval) clearInterval(plusGlitchInterval);
+    const titleEl = document.getElementById('plusTitle');
+    if (!titleEl) return;
+    const base = "Diamond Plus";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+
+    plusGlitchInterval = setInterval(() => {
+        let result = "";
+        for (let i = 0; i < base.length; i++) {
+            if (Math.random() < 0.1) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            } else {
+                result += base[i];
+            }
+        }
+        titleEl.textContent = result;
+    }, 150);
+}
+
+/* ====== GPX-ВЬЮ (БЕЗ ИЗМЕНЕНИЙ) ====== */
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
