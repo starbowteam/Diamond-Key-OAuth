@@ -1,6 +1,19 @@
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
-const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Кастомный fetch, который направляет все запросы к Supabase через наш прокси
+const customFetch = (url, options) => {
+    const original = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
+    if (typeof url === 'string' && url.startsWith(original)) {
+        return fetch(url.replace(original, '/api/supabase'), options);
+    }
+    if (url instanceof Request && url.url.startsWith(original)) {
+        return fetch(new Request(url.url.replace(original, '/api/supabase'), url), options);
+    }
+    return fetch(url, options);
+};
+
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { fetch: customFetch });
 let currentUser = null;
 
 function escapeHtml(str) {
@@ -157,7 +170,7 @@ async function getUsers() {
 }
 
 async function getProfile(login) {
-    const { data } = await _supabase.from('users').select('name, avatar, description, created_at, cover').eq('login', login).maybeSingle();
+    const { data } = await _supabase.from('users').select('name, avatar, description, created_at, cover, cover_pos_x, cover_pos_y, cover_scale').eq('login', login).maybeSingle();
     return data;
 }
 
@@ -242,10 +255,7 @@ async function toggleGpxReaction(fileId, type) {
     const previousType = localStorage.getItem(storageKey);
 
     const { data: file, error } = await _supabase.from('gpx_files').select('reactions').eq('id', fileId).maybeSingle();
-    if (error || !file) {
-        console.error('[DiamKey] Ошибка получения GPX для реакции:', error);
-        return showToast('Ошибка');
-    }
+    if (error || !file) return showToast('Ошибка');
     let reactions = file.reactions || {};
 
     if (previousType === type) {
@@ -260,12 +270,8 @@ async function toggleGpxReaction(fileId, type) {
     }
 
     const { error: updateError } = await _supabase.from('gpx_files').update({ reactions }).eq('id', fileId);
-    if (updateError) {
-        console.error('[DiamKey] Ошибка обновления реакций GPX:', updateError);
-        return showToast('Ошибка');
-    }
+    if (updateError) return showToast('Ошибка');
 
-    // Обновить отображение в карточках (просто перерисовать страницу)
     if (typeof renderProfileGpxView === 'function' && currentUser) {
         const currentPath = window.location.pathname;
         if (currentPath.startsWith('/profile/') && currentPath.endsWith('/gpxview')) {
