@@ -1,18 +1,6 @@
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
-
-const customFetch = (url, options) => {
-    const original = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
-    if (typeof url === 'string' && url.startsWith(original)) {
-        return fetch(url.replace(original, '/api/supabase'), options);
-    }
-    if (url instanceof Request && url.url.startsWith(original)) {
-        return fetch(new Request(url.url.replace(original, '/api/supabase'), url), options);
-    }
-    return fetch(url, options);
-};
-
-const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { fetch: customFetch });
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 
 function escapeHtml(str) {
