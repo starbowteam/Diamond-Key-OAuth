@@ -93,6 +93,9 @@ function handleRoute() {
     } else if (path === '/diamond-plus') {
         activatePage('page-diamond-plus', true);
         if (typeof renderDiamondPlusPage === 'function') renderDiamondPlusPage();
+    } else if (path === '/data') {
+        activatePage('page-data', true);
+        if (typeof renderDatabasePage === 'function') renderDatabasePage();
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
