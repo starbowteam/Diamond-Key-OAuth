@@ -361,7 +361,6 @@ body {
     margin-bottom: 32px;
 }
 
-/* Баннер с кнопкой Обложка */
 .profile-cover {
     height: 180px;
     background: linear-gradient(160deg, #1e1e32 0%, #0a0a14 100%);
@@ -403,7 +402,6 @@ body {
 }
 .edit-cover-btn:hover { background: rgba(0,0,0,0.6); opacity: 1; }
 
-/* Кнопка «Назад» для чужих профилей */
 .back-btn-profile {
     position: absolute;
     top: 16px;
@@ -425,7 +423,6 @@ body {
 }
 .back-btn-profile:hover { background: rgba(0,0,0,0.6); opacity: 1; }
 
-/* Кнопка «Назад» для GPX */
 .gpx-back-btn {
     position: absolute;
     top: 16px;
@@ -447,7 +444,6 @@ body {
 }
 .gpx-back-btn:hover { background: rgba(0,0,0,0.6); opacity: 1; }
 
-/* Аватар – по центру */
 .avatar-section {
     display: flex;
     justify-content: center;
@@ -511,7 +507,6 @@ body {
     opacity: 1;
 }
 
-/* Центрированный ник */
 .profile-nickname-center {
     display: flex;
     justify-content: center;
@@ -520,7 +515,6 @@ body {
     padding: 0 32px;
 }
 
-/* Grid-компоновка */
 .profile-body {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -529,7 +523,6 @@ body {
     padding: 20px 32px 24px;
 }
 
-/* Карточка описания с акцентной полосой */
 .description-card {
     background: rgba(255,255,255,0.02);
     border: 1px solid rgba(255,255,255,0.15);
@@ -548,7 +541,6 @@ body {
     text-decoration: underline;
 }
 
-/* Карточки действий */
 .action-card {
     display: flex;
     align-items: center;
@@ -620,7 +612,6 @@ body {
     transform: translateX(4px);
 }
 
-/* Панель бейджей – компактнее */
 .badges-panel {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.10);
@@ -639,7 +630,6 @@ body {
     text-align: center;
 }
 
-/* Бейджи компактнее */
 .badge-item {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.12);
@@ -673,7 +663,6 @@ body {
     margin-top: 8px;
 }
 
-/* Статус */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -712,7 +701,6 @@ body {
 }
 .regdate i { font-size: 12px; }
 
-/* Никнейм в рамке */
 .nickname-badge {
     display: inline-flex;
     align-items: center;
@@ -1351,6 +1339,119 @@ body {
     width: 100%; height: 100%;
     pointer-events: none;
     z-index: 1;
+}
+
+/* ====== СТРАНИЦА DIAMOND DATABASE ====== */
+.db-header {
+    background: linear-gradient(135deg, #2a2a35, #1a1a22, #2a2a35);
+    background-size: 200% 200%;
+    animation: dbGradient 6s ease infinite;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 50px 32px; text-align: center; position: relative;
+}
+@keyframes dbGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+.db-header h1 {
+    font-size: 42px; font-weight: 800;
+    background: linear-gradient(135deg, #e0e0e0, #c0c0d0, #e0e0e0);
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: shimmer 3s linear infinite;
+    margin-bottom: 8px;
+}
+@keyframes shimmer { to { background-position: 200% center; } }
+.db-subtitle { color: var(--text-muted); font-size: 18px; }
+
+.db-content {
+    padding: 32px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+}
+.db-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-md);
+    padding: 24px; text-align: center;
+    transition: 0.3s;
+}
+.db-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: var(--accent);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(192,192,208,0.1);
+}
+.db-card-icon {
+    font-size: 36px; color: var(--accent);
+    margin-bottom: 16px;
+}
+.db-card-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.db-card-desc { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+.db-card-highlight { margin-top: 12px; font-size: 16px; font-weight: 700; color: var(--accent); }
+
+.db-plans {
+    display: flex; gap: 20px; padding: 0 32px 32px;
+    flex-wrap: wrap; justify-content: center;
+}
+.plan-card {
+    flex: 1 1 280px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-md);
+    padding: 32px 24px;
+    text-align: center;
+    transition: 0.3s;
+    position: relative; overflow: hidden;
+}
+.plan-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(192,192,208,0.15);
+}
+.plan-badge {
+    position: absolute; top: 16px; right: 16px;
+    background: var(--accent); color: #0a0a0f;
+    font-size: 12px; font-weight: 700;
+    padding: 4px 12px; border-radius: 20px;
+}
+.plan-name { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.plan-size { font-size: 36px; font-weight: 800; margin-bottom: 16px; }
+.plan-price { font-size: 16px; color: var(--text-muted); margin-bottom: 24px; }
+.plan-features {
+    list-style: none; text-align: left;
+    font-size: 14px; color: var(--text-muted);
+    margin-bottom: 24px;
+}
+.plan-features li {
+    padding: 6px 0; display: flex; align-items: center; gap: 8px;
+}
+.plan-features i { color: var(--accent); font-size: 14px; }
+
+.db-faq-section {
+    padding: 32px; border-top: 1px solid var(--border-glass);
+}
+.db-faq-title { font-size: 24px; font-weight: 700; margin-bottom: 24px; text-align: center; }
+.db-faq-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-md); padding: 20px 24px;
+    margin-bottom: 12px; cursor: pointer;
+    transition: 0.2s;
+}
+.db-faq-item:hover { background: rgba(255,255,255,0.06); }
+.db-faq-q { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.db-faq-q i { color: var(--accent); font-size: 14px; transition: transform 0.3s; }
+.db-faq-item.open .db-faq-q i { transform: rotate(90deg); }
+.db-faq-a { color: var(--text-muted); font-size: 14px; margin-top: 8px; display: none; }
+.db-faq-item.open .db-faq-a { display: block; }
+
+.db-cta {
+    background: rgba(255,255,255,0.02);
+    border-top: 1px solid var(--border-glass);
+    padding: 32px; text-align: center;
 }
 
 /* Модалка фильтра по бейджам */
