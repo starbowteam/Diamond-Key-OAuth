@@ -26,6 +26,7 @@ function showToast(msg) {
 const saved = localStorage.getItem('diamkey_current');
 if (saved) try { currentUser = JSON.parse(saved); } catch(e) { console.log('[DiamKey] Ошибка парсинга сохранённой сессии'); }
 
+// ---------- АВАТАР (глобальная функция) ----------
 function avatarHTML(src, size = 100) {
     const fallbackIcon = `<i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>`;
     if (!src || !src.trim()) return fallbackIcon;
@@ -35,6 +36,38 @@ function avatarHTML(src, size = 100) {
              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
         <i class="fas fa-user" style="font-size:${size * 0.6}px;color:var(--text-muted);width:${size}px;height:${size}px;display:none;align-items:center;justify-content:center;border-radius:50%;background:var(--bg-primary);"></i>
     `;
+}
+
+// ---------- КАПЧА ----------
+function generateCaptchaCode() {
+    let code = '';
+    for (let i = 0; i < 3; i++) {
+        code += Math.floor(Math.random() * 10).toString();
+    }
+    return code;
+}
+
+// ---------- ОЦЕНКА СЛОЖНОСТИ ПАРОЛЯ ----------
+function evaluatePasswordStrength(password) {
+    if (!password || password.length < 6) {
+        return { level: 'none', score: 0, label: 'Минимум 6 символов', color: '#e05d5d' };
+    }
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    if (score <= 1) {
+        return { level: 'weak', score: 1, label: 'Слабый – попробуйте добавить цифры и заглавные буквы', color: '#e05d5d' };
+    } else if (score <= 2) {
+        return { level: 'medium', score: 2, label: 'Средний – добавьте спецсимволы для надёжности', color: '#f0ad4e' };
+    } else if (score <= 3) {
+        return { level: 'strong', score: 3, label: 'Сильный – хорошо, но можно ещё спецсимвол', color: '#5cb85c' };
+    } else {
+        return { level: 'very-strong', score: 4, label: 'Очень сильный – отлично!', color: '#2ecc71' };
+    }
 }
 
 async function login(login, password) {
@@ -205,6 +238,7 @@ async function loadHomeStats() {
     return results;
 }
 
+// ======== БЕЙДЖИ ========
 async function getAllBadges() {
     const { data } = await _supabase.from('badges').select('*');
     return data || [];
@@ -231,6 +265,7 @@ async function removeBadge(userLogin, badgeId) {
     return { error };
 }
 
+// ======== ОНЛАЙН-СТАТУС ========
 async function updatePresence() {
     if (!currentUser) return;
     await _supabase.from('user_presence').upsert({ login: currentUser.login, last_seen: new Date().toISOString() }, { onConflict: 'login' });
@@ -245,6 +280,7 @@ async function isUserOnline(login) {
     return diff < 120000;
 }
 
+// ======== РЕАКЦИИ НА GPX ========
 async function toggleGpxReaction(fileId, type) {
     if (!currentUser) return showToast('Войдите');
     const storageKey = `gpx_reacted_${fileId}`;
