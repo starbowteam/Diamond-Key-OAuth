@@ -175,7 +175,7 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
-// НОВАЯ КАПЧА — квадратный стильный дизайн
+// НОВАЯ КАПЧА — квадратный стильный дизайн с стеклянной панелью
 function showCaptchaModal(onSuccess) {
     const old = document.getElementById('captchaModal');
     if (old) old.remove();
@@ -191,7 +191,7 @@ function showCaptchaModal(onSuccess) {
     let timerInterval = null;
 
     modal.innerHTML = `
-        <div class="modal-content captcha-modal-content" onclick="event.stopPropagation()" style="
+        <div class="modal-content glass-panel captcha-modal-content" onclick="event.stopPropagation()" style="
             max-width: 400px;
             width: 90%;
             aspect-ratio: 1 / 1;
@@ -201,6 +201,12 @@ function showCaptchaModal(onSuccess) {
             align-items: center;
             text-align: center;
             padding: 48px 40px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-glass);
+            border-radius: 32px;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.05) inset;
         ">
             <div class="captcha-icon" style="
                 width: 64px; height: 64px;
