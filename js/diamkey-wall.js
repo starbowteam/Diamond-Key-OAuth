@@ -793,11 +793,6 @@ async function renderDatabasePage() {
                     <h3 class="db-card-title">Доступ из любого сервиса</h3>
                     <p class="db-card-desc">Diamond AI, DiamKey, Dirmess — все используют одно хранилище для ваших данных.</p>
                 </div>
-                <div class="db-card">
-                    <div class="db-card-icon"><i class="fas fa-hard-drive"></i></div>
-                    <h3 class="db-card-title">Собственный дата-центр</h3>
-                    <p class="db-card-desc">Сервер построен на базе старого ПК. Данные хранятся у меня, а не у корпораций.</p>
-                </div>
             </div>
 
             <h2 style="text-align:center; margin-bottom:20px;">Тарифы</h2>
