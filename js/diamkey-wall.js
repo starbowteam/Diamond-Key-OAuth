@@ -828,7 +828,7 @@ async function renderDatabasePage() {
                 <h2 class="db-faq-title">Часто спрашивают</h2>
                 <div class="db-faq-item" onclick="this.classList.toggle('open')">
                     <div class="db-faq-q"><i class="fas fa-chevron-right"></i> Когда хранилище заработает?</div>
-                    <div class="db-faq-a">Я собираю сервер из старого ПК. Как только оборудование будет готово — запущу бета-тест. Ориентировочно — через пару месяцев.</div>
+                    <div class="db-faq-a">Я собираю сервер из старого ПК. Как только оборудование будет готово — запущу бета-тест. Ориентировочно — через пару недель.</div>
                 </div>
                 <div class="db-faq-item" onclick="this.classList.toggle('open')">
                     <div class="db-faq-q"><i class="fas fa-chevron-right"></i> Какие типы файлов можно хранить?</div>
