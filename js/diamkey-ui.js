@@ -175,6 +175,7 @@ function smoothLoginSuccess() {
     }, 1200);
 }
 
+// НОВАЯ КАПЧА — квадратный стильный дизайн
 function showCaptchaModal(onSuccess) {
     const old = document.getElementById('captchaModal');
     if (old) old.remove();
@@ -190,17 +191,100 @@ function showCaptchaModal(onSuccess) {
     let timerInterval = null;
 
     modal.innerHTML = `
-        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:400px;">
-            <h3><i class="fas fa-shield-alt"></i> Подтверждение входа</h3>
-            <p>Введите три цифры:</p>
-            <div class="captcha-display">${captchaCode}</div>
-            <input type="text" id="captchaInput" placeholder="Цифры" maxlength="3" style="font-size:24px; text-align:center; letter-spacing:4px;">
-            <div class="captcha-timer">
-                <div class="captcha-timer-bar"><div class="captcha-timer-fill"></div></div>
-                <span id="captchaTimerSeconds">${timerSeconds} сек</span>
+        <div class="modal-content captcha-modal-content" onclick="event.stopPropagation()" style="
+            max-width: 400px;
+            width: 90%;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 48px 40px;
+        ">
+            <div class="captcha-icon" style="
+                width: 64px; height: 64px;
+                margin: 0 auto 20px;
+                background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), rgba(255,255,255,0.03));
+                border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 30px; color: var(--accent);
+                border: 1px solid rgba(255,255,255,0.15);
+                box-shadow: 0 0 25px rgba(192,192,208,0.2);
+                animation: iconPulse 2.5s ease-in-out infinite;
+            ">
+                <i class="fas fa-shield-alt"></i>
             </div>
-            <button class="btn btn-primary" id="submitCaptchaBtn" style="margin-top:16px;">Подтвердить</button>
-            <p class="error-msg" id="captchaError" style="display:none;"></p>
+            <h2 style="font-size:24px; font-weight:700; margin-bottom:6px; letter-spacing:-0.3px;">Подтверждение входа</h2>
+            <p style="font-size:14px; color:var(--text-muted); margin-bottom:24px; line-height:1.4; padding:0 10px;">Введите для прохождения входа</p>
+            <div class="captcha-digits" id="captchaDigits" style="display:flex; gap:12px; justify-content:center; margin-bottom:20px;">
+                ${captchaCode.split('').map(d => `<div class="digit-card" style="
+                    width:60px; height:80px;
+                    background:rgba(20,20,25,0.9);
+                    backdrop-filter:blur(12px);
+                    border:1px solid rgba(255,255,255,0.18);
+                    border-radius:16px;
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:38px; font-weight:800;
+                    color:transparent;
+                    background-clip:text;
+                    -webkit-background-clip:text;
+                    background-image:linear-gradient(180deg, #ffffff 0%, #b0b0c0 100%);
+                    text-shadow:0 0 20px rgba(192,192,208,0.6);
+                    box-shadow:0 8px 20px rgba(0,0,0,0.4), 0 0 20px rgba(192,192,208,0.15);
+                    position:relative;
+                    overflow:hidden;
+                    user-select:none;
+                ">${d}</div>`).join('')}
+            </div>
+            <input type="text" id="captchaInput" placeholder="•••" maxlength="3" style="
+                width:100%; padding:14px 16px;
+                background:rgba(255,255,255,0.06);
+                border:1px solid rgba(255,255,255,0.2);
+                border-radius:24px;
+                color:var(--text-primary);
+                font-size:26px; text-align:center;
+                letter-spacing:6px; font-weight:700;
+                outline:none;
+                transition:border-color 0.3s, box-shadow 0.3s;
+                margin-bottom:18px;
+                caret-color:var(--accent);
+            ">
+            <div class="captcha-timer" style="
+                display:flex; align-items:center; gap:10px;
+                margin-bottom:22px; color:var(--text-muted);
+                font-size:13px; width:100%;
+            ">
+                <i class="fas fa-clock"></i>
+                <span id="captchaTimerSeconds">${timerSeconds} сек</span>
+                <div class="timer-bar" style="
+                    flex:1; height:4px;
+                    background:rgba(255,255,255,0.08);
+                    border-radius:4px;
+                    overflow:hidden;
+                ">
+                    <div class="timer-fill" id="captchaTimerFill" style="
+                        width:100%; height:100%;
+                        background:linear-gradient(90deg, var(--accent), #ffffff);
+                        border-radius:4px;
+                        transition: width 1s linear;
+                    "></div>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="submitCaptchaBtn" style="
+                width:100%; padding:14px 24px;
+                border:none; border-radius:40px;
+                background:linear-gradient(135deg, #5a5e6a, #3a3c44);
+                box-shadow:0 10px 25px rgba(0,0,0,0.5);
+                color:white; font-weight:700; font-size:17px;
+                cursor:pointer; transition:all 0.3s;
+                display:flex; align-items:center; justify-content:center;
+                gap:8px; letter-spacing:0.2px;
+                border:1px solid rgba(255,255,255,0.15);
+            ">
+                <i class="fas fa-check-circle"></i> Подтвердить
+            </button>
+            <p class="error-msg" id="captchaError" style="display:none; color:#e05d5d; font-size:13px; margin-top:10px;"></p>
         </div>
     `;
     document.body.appendChild(modal);
@@ -208,8 +292,32 @@ function showCaptchaModal(onSuccess) {
     const input = document.getElementById('captchaInput');
     const submitBtn = document.getElementById('submitCaptchaBtn');
     const errorEl = document.getElementById('captchaError');
-    const timerFill = modal.querySelector('.captcha-timer-fill');
+    const timerFill = document.getElementById('captchaTimerFill');
     const timerSecondsEl = document.getElementById('captchaTimerSeconds');
+    const digitsContainer = document.getElementById('captchaDigits');
+
+    function updateDigits(code) {
+        digitsContainer.innerHTML = code.split('').map(d => `
+            <div style="
+                width:60px; height:80px;
+                background:rgba(20,20,25,0.9);
+                backdrop-filter:blur(12px);
+                border:1px solid rgba(255,255,255,0.18);
+                border-radius:16px;
+                display:flex; align-items:center; justify-content:center;
+                font-size:38px; font-weight:800;
+                color:transparent;
+                background-clip:text;
+                -webkit-background-clip:text;
+                background-image:linear-gradient(180deg, #ffffff 0%, #b0b0c0 100%);
+                text-shadow:0 0 20px rgba(192,192,208,0.6);
+                box-shadow:0 8px 20px rgba(0,0,0,0.4), 0 0 20px rgba(192,192,208,0.15);
+                position:relative;
+                overflow:hidden;
+                user-select:none;
+            ">${d}</div>
+        `).join('');
+    }
 
     function updateTimer() {
         timerSeconds--;
@@ -217,44 +325,57 @@ function showCaptchaModal(onSuccess) {
             clearInterval(timerInterval);
             captchaCode = generateCaptchaCode();
             timerSeconds = 15;
-            modal.querySelector('.captcha-display').textContent = captchaCode;
+            updateDigits(captchaCode);
             timerSecondsEl.textContent = timerSeconds + ' сек';
+            timerFill.style.transition = 'none';
             timerFill.style.width = '100%';
+            void timerFill.offsetWidth;
+            timerFill.style.transition = `width ${timerSeconds}s linear`;
+            timerFill.style.width = '0%';
             startTimer();
         } else {
-            const percent = (timerSeconds / 15) * 100;
-            timerFill.style.width = percent + '%';
             timerSecondsEl.textContent = timerSeconds + ' сек';
+            timerFill.style.width = (timerSeconds / 15 * 100) + '%';
         }
     }
 
     function startTimer() {
         clearInterval(timerInterval);
         timerInterval = setInterval(updateTimer, 1000);
+        timerFill.style.transition = 'none';
+        timerFill.style.width = '100%';
+        void timerFill.offsetWidth;
+        timerFill.style.transition = `width ${timerSeconds}s linear`;
+        timerFill.style.width = (timerSeconds / 15 * 100) + '%';
     }
     startTimer();
+
+    input.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').substring(0, 3);
+    });
 
     submitBtn.addEventListener('click', () => {
         const userInput = input.value.trim();
         if (userInput === captchaCode) {
             clearInterval(timerInterval);
-            modal.remove();
+            modal.classList.remove('active');
+            setTimeout(() => modal.remove(), 300);
             onSuccess();
         } else {
             errorEl.textContent = 'Неверно, попробуйте снова';
             errorEl.style.display = 'block';
             captchaCode = generateCaptchaCode();
             timerSeconds = 15;
-            modal.querySelector('.captcha-display').textContent = captchaCode;
+            updateDigits(captchaCode);
             timerSecondsEl.textContent = timerSeconds + ' сек';
+            timerFill.style.transition = 'none';
             timerFill.style.width = '100%';
+            void timerFill.offsetWidth;
+            timerFill.style.transition = `width ${timerSeconds}s linear`;
+            timerFill.style.width = '0%';
             input.value = '';
             startTimer();
         }
-    });
-
-    input.addEventListener('input', function() {
-        this.value = this.value.replace(/\D/g, '').substring(0, 3);
     });
 
     modal.addEventListener('click', function(e) {
