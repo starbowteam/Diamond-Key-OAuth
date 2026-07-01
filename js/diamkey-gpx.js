@@ -1,4 +1,120 @@
-// diamkey-gpx.js — полный редизайн GPX
+// diamkey-gpx.js — полный редизайн GPX (современные кнопки, стекло, интерфейс)
+
+(function() {
+    // Внедряем обновлённые стили для GPX-интерфейса
+    const gpxStyles = document.createElement('style');
+    gpxStyles.textContent = `
+        .gpx-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .gpx-toolbar .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(40, 42, 48, 0.6);
+            backdrop-filter: blur(12px);
+            color: var(--text-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .gpx-toolbar .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(60, 62, 72, 0.7);
+        }
+        .gpx-toolbar .btn i {
+            font-size: 16px;
+        }
+        .gpx-title {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f5f5f7, #b0b0b0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-right: auto;
+        }
+        #gpx-map {
+            height: 420px;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-glass);
+        }
+        .gpx-dashboard {
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+        }
+        .chart-wrap {
+            width: 100%;
+            height: 220px;
+            margin-bottom: 20px;
+        }
+        .gpx-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        .gpx-stat-card {
+            text-align: center;
+            padding: 16px 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .gpx-stat-card i {
+            font-size: 20px;
+            margin-bottom: 6px;
+            color: var(--accent);
+        }
+        .stat-label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+        #aiReview {
+            display: none;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #aiReview img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        #gpxOwnerInfo {
+            text-align: center;
+            padding: 24px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    `;
+    document.head.appendChild(gpxStyles);
+})();
 
 let gpxMap = null;
 let gpxLayerGroup = null;
@@ -243,7 +359,7 @@ function addExportButton() {
     const toolbar = document.querySelector('.gpx-toolbar');
     if (!toolbar || document.getElementById('exportGpxBtn')) return;
     const btn = document.createElement('button');
-    btn.className = 'btn btn-icon';
+    btn.className = 'btn';
     btn.id = 'exportGpxBtn';
     btn.innerHTML = '<i class="fas fa-download"></i>';
     btn.title = 'Сохранить отчёт';
