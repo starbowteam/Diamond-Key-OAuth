@@ -87,7 +87,7 @@
         <button class="emoji-cat-btn" data-cat="gestures"><i class="fas fa-hand-peace"></i> Жесты</button>
         <button class="emoji-cat-btn" data-cat="hearts"><i class="fas fa-heart"></i> Сердца</button>
         <button class="emoji-cat-btn" data-cat="emotions"><i class="fas fa-face-laugh"></i> Эмоции</button>
-        <button class="emoji-cat-btn" data-cat="celebrations"><i class="fas fa-party-horn"></i> Праздники</button>
+        <button class="emoji-cat-btn" data-cat="celebrations"><i class="fas fa-star"></i> Праздники</button>
       </div>
       <div class="emoji-grid" id="emojiGrid"></div>
     </div>
