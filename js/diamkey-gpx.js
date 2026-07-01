@@ -1,3 +1,5 @@
+// diamkey-gpx.js — полный редизайн GPX
+
 let gpxMap = null;
 let gpxLayerGroup = null;
 let elevationChart = null;
@@ -51,28 +53,37 @@ function initGPX() {
     gpxLayerGroup = L.featureGroup().addTo(gpxMap);
     gpxInitialized = true;
 
-    document.getElementById('gpx-file-input').addEventListener('change', function(e) {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = ev => {
-            try {
-                const data = parseGPX(ev.target.result);
-                displayGPX(data);
-                currentGpxContent = ev.target.result;
-                document.getElementById('saveGpxBtn').style.display = 'inline-flex';
-                showAIReview(data);
-                if (typeof previewGpxBeforeSave === 'function') previewGpxBeforeSave(ev.target.result);
-            } catch (err) { showToast('Ошибка: ' + err.message); }
-        };
-        reader.readAsText(file);
-    });
+    // Переработанный интерфейс загрузки GPX
+    const fileInput = document.getElementById('gpx-file-input');
+    const saveBtn = document.getElementById('saveGpxBtn');
+    const uploadBtn = document.getElementById('uploadGpxBtn');
 
-    document.getElementById('saveGpxBtn').addEventListener('click', () => {
-        const modal = document.getElementById('gpxNameModal');
-        if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
-    });
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const data = parseGPX(ev.target.result);
+                    displayGPX(data);
+                    currentGpxContent = ev.target.result;
+                    if (saveBtn) saveBtn.style.display = 'inline-flex';
+                    showAIReview(data);
+                    if (typeof previewGpxBeforeSave === 'function') previewGpxBeforeSave(ev.target.result);
+                } catch (err) { showToast('Ошибка: ' + err.message); }
+            };
+            reader.readAsText(file);
+        });
+    }
 
-    document.getElementById('saveGpxNameBtn').addEventListener('click', async () => {
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const modal = document.getElementById('gpxNameModal');
+            if (modal) { modal.style.display = 'flex'; modal.classList.add('active'); }
+        });
+    }
+
+    document.getElementById('saveGpxNameBtn')?.addEventListener('click', async () => {
         const name = document.getElementById('gpxNameInput')?.value?.trim() || 'Без названия';
         if (!currentUser) return showToast('Войдите');
         const { error } = await _supabase.from('gpx_files').insert([{ user_login: currentUser.login, name, content: currentGpxContent }]);
@@ -82,7 +93,7 @@ function initGPX() {
         }
         closeModal('gpxNameModal');
         showToast('Опубликовано!');
-        document.getElementById('saveGpxBtn').style.display = 'none';
+        if (saveBtn) saveBtn.style.display = 'none';
     });
 
     if (document.getElementById('page-add-gpx') && document.getElementById('page-add-gpx').classList.contains('active')) {
@@ -109,22 +120,26 @@ async function loadGpxFromId(gpxId) {
         
         if (currentUser && currentUser.login === data.user_login) {
             showAIReview(parsed);
-            document.getElementById('gpxOwnerInfo').style.display = 'none';
-        } else {
-            document.getElementById('aiReview').style.display = 'none';
             const ownerInfo = document.getElementById('gpxOwnerInfo');
-            ownerInfo.style.display = 'block';
-            const { data: owner } = await _supabase.from('users').select('avatar').eq('login', data.user_login).maybeSingle();
-            const avatarHTML = owner?.avatar 
-                ? `<img src="${escapeHtml(owner.avatar)}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">`
-                : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
-            ownerInfo.innerHTML = `
-                <div class="gpx-name">${escapeHtml(data.name)}</div>
-                <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:8px;">
-                    ${avatarHTML}
-                    <span class="owner-name">${escapeHtml(data.user_login)}</span>
-                </div>
-            `;
+            if (ownerInfo) ownerInfo.style.display = 'none';
+        } else {
+            const aiReview = document.getElementById('aiReview');
+            if (aiReview) aiReview.style.display = 'none';
+            const ownerInfo = document.getElementById('gpxOwnerInfo');
+            if (ownerInfo) {
+                ownerInfo.style.display = 'block';
+                const { data: owner } = await _supabase.from('users').select('avatar').eq('login', data.user_login).maybeSingle();
+                const avatarHTML = owner?.avatar 
+                    ? `<img src="${escapeHtml(owner.avatar)}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">`
+                    : '<i class="fas fa-user" style="font-size:48px;color:var(--text-muted);"></i>';
+                ownerInfo.innerHTML = `
+                    <div class="gpx-name">${escapeHtml(data.name)}</div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:8px;">
+                        ${avatarHTML}
+                        <span class="owner-name">${escapeHtml(data.user_login)}</span>
+                    </div>
+                `;
+            }
         }
     } catch (e) {
         console.error('[DiamKey] Ошибка парсинга GPX:', e);
@@ -211,7 +226,7 @@ function showAIReview(data) {
     const randomReview = AI_REVIEWS[Math.floor(Math.random() * AI_REVIEWS.length)].replace('{dist}', distStr);
     
     box.innerHTML = `
-        <img src="/assets/logo-ai.ico" style="width:56px;height:56px;border-radius:50%;object-fit:cover;">
+        <img src="/assets/diamond-ai.png" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">
         <p>${randomReview}</p>
     `;
     box.style.display = 'flex';
@@ -223,7 +238,7 @@ function haversine(lat1,lon1,lat2,lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// ======== ЭКСПОРТ В ИЗОБРАЖЕНИЕ ========
+// Экспорт в изображение (кнопка добавлена в интерфейс)
 function addExportButton() {
     const toolbar = document.querySelector('.gpx-toolbar');
     if (!toolbar || document.getElementById('exportGpxBtn')) return;
@@ -266,6 +281,7 @@ function loadScript(src) {
     });
 }
 
+// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     const gpxPage = document.getElementById('page-add-gpx');
     if (gpxPage) {
