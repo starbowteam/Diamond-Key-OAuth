@@ -1,13 +1,36 @@
-// diamkey-wall.js — полный файл с новым дизайном профиля и страницей /add/plus
+// diamkey-wall.js — полный файл с новой вёрсткой профиля и страницей /add/plus
 
 // Стили для профиля и карточки Plus
 const profileStyles = document.createElement('style');
 profileStyles.textContent = `
   .profile-cover {
-    transition: filter 0.3s ease;
+    position: relative;
+    overflow: hidden;
   }
-  .profile-cover:hover {
-    filter: blur(3px) brightness(0.6);
+  .profile-cover .cover-bg-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+  }
+  .profile-cover:hover .cover-bg-layer {
+    filter: blur(4px) brightness(0.6);
+  }
+  .profile-cover .cover-dark-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0);
+    z-index: 2;
+    transition: background 0.3s ease;
+    pointer-events: none;
+  }
+  .profile-cover:hover .cover-dark-overlay {
+    background: rgba(0,0,0,0.3);
   }
   .cover-actions {
     position: absolute;
@@ -25,17 +48,6 @@ profileStyles.textContent = `
   .profile-cover:hover .cover-actions {
     opacity: 1;
     pointer-events: auto;
-  }
-  .profile-cover::after {
-    content: '';
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0);
-    z-index: 2;
-    transition: background 0.3s ease;
-    pointer-events: none;
-  }
-  .profile-cover:hover::after {
-    background: rgba(0,0,0,0.3);
   }
   .cover-action {
     display: flex;
@@ -342,18 +354,20 @@ function applyCoverTransform(img, posX, posY, scale) {
 }
 
 function renderCoverHTML(profile, isOwnProfile, showBackBtn = false) {
-    let coverContent = '';
+    let coverBgHTML = '';
     if (profile.cover && profile.cover.startsWith('image:')) {
         const src = profile.cover.replace('image:', '');
         const scale = profile.cover_scale || 1;
         const posX = profile.cover_pos_x || 0;
         const posY = profile.cover_pos_y || 0;
-        coverContent = `<img class="cover-image" src="${escapeHtml(src)}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">`;
+        coverBgHTML = `<img class="cover-image cover-bg-layer" src="${escapeHtml(src)}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">`;
     } else if (profile.cover && (profile.cover.startsWith('gradient:') || profile.cover.startsWith('color:'))) {
         const bg = profile.cover.startsWith('gradient:')
             ? `background: linear-gradient(135deg, ${profile.cover.split(':')[1]}, ${profile.cover.split(':')[2]});`
             : `background: ${profile.cover.split(':')[1]};`;
-        coverContent = `<div style="width:100%;height:100%;${bg}"></div>`;
+        coverBgHTML = `<div class="cover-bg-layer" style="width:100%;height:100%;${bg}"></div>`;
+    } else {
+        coverBgHTML = `<div class="cover-bg-layer" style="width:100%;height:100%;background: linear-gradient(160deg, #1e1e32 0%, #0a0a14 100%);"></div>`;
     }
 
     let buttons = '';
@@ -377,7 +391,8 @@ function renderCoverHTML(profile, isOwnProfile, showBackBtn = false) {
 
     return `
         <div class="profile-cover" id="profileCoverBlock">
-            ${coverContent}
+            ${coverBgHTML}
+            <div class="cover-dark-overlay"></div>
             ${buttons}
         </div>
     `;
@@ -809,27 +824,76 @@ function startPlusGlitch() {
     }, 150);
 }
 
-// Новая функция: страница /add/plus
+// Полноценная страница Diamond Plus (для /add/plus)
 function renderAddPlusPage() {
+    // Используем существующую структуру plus-panel с карточками и FAQ
     return `
-        <div class="glass-panel add-plus-promo">
-            <div class="add-plus-left">
-                <i class="fas fa-crown"></i>
-                <h3>Diamond Plus</h3>
-                <p>Подписка, открывающая весь потенциал DiamKey. Расширенные настройки, безлимитный AI, премиум-бейдж и ранний доступ к новинкам.</p>
-                <button class="btn btn-primary" onclick="showToast('Скоро будет!')"><i class="fas fa-star"></i> Оформить</button>
+        <div class="plus-panel" id="plusPanelContainer">
+            <canvas id="particleCanvas"></canvas>
+            <div class="plus-header">
+                <button class="back-btn-profile" onclick="navigateTo('/add')"><i class="fas fa-arrow-left"></i> Назад</button>
+                <h1>Diamond Plus</h1>
+                <p class="plus-subtitle">Подписка, открывающая весь потенциал DiamKey</p>
             </div>
-            <div class="add-plus-right">
-                <div class="add-plus-shape"></div>
+            <div class="plus-grid">
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-brain"></i></div>
+                    <h3 class="plus-card-title">Diamond AI без цензуры</h3>
+                    <p class="plus-card-desc">Искусственный интеллект, который отвечает прямо и без ограничений. Только вы и чистый разум.</p>
+                    <p class="plus-card-extra">+ эксклюзивные модели</p>
+                </div>
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-sliders-h"></i></div>
+                    <h3 class="plus-card-title">Расширенные настройки профиля</h3>
+                    <p class="plus-card-desc">Уникальные обложки, кастомные шрифты ника, эксклюзивные рамки аватара.</p>
+                    <p class="plus-card-extra">+ безумная фантазия к ним</p>
+                </div>
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-medal"></i></div>
+                    <h3 class="plus-card-title">Премиум-бейдж</h3>
+                    <p class="plus-card-desc">Серебряный значок Diamond Plus, который виден всем. Вас узнают и уважают.</p>
+                    <p class="plus-card-extra">+ приоритетная поддержка</p>
+                </div>
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-rocket"></i></div>
+                    <h3 class="plus-card-title">Ранний доступ</h3>
+                    <p class="plus-card-desc">Участвуйте в закрытых бета-тестах новых функций DiamKey и влияйте на развитие экосистемы.</p>
+                    <p class="plus-card-extra">+ возможность взлететь</p>
+                </div>
+                <div class="plus-card">
+                    <div class="plus-card-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <h3 class="plus-card-title">Расширенное хранилище</h3>
+                    <p class="plus-card-desc">До 5 ГБ для ваших данных в дополнениях. Никаких ограничений.</p>
+                    <p class="plus-card-extra">+ авто-бэкап данных</p>
+                </div>
+            </div>
+            <div class="faq-section">
+                <h2 class="faq-title">Часто спрашивают</h2>
+                <div class="faq-item" onclick="this.classList.toggle('open')">
+                    <div class="faq-q"><i class="fas fa-chevron-right"></i> Когда спишут деньги?</div>
+                    <div class="faq-a">Когда вы оплатите подписку.</div>
+                </div>
+                <div class="faq-item" onclick="this.classList.toggle('open')">
+                    <div class="faq-q"><i class="fas fa-chevron-right"></i> Можно ли отменить в любой момент?</div>
+                    <div class="faq-a">Да, подписка отключается в один клик. До конца оплаченного периода все преимущества сохраняются.</div>
+                </div>
+                <div class="faq-item" onclick="this.classList.toggle('open')">
+                    <div class="faq-q"><i class="fas fa-chevron-right"></i> Как получить ранний доступ?</div>
+                    <div class="faq-a">Сразу после оформления подписки вы автоматически попадаете в список тестеров.</div>
+                </div>
+            </div>
+            <div class="plus-cta">
+                <div class="plus-price">
+                    <span class="amount">₽149</span>
+                    <span class="period">/ месяц</span>
+                </div>
+                <button class="plus-btn" onclick="showToast('Скоро будет!')"><i class="fas fa-crown"></i> Оформить подписку</button>
             </div>
         </div>
-        <button class="btn back-btn-add" onclick="navigateTo('/add')" style="margin-top:16px;">
-            <i class="fas fa-arrow-left"></i> Назад
-        </button>
     `;
 }
 
-// Существующие страницы Diamond Plus (используются только для обратной совместимости, больше не вызываются)
+// Старая функция рендера Diamond Plus (используется для обратной совместимости с /diamond-plus)
 async function renderDiamondPlusPage() {
     const page = document.getElementById('page-diamond-plus');
     if (!page) return;
@@ -837,7 +901,7 @@ async function renderDiamondPlusPage() {
     setTimeout(() => initParticles(), 100);
 }
 
-// Остальные функции (Database, GPX-вью, QR-confirm) остаются без изменений, но я приведу их здесь для полноты
+// Остальные функции (Database, GPX-вью, QR-confirm)
 async function renderDatabasePage() {
     const page = document.getElementById('page-data');
     if (!page) return;
