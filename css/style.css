@@ -324,23 +324,26 @@ body {
 .benefit-card h3 { font-size: 20px; margin-bottom: 10px; }
 .benefit-card p { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
 
-/* ГОРИЗОНТАЛЬНЫЕ КАРТОЧКИ В ADD */
+/* ===== ГОРИЗОНТАЛЬНЫЕ КАРТОЧКИ В ADD ===== */
 .add-services-grid {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
+    align-items: stretch;
     gap: 24px;
     margin-bottom: 32px;
 }
 .add-service-card {
-    transition: all var(--transition);
     flex: 1 1 400px;
     max-width: 500px;
     min-width: 300px;
+    display: flex;
+    flex-direction: column;
 }
 
-.gpx-promo { display: flex; flex-direction: row; align-items: center; gap: 40px; padding: 48px; cursor: pointer; }
+/* ===== КАРТОЧКА GPX ===== */
+.gpx-promo { display: flex; flex-direction: row; align-items: center; gap: 40px; padding: 48px; cursor: pointer; height: 100%; }
 .gpx-promo-left { flex: 3; display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding-left: 16px; }
 .gpx-promo-left i { font-size: 48px; color: var(--accent); margin-bottom: 16px; margin-left: 0; }
 .gpx-promo-left h3 {
@@ -363,7 +366,7 @@ body {
     50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
 }
 
-/* Карточка Diamond Plus в Add */
+/* ===== КАРТОЧКА DIAMOND PLUS В ADD ===== */
 .add-plus-promo {
     display: flex;
     flex-direction: row;
@@ -371,6 +374,7 @@ body {
     gap: 40px;
     padding: 48px;
     cursor: pointer;
+    height: 100%;
 }
 .add-plus-left {
     flex: 3;
@@ -420,7 +424,7 @@ body {
     50% { box-shadow: 0 0 40px rgba(220,220,240,0.8), inset 0 0 25px rgba(255,255,255,0.3); }
 }
 
-/* ===== ЕДИНЫЙ БЛОК ПРОФИЛЯ ===== */
+/* ===== ПРОФИЛЬ (ОБЛОЖКА БЕЗ БЛЮРА НА КНОПКАХ) ===== */
 .profile-panel {
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
@@ -433,40 +437,36 @@ body {
 
 .profile-cover {
     height: 160px;
-    background: linear-gradient(160deg, #1e1e32 0%, #0a0a14 100%);
     position: relative;
     overflow: hidden;
     cursor: default;
+    background: linear-gradient(160deg, #1e1e32 0%, #0a0a14 100%);
+}
+/* фоновый слой, который будет блюриться */
+.profile-cover .cover-bg-layer {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
     transition: filter 0.3s ease;
 }
-.profile-cover:hover {
-    filter: blur(3px) brightness(0.6);
+.profile-cover:hover .cover-bg-layer {
+    filter: blur(4px) brightness(0.6);
 }
-.profile-cover::after {
-    content: '';
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+/* затемняющий оверлей */
+.profile-cover .cover-dark-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0);
     z-index: 2;
     transition: background 0.3s ease;
     pointer-events: none;
 }
-.profile-cover:hover::after {
+.profile-cover:hover .cover-dark-overlay {
     background: rgba(0,0,0,0.3);
 }
-.profile-cover img.cover-image {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: auto;
-    height: 100%;
-    min-width: 100%;
-    transform-origin: center;
-}
-
+/* контейнер кнопок – никогда не блюрится */
 .cover-actions {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
@@ -475,6 +475,7 @@ body {
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
+    filter: none !important;
 }
 .profile-cover:hover .cover-actions {
     opacity: 1;
@@ -493,6 +494,7 @@ body {
     transition: all 0.3s ease;
     overflow: hidden;
     white-space: nowrap;
+    filter: none !important;
 }
 .cover-action:first-child {
     border-radius: 24px 0 0 24px;
@@ -513,31 +515,10 @@ body {
 .cover-action:hover span { max-width: 100px; padding-right: 12px; }
 .cover-action:hover { background: rgba(255,255,255,0.15); }
 
-.edit-cover-btn {
+/* старые кнопки обложки и аватара больше не используются */
+.edit-cover-btn, .back-btn-profile, .gpx-back-btn {
     position: absolute;
     top: 16px;
-    right: 24px;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 30px;
-    padding: 6px 14px;
-    color: white;
-    font-weight: 500;
-    font-size: 13px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    z-index: 2;
-    opacity: 0.7;
-}
-.edit-cover-btn:hover { background: rgba(0,0,0,0.6); opacity: 1; }
-
-.back-btn-profile {
-    position: absolute;
-    top: 16px;
-    left: 24px;
     background: rgba(0,0,0,0.4);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255,255,255,0.15);
@@ -553,28 +534,10 @@ body {
     z-index: 5;
     opacity: 0.7;
 }
-.back-btn-profile:hover { background: rgba(0,0,0,0.6); opacity: 1; }
-
-.gpx-back-btn {
-    position: absolute;
-    top: 16px;
-    right: 24px;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 30px;
-    padding: 6px 14px;
-    color: white;
-    font-weight: 500;
-    font-size: 13px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    z-index: 5;
-    opacity: 0.7;
-}
-.gpx-back-btn:hover { background: rgba(0,0,0,0.6); opacity: 1; }
+.edit-cover-btn { right: 24px; }
+.back-btn-profile { left: 24px; }
+.gpx-back-btn { right: 24px; }
+.edit-cover-btn:hover, .back-btn-profile:hover, .gpx-back-btn:hover { background: rgba(0,0,0,0.6); opacity: 1; }
 
 .avatar-section {
     display: flex;
@@ -1311,7 +1274,7 @@ body {
     max-width: 200px;
 }
 
-/* ====== СТРАНИЦА DIAMOND PLUS (старая) ====== */
+/* ====== СТРАНИЦА DIAMOND PLUS ====== */
 .plus-panel {
     position: relative;
     background: var(--bg-glass);
