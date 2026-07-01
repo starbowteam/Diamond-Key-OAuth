@@ -1,5 +1,132 @@
-// diamkey-wall.js — полный файл с правками
+// diamkey-wall.js — полный файл с новой вёрсткой профиля
 
+// Инжектируем стили для новой верхней части профиля
+const newProfileStyles = document.createElement('style');
+newProfileStyles.textContent = `
+  .profile-cover {
+    transition: filter 0.3s ease;
+  }
+  .cover-actions {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    z-index: 3;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  .profile-cover:hover .cover-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .profile-cover:hover::after {
+    content: '';
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.3);
+    z-index: 2;
+  }
+  .cover-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .cover-action:first-child {
+    border-radius: 24px 0 0 24px;
+    border-right: none;
+  }
+  .cover-action:last-child {
+    border-radius: 0 24px 24px 0;
+    border-left: none;
+  }
+  .cover-action i { font-size: 16px; padding: 0 12px; }
+  .cover-action span {
+    max-width: 0;
+    overflow: hidden;
+    transition: max-width 0.3s ease, padding 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .cover-action:hover span { max-width: 100px; padding-right: 12px; }
+  .cover-action:hover { background: rgba(255,255,255,0.15); }
+
+  .description-card-new {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    padding: 14px 18px;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 16px 24px 12px;
+    text-align: center;
+  }
+
+  .badges-panel-centered {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin: 0 24px 12px;
+  }
+
+  .meta-row-centered {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 8px 24px 16px;
+  }
+
+  .actions-row {
+    display: flex;
+    gap: 12px;
+    margin: 0 24px 20px;
+  }
+
+  .action-card-mini {
+    flex: 1;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .action-card-mini:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3), 0 0 20px rgba(192,192,208,0.2);
+    background: rgba(255,255,255,0.06);
+  }
+  .action-card-mini i { font-size: 22px; color: var(--accent); transition: transform 0.3s; }
+  .action-card-mini:hover i { transform: scale(1.15); }
+  .action-card-mini span { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .action-card-mini .action-sub { display: none; font-size: 12px; color: var(--text-muted); }
+  .action-card-mini:hover .action-sub { display: inline; }
+`;
+document.head.appendChild(newProfileStyles);
+
+// Остальной код diamkey-wall.js начинается здесь
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
     if (!body) return;
@@ -25,7 +152,6 @@ async function loadAnnouncement() {
 const EMOJI_MAP = { heart: '❤️', like: '👍', fire: '🔥' };
 const BASE_EMOJIS = ['❤️', '👍', '🔥'];
 
-// Множественные реакции: рендер
 function renderReactions(reactionsObj, postId) {
     const reactions = reactionsObj || {};
     const storageKey = `reacted_${postId}`;
@@ -35,7 +161,7 @@ function renderReactions(reactionsObj, postId) {
         if (raw) {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) userReactions = parsed;
-            else if (typeof parsed === 'string') userReactions = [parsed]; // миграция старых данных
+            else if (typeof parsed === 'string') userReactions = [parsed];
         }
     } catch (e) { userReactions = []; }
 
@@ -46,14 +172,12 @@ function renderReactions(reactionsObj, postId) {
     }
 
     let html = '';
-    // Базовые всегда видны
     BASE_EMOJIS.forEach(emoji => {
         const count = normalized[emoji] || 0;
         const activeClass = userReactions.includes(emoji) ? ' active' : '';
         html += `<button class="reaction-btn${activeClass}" data-emoji="${emoji}">${emoji} <span>${count}</span></button>`;
     });
 
-    // Дополнительные эмодзи (не базовые) с ненулевым количеством
     const extraEmojis = Object.entries(normalized)
         .filter(([emoji]) => !BASE_EMOJIS.includes(emoji) && normalized[emoji] > 0)
         .sort((a, b) => b[1] - a[1]);
@@ -62,12 +186,10 @@ function renderReactions(reactionsObj, postId) {
         html += `<button class="reaction-btn${activeClass}" data-emoji="${emoji}">${emoji} <span>${count}</span></button>`;
     });
 
-    // Кнопка "···" всегда последняя
     html += `<button class="reaction-btn reaction-more" onclick="window.openReactionPicker('${postId}')">···</button>`;
     return html;
 }
 
-// Множественные реакции: переключение (можно ставить сколько угодно)
 async function toggleReaction(postId, emoji) {
     if (!currentUser) return showToast('Войдите');
     const storageKey = `reacted_${postId}`;
@@ -96,7 +218,6 @@ async function toggleReaction(postId, emoji) {
         normalized[e] = (normalized[e] || 0) + count;
     }
 
-    // Загружаем текущие реакции пользователя
     let userReactions = [];
     try {
         const raw = localStorage.getItem(storageKey);
@@ -107,7 +228,6 @@ async function toggleReaction(postId, emoji) {
         }
     } catch (e) { userReactions = []; }
 
-    // Переключаем: если уже есть – убираем, иначе добавляем
     if (userReactions.includes(emoji)) {
         userReactions = userReactions.filter(e => e !== emoji);
         normalized[emoji] = Math.max((normalized[emoji] || 0) - 1, 0);
@@ -124,7 +244,6 @@ async function toggleReaction(postId, emoji) {
         return showToast('Ошибка');
     }
 
-    // Обновляем DOM
     const postEl = document.querySelector(`.wall-post[data-post-id="${postId}"]`);
     if (postEl) {
         const footer = postEl.querySelector('.wall-post-footer');
@@ -139,7 +258,6 @@ async function toggleReaction(postId, emoji) {
         }
     }
 
-    // Уведомление владельцу
     const { data: owner } = await _supabase.from(table).select('profile_login').eq(idField, idValue).maybeSingle();
     if (owner && owner.profile_login !== currentUser.login) {
         await _supabase.from('notifications').insert({
@@ -190,9 +308,15 @@ function renderCoverHTML(profile, isOwnProfile, showBackBtn = false) {
     }
     if (isOwnProfile && !showBackBtn) {
         buttons += `
-            <div style="position:absolute; top:16px; right:24px; display:flex; flex-direction:column; gap:8px; z-index:5;">
-                <button style="background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); border-radius: 30px; padding: 6px 14px; color: white; font-weight: 500; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; opacity: 0.7;" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>
-                <button style="background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); border-radius: 30px; padding: 6px 14px; color: white; font-weight: 500; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; opacity: 0.7;" onclick="changeAvatar()"><i class="fas fa-camera"></i> Аватар</button>
+            <div class="cover-actions">
+                <button class="cover-action" onclick="event.stopPropagation(); openCoverSetupModal(currentUser)">
+                    <i class="fas fa-image"></i>
+                    <span>Обложка</span>
+                </button>
+                <button class="cover-action" onclick="event.stopPropagation(); changeAvatar()">
+                    <i class="fas fa-user"></i>
+                    <span>Аватар</span>
+                </button>
             </div>
         `;
     }
@@ -269,11 +393,6 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const isOwnProfile = (currentUser && currentUser.login === login);
     const showBackBtn = !isOwnProfile;
 
-    const diamondPlusTitle = 'Diamond Plus';
-    const diamondPlusSubtitle = isOwnProfile ? 'Подписка скоро будет доступна XD' : 'Не подписан, подписки не существует XD';
-    const diamondPlusClass = isOwnProfile ? 'diamond-plus-card' : '';
-    const diamondPlusAction = isOwnProfile ? `onclick="navigateTo('/diamond-plus')"` : `onclick="showToast('В разработке')"`;
-
     return `
         <div class="profile-panel">
             ${renderCoverHTML(profile, isOwnProfile, showBackBtn)}
@@ -288,30 +407,22 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                     <button class="ai-btn-nick" onclick="event.stopPropagation(); window.openAIModal('${login}')" title="Анализ профиля AI"><i class="fas fa-info-circle"></i></button>
                 </div>
             </div>
-            <div class="profile-body">
-                <div class="description-card" id="profileDescription">${escapeHtml(desc)}</div>
-                <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
-                    <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
-                    <div class="action-card-text">
-                        <span class="action-card-title">Дополнения</span>
-                        <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
-                    </div>
-                    <i class="fas fa-chevron-right action-card-arrow"></i>
+            <div class="description-card-new" id="profileDescription">${escapeHtml(desc)}</div>
+            <div class="badges-panel-centered">${badgesHTML}</div>
+            <div class="meta-row-centered">
+                ${statusHTML}
+                <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+            </div>
+            <div class="actions-row">
+                <div class="action-card-mini" onclick="navigateTo('/profile/${login}/gpxview')">
+                    <i class="fas fa-puzzle-piece"></i>
+                    <span>Дополнения</span>
+                    <span class="action-sub">Поездки и другое</span>
                 </div>
-                <div>
-                    <div class="badges-panel">${badgesHTML}</div>
-                    <div class="meta-row">
-                        ${statusHTML}
-                        <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
-                    </div>
-                </div>
-                <div class="action-card ${diamondPlusClass}" ${diamondPlusAction} id="diamondPlusCard">
-                    <div class="action-card-icon"><i class="fas fa-crown"></i></div>
-                    <div class="action-card-text">
-                        <span class="action-card-title" id="plusTitle">${diamondPlusTitle}</span>
-                        <span class="action-card-subtitle">${diamondPlusSubtitle}</span>
-                    </div>
-                    <i class="fas fa-chevron-right action-card-arrow"></i>
+                <div class="action-card-mini" onclick="navigateTo('/diamond-plus')">
+                    <i class="fas fa-crown"></i>
+                    <span>Diamond Plus</span>
+                    <span class="action-sub">Подписка</span>
                 </div>
             </div>
         </div>
@@ -429,7 +540,6 @@ async function openUserProfile(login) {
                 };
             }
 
-            // Привязка реакций
             userWallSection.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -509,30 +619,22 @@ async function renderMyProfile() {
                         <button class="ai-btn-nick" onclick="event.stopPropagation(); window.openAIModal('${login}')" title="Анализ профиля AI"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
-                <div class="profile-body">
-                    <div class="description-card" id="myDescription">${escapeHtml(desc)}</div>
-                    <div class="action-card" onclick="navigateTo('/profile/${login}/gpxview')">
-                        <div class="action-card-icon"><i class="fas fa-puzzle-piece"></i></div>
-                        <div class="action-card-text">
-                            <span class="action-card-title">Дополнения</span>
-                            <span class="action-card-subtitle">Поездки, а в будущем и другое =)</span>
-                        </div>
-                        <i class="fas fa-chevron-right action-card-arrow"></i>
+                <div class="description-card-new" id="myDescription">${escapeHtml(desc)}</div>
+                <div class="badges-panel-centered">${badgesHTML}</div>
+                <div class="meta-row-centered">
+                    ${statusHTML}
+                    <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
+                </div>
+                <div class="actions-row">
+                    <div class="action-card-mini" onclick="navigateTo('/profile/${login}/gpxview')">
+                        <i class="fas fa-puzzle-piece"></i>
+                        <span>Дополнения</span>
+                        <span class="action-sub">Поездки и другое</span>
                     </div>
-                    <div>
-                        <div class="badges-panel">${badgesHTML}</div>
-                        <div class="meta-row">
-                            ${statusHTML}
-                            <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
-                        </div>
-                    </div>
-                    <div class="action-card diamond-plus-card" onclick="navigateTo('/diamond-plus')" id="diamondPlusCard">
-                        <div class="action-card-icon"><i class="fas fa-crown"></i></div>
-                        <div class="action-card-text">
-                            <span class="action-card-title" id="plusTitle">Diamond Plus</span>
-                            <span class="action-card-subtitle">Подписка скоро будет доступна XD</span>
-                        </div>
-                        <i class="fas fa-chevron-right action-card-arrow"></i>
+                    <div class="action-card-mini" onclick="navigateTo('/diamond-plus')">
+                        <i class="fas fa-crown"></i>
+                        <span>Diamond Plus</span>
+                        <span class="action-sub">Подписка</span>
                     </div>
                 </div>
             </div>
@@ -564,7 +666,6 @@ async function renderMyProfile() {
             showToast('Описание сохранено');
         };
 
-        // Привязка реакций
         pageProfile.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -594,7 +695,6 @@ async function renderMyProfile() {
     }
 }
 
-// Вспомогательная функция рендера текстового поста
 function renderTextPostHTML(post) {
     return `
       <div class="wall-post glass-panel" data-post-id="${post.id}">
@@ -660,7 +760,6 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/* ====== ГЛИТЧ-ЭФФЕКТ для Diamond Plus ====== */
 let plusGlitchInterval = null;
 function startPlusGlitch() {
     if (plusGlitchInterval) clearInterval(plusGlitchInterval);
@@ -668,21 +767,16 @@ function startPlusGlitch() {
     if (!titleEl) return;
     const base = "Diamond Plus";
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
-
     plusGlitchInterval = setInterval(() => {
         let result = "";
         for (let i = 0; i < base.length; i++) {
-            if (Math.random() < 0.1) {
-                result += chars[Math.floor(Math.random() * chars.length)];
-            } else {
-                result += base[i];
-            }
+            if (Math.random() < 0.1) result += chars[Math.floor(Math.random() * chars.length)];
+            else result += base[i];
         }
         titleEl.textContent = result;
     }, 150);
 }
 
-/* ====== СТРАНИЦА DIAMOND PLUS (С ЧАСТИЦАМИ) ====== */
 async function renderDiamondPlusPage() {
     const page = document.getElementById('page-diamond-plus');
     if (!page) return;
@@ -757,7 +851,6 @@ async function renderDiamondPlusPage() {
     }, 100);
 }
 
-/* ====== ЧАСТИЦЫ ДЛЯ DIAMOND PLUS ====== */
 function initParticles() {
     const canvas = document.getElementById('particleCanvas');
     if (!canvas) return;
@@ -813,7 +906,6 @@ function initParticles() {
     draw();
 }
 
-/* ====== СТРАНИЦА DIAMOND DATABASE ====== */
 async function renderDatabasePage() {
     const page = document.getElementById('page-data');
     if (!page) return;
@@ -914,7 +1006,6 @@ async function renderDatabasePage() {
     `;
 }
 
-/* ====== GPX-ВЬЮ ====== */
 async function renderProfileGpxView(login) {
     const page = document.getElementById('page-profile-gpx');
     if (!page) return;
