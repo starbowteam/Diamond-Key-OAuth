@@ -1,3 +1,5 @@
+// diamkey-router.js — SPA-роутинг с новым маршрутом /add/plus
+
 function navigateTo(path, replace = false) {
     if (replace) { history.replaceState(null, null, path); }
     else { history.pushState(null, null, path); }
@@ -27,11 +29,21 @@ function handleRoute() {
         path = '/home';
     }
 
+    // Редирект со старого Diamond Plus на новый
+    if (path === '/diamond-plus') {
+        navigateTo('/add/plus', true);
+        return;
+    }
+
     document.querySelectorAll('.page.active').forEach(p => {
         p.classList.remove('active');
         p.style.opacity = '0';
         p.style.transform = 'translateY(16px)';
     });
+
+    // Скрываем динамически созданные страницы
+    const dynamicPages = document.querySelectorAll('[data-dynamic-page]');
+    dynamicPages.forEach(p => p.remove());
 
     function activatePage(pageId, instant = false) {
         const page = document.getElementById(pageId);
@@ -71,6 +83,24 @@ function handleRoute() {
             if (currentUser && uploadBtn) uploadBtn.style.display = 'inline-flex';
             else if (uploadBtn) uploadBtn.style.display = 'none';
         }
+    } else if (path === '/add/plus') {
+        // Динамически создаём страницу для Diamond Plus
+        const main = document.getElementById('mainContent');
+        let plusPage = document.getElementById('page-add-plus');
+        if (!plusPage) {
+            plusPage = document.createElement('section');
+            plusPage.id = 'page-add-plus';
+            plusPage.className = 'page';
+            plusPage.setAttribute('data-dynamic-page', 'true');
+            main.appendChild(plusPage);
+        }
+        // Рендерим контент
+        if (typeof renderAddPlusPage === 'function') {
+            plusPage.innerHTML = renderAddPlusPage();
+        } else {
+            plusPage.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><p class="text-muted">Загрузка...</p></div>';
+        }
+        activatePage('page-add-plus', true);
     } else if (path === '/users') {
         activatePage('page-users');
         if (typeof loadUsers === 'function') loadUsers();
@@ -90,9 +120,6 @@ function handleRoute() {
         activatePage('page-qr-confirm', true);
         const ticket = params.get('ticket');
         if (ticket && typeof renderQrConfirm === 'function') renderQrConfirm(ticket);
-    } else if (path === '/diamond-plus') {
-        activatePage('page-diamond-plus', true);
-        if (typeof renderDiamondPlusPage === 'function') renderDiamondPlusPage();
     } else if (path === '/data') {
         activatePage('page-data', true);
         if (typeof renderDatabasePage === 'function') renderDatabasePage();
@@ -105,7 +132,10 @@ function handleRoute() {
     document.querySelectorAll('.sidebar-icon[href]').forEach(btn => {
         btn.classList.remove('active');
         const href = btn.getAttribute('href');
-        if (href === path || (path.startsWith('/add') && href === '/add') || (path.startsWith('/users') && href === '/users') || (path.startsWith('/profile') && href === '/profile')) {
+        if (href === path || 
+            (path.startsWith('/add') && href === '/add') || 
+            (path.startsWith('/users') && href === '/users') || 
+            (path.startsWith('/profile') && href === '/profile')) {
             btn.classList.add('active');
         }
     });
