@@ -1,6 +1,5 @@
-// diamkey-wall.js — полный файл с новой вёрсткой профиля и страницей /add/plus
+// diamkey-wall.js — полный файл с исправленными стилями
 
-// Стили для профиля и карточки Plus
 const profileStyles = document.createElement('style');
 profileStyles.textContent = `
   .profile-cover {
@@ -134,7 +133,6 @@ profileStyles.textContent = `
     color: #fff;
   }
 
-  /* Карточка Diamond Plus в /add */
   .add-plus-promo {
     display: flex;
     flex-direction: row;
@@ -827,7 +825,6 @@ function startPlusGlitch() {
     }, 150);
 }
 
-// Полноценная страница Diamond Plus (для /add/plus)
 function renderAddPlusPage() {
     return `
         <div class="plus-panel" id="plusPanelContainer">
@@ -895,7 +892,6 @@ function renderAddPlusPage() {
     `;
 }
 
-// Старая функция рендера Diamond Plus (используется для обратной совместимости с /diamond-plus)
 async function renderDiamondPlusPage() {
     const page = document.getElementById('page-diamond-plus');
     if (!page) return;
@@ -903,7 +899,6 @@ async function renderDiamondPlusPage() {
     setTimeout(() => initParticles(), 100);
 }
 
-// Остальные функции (Database, GPX-вью, QR-confirm)
 async function renderDatabasePage() {
     const page = document.getElementById('page-data');
     if (!page) return;
