@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>DiamKey · Единая экосистема</title>
+    <link rel="icon" href="/assets/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DiamKey">
+    <link rel="apple-touch-icon" href="/assets/logo-512.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="/css/style.css?v=12">
+</head>
+<body>
+    <div class="smooth-loader-overlay" id="smoothLoader">
+        <img src="/assets/favicon.ico" class="smooth-loader-logo" alt="DiamKey">
+        <div class="smooth-loader-spinner"><i class="fas fa-circle-notch"></i></div>
+    </div>
+
+    <div class="dot-bg"></div>
+    <div class="app-shell" id="appShell">
+        <nav class="sidebar" id="sidebar">
+            <a class="sidebar-icon" href="/home"><i class="fas fa-home"></i></a>
+            <a class="sidebar-icon" href="/add"><i class="fas fa-puzzle-piece"></i></a>
+            <a class="sidebar-icon" href="/users"><i class="fas fa-users"></i></a>
+            <a class="sidebar-icon" href="/profile"><i class="fas fa-user"></i></a>
+            <!-- НОВАЯ ИКОНКА Diamond Database -->
+            <a class="sidebar-icon" href="/data"><i class="fas fa-database"></i></a>
+            <a class="sidebar-icon" href="https://diamond-ai.ru" target="_blank"><img src="/assets/diamond-ai.ico" style="width:30px;height:30px;"></a>
+            <a class="sidebar-icon" href="https://dirmess.ru" target="_blank"><img src="/assets/dirmess.ico" style="width:30px;height:30px;"></a>
+            <div class="sidebar-bottom">
+                <a class="sidebar-icon" id="qrScannerBtn" title="Сканер QR-кода"><i class="fas fa-qrcode"></i></a>
+                <a class="sidebar-icon" id="badgeAdminBtn" title="Выдать бейдж" style="display:none;"><i class="fas fa-medal"></i></a>
+                <a class="sidebar-icon" href="https://discord.gg/diamondshop" target="_blank" id="discordSidebarIcon"><i class="fab fa-discord"></i></a>
+                <button class="sidebar-icon" id="logoutSidebarBtn"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </nav>
+        <main class="main-content" id="mainContent">
+            <section class="page" id="page-home">
+                <div class="glass-panel hero">
+                    <img src="/assets/favicon.ico" class="hero-logo" alt="DiamKey">
+                    <h1 id="cipherTitle">DIAMKEY</h1>
+                    <p class="hero-subtitle">Единая учётная запись для всей экосистемы Diamond</p>
+                    <div class="hero-description">
+                        <p>DiamKey — это ваш универсальный ключ. Один аккаунт открывает доступ к передовому ИИ-помощнику, удобному анализу маршрутов и будущему защищённому мессенджеру. Никакой путаницы с паролями, только чистый комфорт.</p>
+                    </div>
+                    <div class="user-stats-row" id="homeStatsRow" style="display:none;"></div>
+                    <div id="heroActionArea">
+                        <button class="btn btn-primary" id="heroActionBtn"><i class="fas fa-user-plus"></i> Войти / Создать DiamKey</button>
+                    </div>
+                </div>
+                <div class="glass-panel announcement-card" id="announcementCard">
+                    <div class="announcement-header"><i class="fas fa-bullhorn"></i> Объявление от создателя</div>
+                    <div class="announcement-body" id="announcementBody">
+                        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+                <div class="section-title">Почему <span>DiamKey</span>?</div>
+                <div class="benefits-grid">
+                    <div class="benefit-card glass-panel">
+                        <i class="fas fa-fingerprint"></i>
+                        <h3>Один аккаунт — все сервисы</h3>
+                        <p>Зарегистрируйтесь один раз и пользуйтесь Diamond AI, Diamond GPX, Dirmess и будущими проектами без повторного ввода данных.</p>
+                    </div>
+                    <div class="benefit-card glass-panel">
+                        <i class="fas fa-shield-alt"></i>
+                        <h3>Приватность без компромиссов</h3>
+                        <p>Все ваши данные шифруются и хранятся в облаке Supabase. Никакой слежки, никаких утечек — только вы контролируете свою информацию.</p>
+                    </div>
+                    <div class="benefit-card glass-panel">
+                        <i class="fas fa-sync-alt"></i>
+                        <h3>Мгновенная синхронизация</h3>
+                        <p>Чаты, файлы, маршруты — всё подхватывается на любом устройстве, где вы вошли в DiamKey. Продолжайте с того места, где остановились.</p>
+                    </div>
+                </div>
+            </section>
+            <section class="page" id="page-add">
+                <div class="section-title">Дополнения <span>DiamKey</span></div>
+                <p class="subtitle">Расширьте возможности вашего аккаунта с помощью сервисов экосистемы Diamond</p>
+                <div class="add-services-grid">
+                    <div class="add-service-card glass-panel gpx-promo" onclick="navigateTo('/add/gpx')">
+                        <div class="gpx-promo-left">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <h3>Diamond GPX</h3>
+                            <p>Загружайте GPS-треки, анализируйте маршруты, смотрите статистику и делитесь прогулками с друзьями.</p>
+                            <button class="btn btn-primary">Открыть</button>
+                        </div>
+                        <div class="gpx-promo-right">
+                            <div class="three-deco"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="page" id="page-add-gpx">
+                <div class="glass-panel gpx-container">
+                    <div class="gpx-toolbar">
+                        <button class="btn btn-icon" id="gpxBackBtn" onclick="navigateTo('/add')"><i class="fas fa-arrow-left"></i></button>
+                        <span class="gpx-title"><i class="fas fa-map-marker-alt"></i> Diamond GPX</span>
+                        <button class="btn btn-icon" id="uploadGpxBtn" onclick="document.getElementById('gpx-file-input').click()"><i class="fas fa-folder-open"></i></button>
+                        <input type="file" id="gpx-file-input" accept=".gpx,.xml" style="display:none">
+                        <button class="btn btn-icon" id="saveGpxBtn" style="display:none"><i class="fas fa-cloud-upload-alt"></i></button>
+                        <a class="btn btn-icon" href="https://apps.apple.com/app/biketracker/id123456" target="_blank"><i class="fab fa-apple"></i></a>
+                        <a class="btn btn-icon" href="https://play.google.com/store/apps/details?id=com.biketracker" target="_blank"><i class="fab fa-android"></i></a>
+                    </div>
+                    <div id="gpx-map"></div>
+                    <div class="gpx-dashboard glass-panel">
+                        <div class="chart-wrap"><canvas id="elevationChart"></canvas></div>
+                        <div class="gpx-stats-grid">
+                            <div class="gpx-stat-card"><i class="fas fa-ruler"></i><span class="stat-label">Дистанция</span><span id="distVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-mountain"></i><span class="stat-label">Набор</span><span id="ascentVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-clock"></i><span class="stat-label">Время</span><span id="timeVal">—</span></div>
+                            <div class="gpx-stat-card"><i class="fas fa-tachometer-alt"></i><span class="stat-label">Скорость</span><span id="speedVal">—</span></div>
+                        </div>
+                    </div>
+                    <div id="aiReview" class="ai-review glass-panel" style="display:none;"></div>
+                    <div id="gpxOwnerInfo" class="glass-panel" style="display:none; text-align:center;"></div>
+                </div>
+            </section>
+            <section class="page" id="page-users">
+                <div class="glass-panel" id="usersPanel">
+                    <h2><i class="fas fa-users"></i> Пользователи</h2>
+                    <div class="sort-container" id="sortContainer"></div>
+                    <input type="text" id="userSearch" placeholder="Поиск по нику...">
+                    <div id="usersList">
+                        <div class="loader-container">
+                            <div class="loader-icon"><i class="fas fa-user-astronaut"></i></div>
+                            <div class="loader-progress"><div class="loader-bar" id="usersLoaderBar"></div></div>
+                            <div class="loader-status" id="usersLoaderStatus">Загрузка пользователей...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel profile-top" id="userProfileView" style="display:none;"></div>
+                <div class="glass-panel profile-wall" id="userWallSection" style="display:none;"></div>
+            </section>
+            <section class="page" id="page-profile">
+                <div class="glass-panel profile-top" id="myProfileTop"></div>
+                <div class="glass-panel profile-gpx" id="myGpxSection"></div>
+                <div class="glass-panel profile-wall" id="myWallSection"></div>
+            </section>
+            <section class="page" id="page-profile-gpx">
+                <div class="glass-panel profile-section" id="profileGpxProfile"></div>
+                <div class="glass-panel gpx-section" id="profileGpxSection" style="display:none;"></div>
+            </section>
+            <section class="page" id="page-qr-confirm"></section>
+            <section class="page" id="page-diamond-plus"></section>
+            <!-- НОВАЯ СТРАНИЦА -->
+            <section class="page" id="page-data"></section>
+        </main>
+    </div>
+
+    <!-- Модалка входа/регистрации/QR -->
+    <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:800px; display:flex; overflow:hidden; padding:0;">
+            <div class="login-image" style="flex:1; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0%, transparent 60%); padding:40px;">
+                <img src="/assets/diamond-ai.png" alt="DiamKey" style="width:100%; max-width:300px; animation: float 3s ease-in-out infinite;">
+            </div>
+            <div class="login-form" style="flex:1; padding:40px 32px; display:flex; flex-direction:column; justify-content:center;">
+                <h2 id="loginCipherTitle" style="font-size:28px; font-weight:800; letter-spacing:2px; margin-bottom:24px; background:linear-gradient(135deg, #f5f5f7, #b0b0b0); -webkit-background-clip:text; background-clip:text; color:transparent;">DIAMKEY</h2>
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="tabLogin">Вход</button>
+                    <button class="auth-tab" id="tabRegister">Регистрация</button>
+                    <button class="auth-tab" id="tabQr"><i class="fas fa-qrcode"></i> QR-код</button>
+                </div>
+                <div id="loginFormBlock">
+                    <input id="loginIdentity" placeholder="Логин" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <input id="loginPassword" type="password" placeholder="Пароль" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <button class="btn btn-primary" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
+                </div>
+                <div id="registerFormBlock" style="display:none;">
+                    <input id="regLoginInput" placeholder="Придумайте логин" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <div class="login-status" id="regLoginStatus"></div>
+                    <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <input id="regPasswordConfirm" type="password" placeholder="Повторите пароль" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <button class="btn btn-primary" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+                </div>
+                <div id="qrFormBlock" style="display:none; text-align:center; padding:20px;">
+                    <div id="qrContainer" style="margin-top:20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка выдачи бейджей -->
+    <div class="modal" id="badgeModal" onclick="if(event.target===this) closeModal('badgeModal')">
+        <div class="modal-content glass-panel badge-modal-content" onclick="event.stopPropagation()">
+            <h3><i class="fas fa-medal"></i> Выдать бейдж</h3>
+            <div class="badge-search">
+                <input type="text" id="badgeUserSearch" placeholder="Поиск пользователя...">
+            </div>
+            <div class="badge-user-list" id="badgeUserList"></div>
+            <div id="badgeListContainer" style="display:none;">
+                <p class="text-muted" style="margin-bottom:12px;">Выберите бейдж для <strong id="selectedBadgeUser"></strong>:</p>
+                <div class="current-badges" id="currentBadges"></div>
+                <div class="badge-options-scroll" id="badgeOptions"></div>
+            </div>
+            <button class="btn btn-secondary" onclick="closeModal('badgeModal')" style="margin-top:16px; width:100%;">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Модалка настройки обложки -->
+    <div id="coverSetupModalContainer"></div>
+
+    <!-- Модалка названия GPX -->
+    <div class="modal" id="gpxNameModal" onclick="if(event.target===this) closeModal('gpxNameModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <h3>Название прогулки</h3>
+            <input id="gpxNameInput" placeholder="Например: Утренняя поездка">
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn" id="saveGpxNameBtn"><i class="fas fa-save"></i> Опубликовать</button>
+                <button class="btn" onclick="closeModal('gpxNameModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка редактирования описания -->
+    <div class="modal" id="editDescriptionModal" onclick="if(event.target===this) closeModal('editDescriptionModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <h3>Редактировать описание</h3>
+            <textarea id="editDescriptionInput" rows="3" placeholder="Расскажите о себе..."></textarea>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn" id="saveDescriptionBtn"><i class="fas fa-save"></i> Сохранить</button>
+                <button class="btn" onclick="closeModal('editDescriptionModal')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
+    <script src="/js/diamkey-core.js?v=12"></script>
+    <script src="/js/diamkey-router.js?v=12"></script>
+    <script src="/js/diamkey-ui.js?v=12"></script>
+    <script src="/js/diamkey-wall.js?v=12"></script>
+    <script src="/js/diamkey-gpx.js?v=12"></script>
+    <script src="/js/diamkey-qr.js?v=12"></script>
+    <script src="/js/diamkey-scanner.js?v=12"></script>
+    <script src="/js/diamkey-bot.js?v=12"></script>
+    <script src="/js/diamkey-users.js?v=12"></script>
+    <script src="/js/diamkey-ai-profile.js?v=12"></script>
+    <script src="/js/diamkey-voice.js?v=12"></script>
+</body>
+</html>
