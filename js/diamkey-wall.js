@@ -1,4 +1,4 @@
-// diamkey-wall.js — стена, профили, GPX-вью, Diamond Plus, Database и голосовые заметки
+// diamkey-wall.js — полный файл: профиль, стена, GPX, Diamond Plus, Database, реакции
 
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
@@ -22,41 +22,51 @@ async function loadAnnouncement() {
     }
 }
 
-function renderReactions(reactionsObj, postId, typePrefix = '') {
+// Новая функция рендера реакций с произвольными эмодзи + кнопка "···"
+function renderReactions(reactionsObj, postId) {
     const reactions = reactionsObj || {};
-    const types = { heart: '❤️', like: '👍', fire: '🔥' };
-    const storageKey = `${typePrefix}reacted_${postId}`;
+    const storageKey = `reacted_${postId}`;
     const userReaction = localStorage.getItem(storageKey);
+    // Получаем все эмодзи с количеством > 0, сортируем по убыванию
+    const entries = Object.entries(reactions).filter(([emoji, count]) => count > 0).sort((a, b) => b[1] - a[1]);
     let html = '';
-    for (const [key, emoji] of Object.entries(types)) {
-        const count = reactions[key] || 0;
-        const activeClass = (userReaction === key) ? ' active' : '';
-        html += `<button class="reaction-btn${activeClass}" data-type="${key}">${emoji} <span>${count}</span></button>`;
-    }
+    entries.forEach(([emoji, count]) => {
+        const activeClass = (userReaction === emoji) ? ' active' : '';
+        html += `<button class="reaction-btn${activeClass}" data-emoji="${emoji}">${emoji} <span>${count}</span></button>`;
+    });
+    // Кнопка "..." для открытия модалки выбора эмодзи
+    html += `<button class="reaction-btn reaction-more" onclick="window.openReactionPicker(${postId})">···</button>`;
     return html;
 }
 
-async function toggleReaction(postId, type, btn) {
+// Новая toggleReaction, работающая с любым эмодзи
+async function toggleReaction(postId, emoji) {
     if (!currentUser) return showToast('Войдите');
     const storageKey = `reacted_${postId}`;
-    const previousType = localStorage.getItem(storageKey);
+    const previousEmoji = localStorage.getItem(storageKey);
 
+    // Получаем текущие реакции
     const { data: post, error } = await _supabase.from('profile_wall').select('reactions').eq('id', postId).maybeSingle();
     if (error || !post) {
-        console.error('[DiamKey] Ошибка получения поста для реакции:', error);
-        return showToast('Ошибка');
+        console.warn('Reaction: post not found');
+        return;
     }
     let reactions = post.reactions || {};
 
-    if (previousType === type) {
-        reactions[type] = Math.max((reactions[type] || 0) - 1, 0);
+    if (previousEmoji === emoji) {
+        // Повторное нажатие – убираем реакцию
+        reactions[emoji] = Math.max((reactions[emoji] || 0) - 1, 0);
+        if (reactions[emoji] === 0) delete reactions[emoji];
         localStorage.removeItem(storageKey);
     } else {
-        if (previousType) {
-            reactions[previousType] = Math.max((reactions[previousType] || 0) - 1, 0);
+        // Если была другая реакция, убираем её
+        if (previousEmoji) {
+            reactions[previousEmoji] = Math.max((reactions[previousEmoji] || 0) - 1, 0);
+            if (reactions[previousEmoji] === 0) delete reactions[previousEmoji];
         }
-        reactions[type] = (reactions[type] || 0) + 1;
-        localStorage.setItem(storageKey, type);
+        // Добавляем новую
+        reactions[emoji] = (reactions[emoji] || 0) + 1;
+        localStorage.setItem(storageKey, emoji);
     }
 
     const { error: updateError } = await _supabase.from('profile_wall').update({ reactions }).eq('id', postId);
@@ -65,29 +75,32 @@ async function toggleReaction(postId, type, btn) {
         return showToast('Ошибка');
     }
 
+    // Обновляем панель реакций в DOM
+    const postEl = document.querySelector(`.wall-post[data-post-id="${postId}"]`);
+    if (postEl) {
+        const footer = postEl.querySelector('.wall-post-footer');
+        if (footer) {
+            footer.innerHTML = renderReactions(reactions, postId);
+            // Привязываем обработчики к кнопкам реакций
+            footer.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleReaction(postId, this.dataset.emoji);
+                });
+            });
+        }
+    }
+
+    // Уведомление владельцу поста (если не сам себе)
     const { data: owner } = await _supabase.from('profile_wall').select('profile_login').eq('id', postId).maybeSingle();
     if (owner && owner.profile_login !== currentUser.login) {
         await _supabase.from('notifications').insert({
             user_login: owner.profile_login,
             type: 'wall_reaction',
             from_login: currentUser.login,
-            content: `${currentUser.name || currentUser.login} поставил(а) реакцию на вашу запись`,
+            content: `${currentUser.name || currentUser.login} поставил(а) реакцию ${emoji} на вашу запись`,
             read: false
         });
-    }
-
-    const postEl = btn.closest('.wall-post');
-    if (postEl) {
-        const footer = postEl.querySelector('.wall-post-footer');
-        if (footer) {
-            footer.innerHTML = renderReactions(reactions, postId);
-            footer.querySelectorAll('.reaction-btn').forEach(b => {
-                b.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    toggleReaction(postId, this.dataset.type, this);
-                });
-            });
-        }
     }
 }
 
@@ -326,7 +339,7 @@ async function openUserProfile(login) {
         if (userWallSection) {
             userWallSection.style.display = 'block';
 
-            // Получаем объединённый список постов (текстовые + голосовые)
+            // Получаем смешанные посты (текстовые + голосовые)
             const allPosts = await (typeof getMixedWallPosts === 'function' ? getMixedWallPosts(login, wallPosts) : wallPosts);
 
             let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
@@ -369,15 +382,14 @@ async function openUserProfile(login) {
                 };
             }
 
-            userWallSection.querySelectorAll('.reaction-btn').forEach(btn => {
+            // Привязываем обработчики к кнопкам реакций в уже отрендеренных постах
+            userWallSection.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     const postId = this.closest('.wall-post').dataset.postId;
-                    toggleReaction(postId, this.dataset.type, this);
+                    toggleReaction(postId, this.dataset.emoji);
                 });
             });
-
-            // Голосовой ввод больше не требует отдельного вызова, он сам находит .wall-input
         }
     } catch (e) {
         console.error('[DiamKey] Ошибка в openUserProfile:', e);
@@ -442,7 +454,6 @@ async function renderMyProfile() {
 
         const coverBlock = renderCoverHTML(profile, true);
 
-        // Объединяем посты
         const allPosts = await (typeof getMixedWallPosts === 'function' ? getMixedWallPosts(login, wallPosts) : wallPosts);
         let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
@@ -524,7 +535,14 @@ async function renderMyProfile() {
             showToast('Описание сохранено');
         };
 
-        attachReactionListeners(pageProfile);
+        // Привязываем реакции
+        pageProfile.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const postId = this.closest('.wall-post').dataset.postId;
+                toggleReaction(postId, this.dataset.emoji);
+            });
+        });
 
         document.getElementById('postMyWallBtn').onclick = async () => {
             const msg = document.getElementById('myWallMessage').value.trim();
@@ -541,12 +559,25 @@ async function renderMyProfile() {
             showToast('Запись добавлена');
             renderMyProfile();
         };
-
-        // Голосовой ввод сам добавится благодаря наблюдателю в voice.js
     } catch (e) {
         console.error('[DiamKey] Ошибка загрузки своего профиля:', e);
         pageProfile.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
     }
+}
+
+// Вспомогательная функция рендера текстового поста
+function renderTextPostHTML(post) {
+    return `
+      <div class="wall-post glass-panel" data-post-id="${post.id}">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          ${avatarHTML(post.user_avatar, 32)}
+          <strong>${escapeHtml(post.user_name || post.user_login)}</strong>
+          <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(post.created_at).toLocaleString()}</span>
+        </div>
+        <p>${escapeHtml(post.content)}</p>
+        <div class="wall-post-footer">${renderReactions(post.reactions, post.id)}</div>
+      </div>
+    `;
 }
 
 function buildWallHTML(posts) {
@@ -564,11 +595,11 @@ function buildWallHTML(posts) {
 }
 
 function attachReactionListeners(container) {
-    container.querySelectorAll('.reaction-btn').forEach(btn => {
+    container.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
             const postId = this.closest('.wall-post').dataset.postId;
-            toggleReaction(postId, this.dataset.type, this);
+            toggleReaction(postId, this.dataset.emoji);
         });
     });
 }
@@ -975,19 +1006,4 @@ function renderQrConfirm(ticket) {
             page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход отклонён</h2></div>';
         });
     }
-}
-
-// Вспомогательная функция для рендера текстового поста (старый формат)
-function renderTextPostHTML(post) {
-    return `
-      <div class="wall-post glass-panel" data-post-id="${post.id}">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-          ${avatarHTML(post.user_avatar, 32)}
-          <strong>${escapeHtml(post.user_name || post.user_login)}</strong>
-          <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(post.created_at).toLocaleString()}</span>
-        </div>
-        <p>${escapeHtml(post.content)}</p>
-        <div class="wall-post-footer">${renderReactions(post.reactions, post.id)}</div>
-      </div>
-    `;
 }
