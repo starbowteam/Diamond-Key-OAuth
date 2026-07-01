@@ -1,20 +1,20 @@
 // diamkey-ai-profile.js — AI-ассистент профиля (исправленный)
 (function() {
   let observer = null;
-  let aiButtonAdded = false;
 
-  // Стили инжектируем
+  // Стили
   const style = document.createElement('style');
   style.textContent = `
     .ai-profile-btn {
       position: absolute;
-      top: -8px;
-      right: -8px;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
       width: 32px;
       height: 32px;
-      background: rgba(18,18,24,0.9);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--border-glass, rgba(255,255,255,0.2));
+      background: var(--bg-glass, rgba(18,18,24,0.85));
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-glass, rgba(255,255,255,0.12));
       border-radius: 50%;
       color: var(--accent, #c0c0d0);
       font-size: 16px;
@@ -22,20 +22,13 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 0 12px rgba(192,192,208,0.3);
-      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: background 0.2s, color 0.2s;
       z-index: 10;
-      animation: aiPulse 2.5s infinite;
     }
     .ai-profile-btn:hover {
-      background: rgba(255,255,255,0.12);
-      box-shadow: 0 0 18px rgba(192,192,208,0.5);
-      transform: scale(1.1);
+      background: rgba(255,255,255,0.1);
       color: #fff;
-    }
-    @keyframes aiPulse {
-      0%, 100% { box-shadow: 0 0 8px rgba(192,192,208,0.2); }
-      50% { box-shadow: 0 0 18px rgba(192,192,208,0.5); }
     }
     .ai-modal-overlay {
       position: fixed;
@@ -124,7 +117,7 @@
   `;
   document.head.appendChild(style);
 
-  // Создаём модалку
+  // Модалка
   const modal = document.createElement('div');
   modal.className = 'ai-modal-overlay';
   modal.innerHTML = `
@@ -143,15 +136,9 @@
     </div>
   `;
   document.body.appendChild(modal);
+  document.getElementById('closeAiModalBtn').addEventListener('click', () => modal.classList.remove('active'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('active'); });
 
-  document.getElementById('closeAiModalBtn').addEventListener('click', () => {
-    modal.classList.remove('active');
-  });
-  modal.addEventListener('click', function(e) {
-    if (e.target === modal) modal.classList.remove('active');
-  });
-
-  // Сбор данных и запрос к Mistral
   async function openAIModal(profileLogin) {
     modal.classList.add('active');
     const body = document.getElementById('aiBody');
@@ -170,22 +157,21 @@
         return;
       }
 
-      let totalDistance = 0;
-      gpxFiles.forEach(f => {
-        const stats = typeof getGpxStats === 'function' ? getGpxStats(f.content) : { dist: 0 };
-        if (stats.dist) totalDistance += stats.dist;
-      });
+      // Вычисляем дни в DiamKey
+      const daysInDiamKey = profile.created_at
+        ? Math.floor((Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24))
+        : '?';
+
+      // Подготовка бейджей для вывода
+      const badgeList = badges.map(b => b.badges?.name).filter(Boolean);
+      const badgesStr = badgeList.length ? badgeList.join(', ') : 'нет';
 
       const profileData = {
         login: profileLogin,
         name: profile.name || profileLogin,
-        created_at: profile.created_at,
-        gpxCount: gpxFiles.length,
-        totalDistance: totalDistance > 1000 ? (totalDistance/1000).toFixed(1) : (totalDistance/1000).toFixed(2),
+        daysInDiamKey,
         wallCount: wallPosts.length,
-        badges: badges.map(b => b.badges).filter(Boolean),
-        cover: profile.cover || '',
-        avatar: profile.avatar || ''
+        badgesStr
       };
 
       const { data: configData } = await _supabase.from('service_config').select('mistral_api_key').eq('id',1).maybeSingle();
@@ -194,7 +180,7 @@
         return;
       }
 
-      const systemPrompt = `Ты — Diamond AI, помощник на сайте DiamKey. Проанализируй профиль пользователя и дай персонализированный дружелюбный отзыв. Данные: логин: ${profileData.login}, имя: ${profileData.name}, зарегистрирован: ${profileData.created_at ? new Date(profileData.created_at).toLocaleDateString('ru-RU') : 'неизвестно'}, GPX-поездок: ${profileData.gpxCount}, общая дистанция: ${profileData.totalDistance} км, записей на стене: ${profileData.wallCount}, бейджи: ${profileData.badges.map(b=>b.name).join(', ') || 'нет'}, обложка: ${profileData.cover ? (profileData.cover.startsWith('image:') ? 'кастомная картинка' : 'градиент') : 'стандартная'}, аватар: ${profileData.avatar ? 'установлен' : 'нет'}. Сделай комплимент, отметь сильные стороны, дай 1-2 совета (больше GPX, оформить обложку, написать на стену). Будь остроумным, но добрым. Отвечай на русском, чистым текстом, без маркдауна, 3-5 предложений.`;
+      const systemPrompt = `Ты — Diamond AI, помощник на сайте DiamKey. Проанализируй профиль пользователя и дай персонализированный дружелюбный отзыв. Данные: логин: ${profileData.login}, имя: ${profileData.name}, дней в DiamKey: ${profileData.daysInDiamKey}, записей на стене: ${profileData.wallCount}, бейджи: ${profileData.badgesStr}. Сделай комплимент, отметь сильные стороны, дай 1-2 совета. Будь остроумным, но добрым. Отвечай на русском, чистым текстом, без маркдауна, 3-5 предложений.`;
 
       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
@@ -219,10 +205,9 @@
       body.innerHTML = `
         <p style="font-size:15px; line-height:1.5; color:var(--text-primary); margin-bottom:16px;">${escapeHtml(reply)}</p>
         <div class="ai-stats">
-          <div class="ai-stat-item"><i class="fas fa-route"></i> <strong>${profileData.gpxCount}</strong> поездок</div>
-          <div class="ai-stat-item"><i class="fas fa-road"></i> <strong>${profileData.totalDistance}</strong> км</div>
+          <div class="ai-stat-item"><i class="fas fa-calendar-alt"></i> <strong>${profileData.daysInDiamKey}</strong> дн. в DiamKey</div>
           <div class="ai-stat-item"><i class="fas fa-comment"></i> <strong>${profileData.wallCount}</strong> записей</div>
-          <div class="ai-stat-item"><i class="fas fa-medal"></i> <strong>${profileData.badges.length}</strong> бейджей</div>
+          <div class="ai-stat-item"><i class="fas fa-medal"></i> ${badgeList.length ? badgeList.map(b => `<span style="font-weight:600;">${escapeHtml(b)}</span>`).join(', ') : 'нет бейджей'}</div>
         </div>
       `;
     } catch (e) {
@@ -231,7 +216,7 @@
     }
   }
 
-  // Прикрепляем кнопку к аватарке
+  // Прикрепление кнопки над аватаркой
   function attachAIButton() {
     const avatarWrapper = document.querySelector('#page-profile.active .avatar-wrapper, #userProfileView .avatar-wrapper');
     if (!avatarWrapper || !currentUser) return;
@@ -240,7 +225,7 @@
     const btn = document.createElement('div');
     btn.className = 'ai-profile-btn';
     btn.title = 'Спросить AI о профиле';
-    btn.innerHTML = '<i class="fas fa-exclamation"></i>';
+    btn.innerHTML = '<i class="fas fa-info-circle"></i>';
 
     let profileLogin = currentUser.login;
     const userView = document.getElementById('userProfileView');
@@ -249,22 +234,15 @@
       if (match) profileLogin = match[1];
     }
 
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', e => {
       e.stopPropagation();
       openAIModal(profileLogin);
     });
 
     avatarWrapper.style.position = 'relative';
     avatarWrapper.appendChild(btn);
-    aiButtonAdded = true;
   }
 
-  function resetAndAttach() {
-    aiButtonAdded = false;
-    attachAIButton();
-  }
-
-  // Наблюдатель за DOM
   function startObserver() {
     if (observer) observer.disconnect();
     observer = new MutationObserver(() => {
@@ -273,7 +251,8 @@
       if ((profilePage && profilePage.classList.contains('active')) || (userView && userView.style.display !== 'none')) {
         attachAIButton();
       } else {
-        aiButtonAdded = false;
+        const existingBtn = document.querySelector('.ai-profile-btn');
+        if (existingBtn) existingBtn.remove();
       }
     });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class','style'] });
@@ -286,5 +265,9 @@
     startObserver();
   }
 
-  window.addEventListener('popstate', resetAndAttach);
+  window.addEventListener('popstate', () => {
+    const existingBtn = document.querySelector('.ai-profile-btn');
+    if (existingBtn) existingBtn.remove();
+    attachAIButton();
+  });
 })();
