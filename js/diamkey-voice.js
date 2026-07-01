@@ -8,7 +8,7 @@
   let currentAudioUrl = null;
   let currentAudioBlob = null;
   let currentDuration = 0;
-  let activeInputContainer = null; // ссылка на .wall-input, где идёт запись
+  let activeInputContainer = null;
 
   // Стили
   const style = document.createElement('style');
@@ -174,24 +174,19 @@
     });
   }
 
-  // Обработчик для одного инпута стены
   function setupVoiceInput(container) {
-    if (!container || container.querySelector('.voice-mic-btn')) return; // уже настроено
+    if (!container || container.querySelector('.voice-mic-btn')) return;
 
     const textarea = container.querySelector('textarea');
     const sendBtn = container.querySelector('button');
     if (!textarea || !sendBtn) return;
 
-    // Создаём кнопку микрофона
     const micBtn = document.createElement('button');
     micBtn.className = 'voice-mic-btn';
     micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
     micBtn.title = 'Записать голосовое';
-
-    // Вставляем перед кнопкой отправки
     sendBtn.parentNode.insertBefore(micBtn, sendBtn);
 
-    // При клике на микрофон начинаем запись
     micBtn.addEventListener('click', async () => {
       if (!currentUser) return showToast('Войдите');
       try {
@@ -204,7 +199,6 @@
           currentAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           currentAudioUrl = URL.createObjectURL(currentAudioBlob);
           currentDuration = recordingSeconds;
-          // Показываем превью
           showPreviewState(container);
         };
 
@@ -227,7 +221,6 @@
     micBtn.style.display = 'none';
     sendBtn.style.display = 'none';
 
-    // Создаём область записи
     let recArea = container.querySelector('.voice-recording-area');
     if (!recArea) {
       recArea = document.createElement('div');
@@ -263,7 +256,6 @@
   }
 
   function showPreviewState(container) {
-    // Убираем интерфейс записи
     const recArea = container.querySelector('.voice-recording-area');
     if (recArea) recArea.style.display = 'none';
 
@@ -274,7 +266,6 @@
     sendBtn.style.display = 'none';
     if (micBtn) micBtn.style.display = 'none';
 
-    // Превью
     let previewArea = container.querySelector('.voice-preview-area');
     if (!previewArea) {
       previewArea = document.createElement('div');
@@ -394,7 +385,6 @@
       currentAudioUrl = null;
       currentAudioBlob = null;
       resetInputUI(container);
-      // Обновляем стену
       if (profileLogin === currentUser.login && typeof renderMyProfile === 'function') renderMyProfile();
       else if (typeof openUserProfile === 'function') openUserProfile(profileLogin);
     } catch (e) {
@@ -421,12 +411,10 @@
     if (previewArea) previewArea.innerHTML = '';
   }
 
-  // Поиск и настройка всех форм ввода на странице
   function setupAllInputs() {
     document.querySelectorAll('.wall-input').forEach(container => setupVoiceInput(container));
   }
 
-  // Наблюдатель за DOM, чтобы подхватывать новые формы
   const domObserver = new MutationObserver(() => setupAllInputs());
   domObserver.observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') {
@@ -435,7 +423,6 @@
     setupAllInputs();
   }
 
-  // Отображение голосовых сообщений в стене (вызывается из wall.js)
   async function loadVoicePosts(login, container) {
     const { data: voicePosts } = await _supabase
       .from('wall_audio')
@@ -451,7 +438,7 @@
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
             ${avatarHTML(msg.user_avatar, 32)}
             <strong>${escapeHtml(msg.user_name || msg.user_login)}</strong>
-            <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${formatDate(msg.created_at)}</span>
+            <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(msg.created_at).toLocaleString()}</span>
           </div>
           <div class="voice-message-player" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;">
             <button class="voice-msg-play" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--accent);background:rgba(255,255,255,0.06);color:var(--accent);" onclick="toggleVoicePlayback(this, '${escapeHtml(msg.audio_url)}')">
@@ -468,7 +455,6 @@
     }
   }
 
-  // Глобальные функции для плеера на стене (вызываются из HTML)
   window.toggleVoicePlayback = function(btn, url) {
     if (window._globalVoiceAudio && window._globalVoiceBtn !== btn) {
       window._globalVoiceAudio.pause();
@@ -515,9 +501,8 @@
     bar.querySelector('.voice-msg-fill').style.width = (pct*100) + '%';
   };
 
-  // Экспортируем функцию для wall.js
   window.integrateVoiceWall = async function(login, wallContainer) {
-    setupVoiceInput(wallContainer); // добавит кнопку микрофона, если ещё нет
+    setupVoiceInput(wallContainer);
     await loadVoicePosts(login, wallContainer);
   };
 
