@@ -1,3 +1,5 @@
+// diamkey-wall.js — стена, профили, GPX-вью, Diamond Plus, Database и голосовые заметки
+
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
     if (!body) return;
@@ -384,6 +386,11 @@ async function openUserProfile(login) {
                     toggleReaction(postId, this.dataset.type, this);
                 });
             });
+
+            // ИНТЕГРАЦИЯ ГОЛОСОВЫХ ЗАМЕТОК
+            if (typeof integrateVoiceWall === 'function') {
+                await integrateVoiceWall(login, userWallSection);
+            }
         }
     } catch (e) {
         console.error('[DiamKey] Ошибка в openUserProfile:', e);
@@ -544,6 +551,12 @@ async function renderMyProfile() {
             showToast('Запись добавлена');
             renderMyProfile();
         };
+
+        // ИНТЕГРАЦИЯ ГОЛОСОВЫХ ЗАМЕТОК
+        const myWallSection = pageProfile.querySelector('.profile-wall');
+        if (myWallSection && typeof integrateVoiceWall === 'function') {
+            await integrateVoiceWall(currentUser.login, myWallSection);
+        }
     } catch (e) {
         console.error('[DiamKey] Ошибка загрузки своего профиля:', e);
         pageProfile.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
