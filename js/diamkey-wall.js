@@ -1,10 +1,13 @@
-// diamkey-wall.js — полный файл с новой вёрсткой профиля
+// diamkey-wall.js — полный файл с новым дизайном профиля и страницей /add/plus
 
-// Инжектируем стили для новой верхней части профиля
-const newProfileStyles = document.createElement('style');
-newProfileStyles.textContent = `
+// Стили для профиля и карточки Plus
+const profileStyles = document.createElement('style');
+profileStyles.textContent = `
   .profile-cover {
     transition: filter 0.3s ease;
+  }
+  .profile-cover:hover {
+    filter: blur(3px) brightness(0.6);
   }
   .cover-actions {
     position: absolute;
@@ -23,11 +26,16 @@ newProfileStyles.textContent = `
     opacity: 1;
     pointer-events: auto;
   }
-  .profile-cover:hover::after {
+  .profile-cover::after {
     content: '';
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0);
     z-index: 2;
+    transition: background 0.3s ease;
+    pointer-events: none;
+  }
+  .profile-cover:hover::after {
+    background: rgba(0,0,0,0.3);
   }
   .cover-action {
     display: flex;
@@ -88,43 +96,89 @@ newProfileStyles.textContent = `
     align-items: center;
     justify-content: center;
     gap: 12px;
-    margin: 8px 24px 16px;
+    margin: 8px 24px 20px;
   }
 
-  .actions-row {
-    display: flex;
-    gap: 12px;
-    margin: 0 24px 20px;
-  }
-
-  .action-card-mini {
-    flex: 1;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border-glass);
-    border-radius: 16px;
-    padding: 14px 12px;
+  .nickname-badge .action-btn-mini {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: rgba(192,192,208,0.15);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 14px;
     cursor: pointer;
-    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .nickname-badge .action-btn-mini:hover {
+    background: rgba(192,192,208,0.3);
+    color: #fff;
+  }
+
+  /* Карточка Diamond Plus в /add */
+  .add-plus-promo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 40px;
+    padding: 48px;
+    cursor: pointer;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .add-plus-left {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    padding-left: 16px;
+  }
+  .add-plus-left i {
+    font-size: 48px;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .add-plus-left h3 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    background: linear-gradient(to right, var(--accent), transparent) bottom left no-repeat;
+    background-size: 100% 2px;
+    display: inline-block;
+  }
+  .add-plus-left p {
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+    max-width: 400px;
+  }
+  .add-plus-right {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    position: relative;
-    overflow: hidden;
   }
-  .action-card-mini:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3), 0 0 20px rgba(192,192,208,0.2);
-    background: rgba(255,255,255,0.06);
+  .add-plus-shape {
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 70%);
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    box-shadow: 0 0 30px rgba(192,192,208,0.6), inset 0 0 20px rgba(255,255,255,0.2);
+    animation: morph 8s ease-in-out infinite, silverGlow 3s ease-in-out infinite;
   }
-  .action-card-mini i { font-size: 22px; color: var(--accent); transition: transform 0.3s; }
-  .action-card-mini:hover i { transform: scale(1.15); }
-  .action-card-mini span { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-  .action-card-mini .action-sub { display: none; font-size: 12px; color: var(--text-muted); }
-  .action-card-mini:hover .action-sub { display: inline; }
+  @keyframes silverGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(192,192,208,0.4), inset 0 0 15px rgba(255,255,255,0.15); }
+    50% { box-shadow: 0 0 40px rgba(220,220,240,0.8), inset 0 0 25px rgba(255,255,255,0.3); }
+  }
 `;
-document.head.appendChild(newProfileStyles);
+document.head.appendChild(profileStyles);
 
 // Остальной код diamkey-wall.js начинается здесь
 async function loadAnnouncement() {
@@ -404,6 +458,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
             <div class="profile-nickname-center">
                 <div class="nickname-badge">
                     ${escapeHtml(profile.name || login)}
+                    ${isOwnProfile ? `<button class="action-btn-mini" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')" title="Дополнения"><i class="fas fa-puzzle-piece"></i></button>` : ''}
                     <button class="ai-btn-nick" onclick="event.stopPropagation(); window.openAIModal('${login}')" title="Анализ профиля AI"><i class="fas fa-info-circle"></i></button>
                 </div>
             </div>
@@ -412,18 +467,6 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
             <div class="meta-row-centered">
                 ${statusHTML}
                 <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
-            </div>
-            <div class="actions-row">
-                <div class="action-card-mini" onclick="navigateTo('/profile/${login}/gpxview')">
-                    <i class="fas fa-puzzle-piece"></i>
-                    <span>Дополнения</span>
-                    <span class="action-sub">Поездки и другое</span>
-                </div>
-                <div class="action-card-mini" onclick="navigateTo('/diamond-plus')">
-                    <i class="fas fa-crown"></i>
-                    <span>Diamond Plus</span>
-                    <span class="action-sub">Подписка</span>
-                </div>
             </div>
         </div>
     `;
@@ -616,6 +659,7 @@ async function renderMyProfile() {
                 <div class="profile-nickname-center">
                     <div class="nickname-badge">
                         ${escapeHtml(profile.name || login)}
+                        <button class="action-btn-mini" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')" title="Дополнения"><i class="fas fa-puzzle-piece"></i></button>
                         <button class="ai-btn-nick" onclick="event.stopPropagation(); window.openAIModal('${login}')" title="Анализ профиля AI"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
@@ -624,18 +668,6 @@ async function renderMyProfile() {
                 <div class="meta-row-centered">
                     ${statusHTML}
                     <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
-                </div>
-                <div class="actions-row">
-                    <div class="action-card-mini" onclick="navigateTo('/profile/${login}/gpxview')">
-                        <i class="fas fa-puzzle-piece"></i>
-                        <span>Дополнения</span>
-                        <span class="action-sub">Поездки и другое</span>
-                    </div>
-                    <div class="action-card-mini" onclick="navigateTo('/diamond-plus')">
-                        <i class="fas fa-crown"></i>
-                        <span>Diamond Plus</span>
-                        <span class="action-sub">Подписка</span>
-                    </div>
                 </div>
             </div>
             <div class="glass-panel profile-wall">
@@ -777,135 +809,35 @@ function startPlusGlitch() {
     }, 150);
 }
 
+// Новая функция: страница /add/plus
+function renderAddPlusPage() {
+    return `
+        <div class="glass-panel add-plus-promo">
+            <div class="add-plus-left">
+                <i class="fas fa-crown"></i>
+                <h3>Diamond Plus</h3>
+                <p>Подписка, открывающая весь потенциал DiamKey. Расширенные настройки, безлимитный AI, премиум-бейдж и ранний доступ к новинкам.</p>
+                <button class="btn btn-primary" onclick="showToast('Скоро будет!')"><i class="fas fa-star"></i> Оформить</button>
+            </div>
+            <div class="add-plus-right">
+                <div class="add-plus-shape"></div>
+            </div>
+        </div>
+        <button class="btn back-btn-add" onclick="navigateTo('/add')" style="margin-top:16px;">
+            <i class="fas fa-arrow-left"></i> Назад
+        </button>
+    `;
+}
+
+// Существующие страницы Diamond Plus (используются только для обратной совместимости, больше не вызываются)
 async function renderDiamondPlusPage() {
     const page = document.getElementById('page-diamond-plus');
     if (!page) return;
-
-    page.innerHTML = `
-        <div class="plus-panel" id="plusPanelContainer">
-            <canvas id="particleCanvas"></canvas>
-            <div class="plus-header">
-                <button class="back-btn-profile" onclick="navigateTo('/profile')"><i class="fas fa-arrow-left"></i> Назад</button>
-                <h1>Diamond Plus</h1>
-                <p class="plus-subtitle">Подписка, открывающая весь потенциал DiamKey</p>
-            </div>
-            <div class="plus-grid">
-                <div class="plus-card">
-                    <div class="plus-card-icon"><i class="fas fa-brain"></i></div>
-                    <h3 class="plus-card-title">Diamond AI без цензуры</h3>
-                    <p class="plus-card-desc">Искусственный интеллект, который отвечает прямо и без ограничений. Только вы и чистый разум.</p>
-                    <p class="plus-card-extra">+ эксклюзивные модели</p>
-                </div>
-                <div class="plus-card">
-                    <div class="plus-card-icon"><i class="fas fa-sliders-h"></i></div>
-                    <h3 class="plus-card-title">Расширенные настройки профиля</h3>
-                    <p class="plus-card-desc">Уникальные обложки, кастомные шрифты ника, эксклюзивные рамки аватара.</p>
-                    <p class="plus-card-extra">+ безумная фантазия к ним</p>
-                </div>
-                <div class="plus-card">
-                    <div class="plus-card-icon"><i class="fas fa-medal"></i></div>
-                    <h3 class="plus-card-title">Премиум-бейдж</h3>
-                    <p class="plus-card-desc">Серебряный значок Diamond Plus, который виден всем. Вас узнают и уважают.</p>
-                    <p class="plus-card-extra">+ приоритетная поддержка</p>
-                </div>
-                <div class="plus-card">
-                    <div class="plus-card-icon"><i class="fas fa-rocket"></i></div>
-                    <h3 class="plus-card-title">Ранний доступ</h3>
-                    <p class="plus-card-desc">Участвуйте в закрытых бета-тестах новых функций DiamKey и влияйте на развитие экосистемы.</p>
-                    <p class="plus-card-extra">+ возможность взлететь</p>
-                </div>
-                <div class="plus-card">
-                    <div class="plus-card-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                    <h3 class="plus-card-title">Расширенное хранилище</h3>
-                    <p class="plus-card-desc">До 5 ГБ для ваших данных в дополнениях. Никаких ограничений.</p>
-                    <p class="plus-card-extra">+ авто-бэкап данных</p>
-                </div>
-            </div>
-            <div class="faq-section">
-                <h2 class="faq-title">Часто спрашивают</h2>
-                <div class="faq-item" onclick="this.classList.toggle('open')">
-                    <div class="faq-q"><i class="fas fa-chevron-right"></i> Когда спишут деньги?</div>
-                    <div class="faq-a">Когда вы оплатите подписку.</div>
-                </div>
-                <div class="faq-item" onclick="this.classList.toggle('open')">
-                    <div class="faq-q"><i class="fas fa-chevron-right"></i> Можно ли отменить в любой момент?</div>
-                    <div class="faq-a">Да, подписка отключается в один клик. До конца оплаченного периода все преимущества сохраняются.</div>
-                </div>
-                <div class="faq-item" onclick="this.classList.toggle('open')">
-                    <div class="faq-q"><i class="fas fa-chevron-right"></i> Как получить ранний доступ?</div>
-                    <div class="faq-a">Сразу после оформления подписки вы автоматически попадаете в список тестеров.</div>
-                </div>
-            </div>
-            <div class="plus-cta">
-                <div class="plus-price">
-                    <span class="amount">₽149</span>
-                    <span class="period">/ месяц</span>
-                </div>
-                <button class="plus-btn" onclick="showToast('Скоро будет!')"><i class="fas fa-crown"></i> Оформить подписку</button>
-            </div>
-        </div>
-    `;
-
-    setTimeout(() => {
-        initParticles();
-    }, 100);
+    page.innerHTML = renderAddPlusPage();
+    setTimeout(() => initParticles(), 100);
 }
 
-function initParticles() {
-    const canvas = document.getElementById('particleCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const panel = canvas.parentElement;
-    let particles = [];
-    const maxParticles = 50;
-
-    function resize() {
-        canvas.width = panel.offsetWidth;
-        canvas.height = panel.offsetHeight;
-    }
-    resize();
-    window.addEventListener('resize', () => {
-        resize();
-        particles = [];
-        for (let i = 0; i < maxParticles; i++) createParticle();
-    });
-
-    function createParticle() {
-        return {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            radius: Math.random() * 1.5 + 0.5,
-            speedY: Math.random() * 0.2 + 0.1,
-            speedX: (Math.random() - 0.5) * 0.1,
-            opacity: Math.random() * 0.5 + 0.2
-        };
-    }
-
-    for (let i = 0; i < maxParticles; i++) particles.push(createParticle());
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach(p => {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(192,192,208,${p.opacity})`;
-            ctx.fill();
-            p.y -= p.speedY;
-            p.x += p.speedX;
-            if (p.y < -10) {
-                p.y = canvas.height + 10;
-                p.x = Math.random() * canvas.width;
-            }
-            if (p.x < -10 || p.x > canvas.width + 10) {
-                p.x = Math.random() * canvas.width;
-                p.y = canvas.height + 10;
-            }
-        });
-        requestAnimationFrame(draw);
-    }
-    draw();
-}
-
+// Остальные функции (Database, GPX-вью, QR-confirm) остаются без изменений, но я приведу их здесь для полноты
 async function renderDatabasePage() {
     const page = document.getElementById('page-data');
     if (!page) return;
@@ -1126,4 +1058,59 @@ function renderQrConfirm(ticket) {
             page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход отклонён</h2></div>';
         });
     }
+}
+
+function initParticles() {
+    const canvas = document.getElementById('particleCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const panel = canvas.parentElement;
+    let particles = [];
+    const maxParticles = 50;
+
+    function resize() {
+        canvas.width = panel.offsetWidth;
+        canvas.height = panel.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', () => {
+        resize();
+        particles = [];
+        for (let i = 0; i < maxParticles; i++) createParticle();
+    });
+
+    function createParticle() {
+        return {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 1.5 + 0.5,
+            speedY: Math.random() * 0.2 + 0.1,
+            speedX: (Math.random() - 0.5) * 0.1,
+            opacity: Math.random() * 0.5 + 0.2
+        };
+    }
+
+    for (let i = 0; i < maxParticles; i++) particles.push(createParticle());
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(192,192,208,${p.opacity})`;
+            ctx.fill();
+            p.y -= p.speedY;
+            p.x += p.speedX;
+            if (p.y < -10) {
+                p.y = canvas.height + 10;
+                p.x = Math.random() * canvas.width;
+            }
+            if (p.x < -10 || p.x > canvas.width + 10) {
+                p.x = Math.random() * canvas.width;
+                p.y = canvas.height + 10;
+            }
+        });
+        requestAnimationFrame(draw);
+    }
+    draw();
 }
