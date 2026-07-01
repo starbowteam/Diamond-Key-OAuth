@@ -1,4 +1,4 @@
-// diamkey-voice.js — Голосовые заметки (исправленная интеграция)
+// diamkey-voice.js — Голосовые заметки (единый стиль, лимит 1 мин, интеграция в стену)
 (function() {
   let mediaRecorder = null;
   let audioChunks = [];
@@ -8,38 +8,67 @@
   let currentAudioUrl = null;
   let currentAudioBlob = null;
   let currentDuration = 0;
+  const MAX_DURATION = 60; // секунд
 
-  // Стили
+  // Инжектим стили – единый вид всех кнопок ввода
   const style = document.createElement('style');
   style.textContent = `
-    .voice-mic-btn {
-      width: 38px; height: 38px;
-      border-radius: 50%;
+    /* Единая кнопка-иконка для области ввода (микрофон, отправка, стоп, удалить, отправить голос) */
+    .wall-input .voice-mic-btn,
+    .wall-input .voice-stop-btn,
+    .wall-input .voice-delete-btn,
+    .wall-input .voice-send-btn,
+    .wall-input .btn-send {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       background: rgba(255,255,255,0.06);
       border: 1px solid var(--border-glass);
       color: var(--text-muted);
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
       transition: all 0.2s;
-      margin: 0 4px;
       flex-shrink: 0;
+      font-size: 16px;
     }
-    .voice-mic-btn:hover {
-      background: rgba(255,255,255,0.1);
+    .wall-input .btn-send {
+      background: rgba(192,192,208,0.15);
+      border-color: var(--accent);
       color: var(--accent);
+    }
+    .wall-input .voice-mic-btn:hover,
+    .wall-input .voice-stop-btn:hover,
+    .wall-input .voice-delete-btn:hover,
+    .wall-input .voice-send-btn:hover,
+    .wall-input .btn-send:hover {
+      background: rgba(255,255,255,0.12);
+      color: var(--text-primary);
       border-color: var(--accent);
     }
-    .voice-mic-btn.recording {
+    .wall-input .voice-stop-btn {
       background: rgba(224,93,93,0.15);
       border-color: #e05d5d;
       color: #e05d5d;
     }
-    .voice-recording-area {
+    .wall-input .voice-delete-btn {
+      background: rgba(224,93,93,0.1);
+      border-color: rgba(224,93,93,0.3);
+      color: #e05d5d;
+    }
+    .wall-input .voice-send-btn {
+      background: rgba(192,192,208,0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Область записи/превью внутри .wall-input (заменяет textarea) */
+    .voice-recording-area,
+    .voice-preview-area {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex: 1;
     }
     .voice-waveform-large {
@@ -65,24 +94,8 @@
       min-width: 45px;
       text-align: center;
     }
-    .voice-stop-btn {
-      width: 38px; height: 38px;
-      border-radius: 50%;
-      background: rgba(224,93,93,0.2);
-      border: 1px solid #e05d5d;
-      color: #e05d5d;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .voice-preview-area {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-    }
+
+    /* Превью плеера */
     .voice-preview-player {
       display: flex;
       align-items: center;
@@ -126,26 +139,6 @@
       background: var(--accent);
       border-radius: 2px;
     }
-    .voice-delete-btn, .voice-send-btn {
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-    .voice-delete-btn {
-      background: rgba(224,93,93,0.2);
-      color: #e05d5d;
-    }
-    .voice-send-btn {
-      background: rgba(192,192,208,0.2);
-      color: var(--accent);
-      border: 1px solid var(--accent);
-    }
   `;
   document.head.appendChild(style);
 
@@ -156,7 +149,7 @@
     return `${m}:${(s % 60).toString().padStart(2, '0')}`;
   }
 
-  function createBars(container, count = 16) {
+  function createBars(container, count = 20) {
     container.innerHTML = '';
     for (let i = 0; i < count; i++) {
       const bar = document.createElement('div');
@@ -173,9 +166,9 @@
     });
   }
 
-  // Сохраняем исходное состояние контейнера (textarea, кнопки) и подменяем на интерфейс записи
+  // Заменяет содержимое .wall-input на интерфейс записи
   function startRecordingUI(container) {
-    // Сохраняем оригинальный HTML
+    // Сохраняем оригинальный HTML (textarea + кнопки) в атрибут
     container.setAttribute('data-original-html', container.innerHTML);
     container.innerHTML = `
       <div class="voice-recording-area">
@@ -187,10 +180,12 @@
     createBars(document.getElementById('voiceWaveLarge'), 20);
     document.getElementById('voiceStopBtn').addEventListener('click', stopRecording);
 
+    // Таймеры
     recordingTimer = setInterval(() => {
       recordingSeconds++;
       document.getElementById('voiceTimerLarge').textContent = formatTime(recordingSeconds);
       animateBars(document.getElementById('voiceWaveLarge'));
+      if (recordingSeconds >= MAX_DURATION) stopRecording();
     }, 1000);
     waveformInterval = setInterval(() => animateBars(document.getElementById('voiceWaveLarge')), 200);
   }
@@ -263,12 +258,8 @@
       fill.style.width = (pct * 100) + '%';
     });
 
-    document.getElementById('voiceDeleteBtn').addEventListener('click', () => {
-      cancelVoice(container, audio);
-    });
-    document.getElementById('voiceSendBtn').addEventListener('click', () => {
-      sendVoice(container, audio);
-    });
+    document.getElementById('voiceDeleteBtn').addEventListener('click', () => cancelVoice(container, audio));
+    document.getElementById('voiceSendBtn').addEventListener('click', () => sendVoice(container, audio));
   }
 
   function cancelVoice(container, audio) {
@@ -320,6 +311,7 @@
       currentAudioUrl = null;
       currentAudioBlob = null;
       resetInputUI(container);
+      // Перерисовать стену
       if (profileLogin === currentUser.login && typeof renderMyProfile === 'function') renderMyProfile();
       else if (typeof openUserProfile === 'function') openUserProfile(profileLogin);
     } catch (e) {
@@ -335,12 +327,11 @@
     if (originalHTML) {
       container.innerHTML = originalHTML;
       container.removeAttribute('data-original-html');
-      // Переинициализируем кнопку микрофона после восстановления
       setupVoiceInput(container);
     }
   }
 
-  // Настройка кнопки микрофона в контейнере .wall-input
+  // Добавляем кнопку микрофона в .wall-input (между textarea и кнопкой отправки)
   function setupVoiceInput(container) {
     if (!container || container.querySelector('.voice-mic-btn')) return;
 
@@ -351,7 +342,7 @@
     const micBtn = document.createElement('button');
     micBtn.className = 'voice-mic-btn';
     micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-    micBtn.title = 'Записать голосовое';
+    micBtn.title = 'Записать голосовое (макс 1 мин)';
     sendBtn.parentNode.insertBefore(micBtn, sendBtn);
 
     micBtn.addEventListener('click', async () => {
@@ -379,7 +370,6 @@
     });
   }
 
-  // Поиск всех форм ввода и добавление микрофона
   function setupAllInputs() {
     document.querySelectorAll('.wall-input').forEach(container => setupVoiceInput(container));
   }
@@ -392,40 +382,51 @@
     setupAllInputs();
   }
 
-  // Загрузка голосовых сообщений и отображение в стене
-  async function loadVoicePosts(login, container) {
-    const { data: voicePosts } = await _supabase
+  // Функция получения голосовых постов для конкретного логина
+  async function getVoicePosts(login) {
+    const { data } = await _supabase
       .from('wall_audio')
       .select('*')
       .eq('profile_login', login)
       .order('created_at', { ascending: false });
-    if (voicePosts && voicePosts.length) {
-      voicePosts.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = 'wall-post glass-panel voice-message';
-        div.style.padding = '16px';
-        div.innerHTML = `
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-            ${avatarHTML(msg.user_avatar, 32)}
-            <strong>${escapeHtml(msg.user_name || msg.user_login)}</strong>
-            <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(msg.created_at).toLocaleString()}</span>
-          </div>
-          <div class="voice-message-player" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;">
-            <button class="voice-msg-play" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--accent);background:rgba(255,255,255,0.06);color:var(--accent);" onclick="toggleVoicePlayback(this, '${escapeHtml(msg.audio_url)}')">
-              <i class="fas fa-play"></i>
-            </button>
-            <span class="voice-msg-time" style="font-family:monospace;">0:00</span>
-            <div class="voice-msg-progress" style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;" onclick="seekVoice(this, event)">
-              <div class="voice-msg-fill" style="height:100%;width:0%;background:var(--accent);border-radius:2px;"></div>
-            </div>
-            <span class="voice-msg-duration" style="font-family:monospace;">${formatTime(msg.duration)}</span>
-          </div>`;
-        container.appendChild(div);
-      });
-    }
+    return (data || []).map(msg => ({
+      id: `voice_${msg.id}`,
+      user_login: msg.user_login,
+      user_name: msg.user_name,
+      user_avatar: msg.user_avatar,
+      content: '',
+      reactions: {},
+      created_at: msg.created_at,
+      type: 'voice',
+      audio_url: msg.audio_url,
+      duration: msg.duration
+    }));
   }
 
-  // Глобальные функции плеера
+  // Рендер одного голосового поста (HTML-строка)
+  function renderVoicePost(msg) {
+    return `
+      <div class="wall-post glass-panel voice-message" data-post-id="${msg.id}">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          ${avatarHTML(msg.user_avatar, 32)}
+          <strong>${escapeHtml(msg.user_name || msg.user_login)}</strong>
+          <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(msg.created_at).toLocaleString()}</span>
+        </div>
+        <div class="voice-message-player" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:12px;padding:10px;">
+          <button class="voice-msg-play" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--accent);background:rgba(255,255,255,0.06);color:var(--accent);" onclick="toggleVoicePlayback(this, '${escapeHtml(msg.audio_url)}')">
+            <i class="fas fa-play"></i>
+          </button>
+          <span class="voice-msg-time" style="font-family:monospace;">0:00</span>
+          <div class="voice-msg-progress" style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;" onclick="seekVoice(this, event)">
+            <div class="voice-msg-fill" style="height:100%;width:0%;background:var(--accent);border-radius:2px;"></div>
+          </div>
+          <span class="voice-msg-duration" style="font-family:monospace;">${formatTime(msg.duration)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Глобальные плеер-функции
   window.toggleVoicePlayback = function(btn, url) {
     if (window._globalVoiceAudio && window._globalVoiceBtn !== btn) {
       window._globalVoiceAudio.pause();
@@ -472,9 +473,34 @@
     bar.querySelector('.voice-msg-fill').style.width = (pct*100) + '%';
   };
 
-  // Экспортируемая функция для интеграции
+  // Экспортируем функцию для стен
   window.integrateVoiceWall = async function(login, wallContainer) {
-    setupVoiceInput(wallContainer);
-    await loadVoicePosts(login, wallContainer);
+    // Ничего не делаем, интеграция теперь через объединение постов
+  };
+
+  // Функция для получения объединённого списка постов (текстовые + голосовые)
+  window.getMixedWallPosts = async function(login, textPosts) {
+    const voicePosts = await getVoicePosts(login);
+    const allPosts = [...textPosts, ...voicePosts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return allPosts;
+  };
+
+  // Рендер одного поста (текстового или голосового)
+  window.renderPostHTML = function(post) {
+    if (post.type === 'voice') {
+      return renderVoicePost(post);
+    }
+    // Обычный текстовый пост
+    return `
+      <div class="wall-post glass-panel" data-post-id="${post.id}">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          ${avatarHTML(post.user_avatar, 32)}
+          <strong>${escapeHtml(post.user_name || post.user_login)}</strong>
+          <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(post.created_at).toLocaleString()}</span>
+        </div>
+        <p>${escapeHtml(post.content)}</p>
+        <div class="wall-post-footer">${renderReactions(post.reactions, post.id)}</div>
+      </div>
+    `;
   };
 })();
