@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="/css/style.css?v=12">
+    <link rel="stylesheet" href="/css/style.css?v=14">
 </head>
 <body>
     <div class="smooth-loader-overlay" id="smoothLoader">
@@ -32,7 +32,6 @@
             <a class="sidebar-icon" href="/add"><i class="fas fa-puzzle-piece"></i></a>
             <a class="sidebar-icon" href="/users"><i class="fas fa-users"></i></a>
             <a class="sidebar-icon" href="/profile"><i class="fas fa-user"></i></a>
-            <!-- НОВАЯ ИКОНКА Diamond Database -->
             <a class="sidebar-icon" href="/data"><i class="fas fa-database"></i></a>
             <a class="sidebar-icon" href="https://diamond-ai.ru" target="_blank"><img src="/assets/diamond-ai.ico" style="width:30px;height:30px;"></a>
             <a class="sidebar-icon" href="https://dirmess.ru" target="_blank"><img src="/assets/dirmess.ico" style="width:30px;height:30px;"></a>
@@ -97,6 +96,17 @@
                             <div class="three-deco"></div>
                         </div>
                     </div>
+                    <div class="add-service-card glass-panel add-plus-promo" onclick="navigateTo('/add/plus')">
+                        <div class="add-plus-left">
+                            <i class="fas fa-crown"></i>
+                            <h3>Diamond Plus</h3>
+                            <p>Подписка, открывающая весь потенциал DiamKey. Расширенные настройки, безлимитный AI, премиум-бейдж и ранний доступ к новинкам.</p>
+                            <button class="btn btn-primary">Открыть</button>
+                        </div>
+                        <div class="add-plus-right">
+                            <div class="add-plus-shape"></div>
+                        </div>
+                    </div>
                 </div>
             </section>
             <section class="page" id="page-add-gpx">
@@ -150,8 +160,6 @@
                 <div class="glass-panel gpx-section" id="profileGpxSection" style="display:none;"></div>
             </section>
             <section class="page" id="page-qr-confirm"></section>
-            <section class="page" id="page-diamond-plus"></section>
-            <!-- НОВАЯ СТРАНИЦА -->
             <section class="page" id="page-data"></section>
         </main>
     </div>
@@ -234,17 +242,17 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
-    <script src="/js/diamkey-core.js?v=12"></script>
-    <script src="/js/diamkey-router.js?v=12"></script>
-    <script src="/js/diamkey-ui.js?v=12"></script>
-    <script src="/js/diamkey-wall.js?v=12"></script>
-    <script src="/js/diamkey-gpx.js?v=12"></script>
-    <script src="/js/diamkey-qr.js?v=12"></script>
-    <script src="/js/diamkey-scanner.js?v=12"></script>
-    <script src="/js/diamkey-bot.js?v=12"></script>
-    <script src="/js/diamkey-users.js?v=12"></script>
-    <script src="/js/diamkey-ai-profile.js?v=12"></script>
-    <script src="/js/diamkey-voice.js?v=12"></script>
-    <script src="/js/diamkey-reactions.js?v=12"></script>
+    <script src="/js/diamkey-core.js?v=14"></script>
+    <script src="/js/diamkey-router.js?v=14"></script>
+    <script src="/js/diamkey-ui.js?v=14"></script>
+    <script src="/js/diamkey-wall.js?v=14"></script>
+    <script src="/js/diamkey-gpx.js?v=14"></script>
+    <script src="/js/diamkey-qr.js?v=14"></script>
+    <script src="/js/diamkey-scanner.js?v=14"></script>
+    <script src="/js/diamkey-bot.js?v=14"></script>
+    <script src="/js/diamkey-users.js?v=14"></script>
+    <script src="/js/diamkey-voice.js?v=14"></script>
+    <script src="/js/diamkey-ai-profile.js?v=14"></script>
+    <script src="/js/diamkey-reactions.js?v=14"></script>
 </body>
 </html>
