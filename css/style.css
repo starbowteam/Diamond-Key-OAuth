@@ -340,9 +340,8 @@ body {
     min-width: 300px;
     display: flex;
     flex-direction: column;
-    min-height: 320px; /* фиксируем высоту, чтобы обе карточки были одной высоты */
+    min-height: 320px;
 }
-/* Чтобы внутренние промо-блоки заполняли высоту родителя */
 .add-service-card .gpx-promo,
 .add-service-card .add-plus-promo {
     flex: 1;
@@ -444,7 +443,7 @@ body {
 }
 
 .profile-cover {
-    height: 160px;
+    height: 180px; /* восстановлена исходная высота */
     position: relative;
     overflow: hidden;
     cursor: default;
@@ -459,8 +458,10 @@ body {
     width: 100%;
     height: 100%;
     transition: filter 0.3s ease;
+    object-fit: cover;
 }
-/* когда фон – изображение, центрируем его и растягиваем */
+
+/* изображения внутри cover-bg-layer всегда растягиваются и центрируются */
 .profile-cover img.cover-bg-layer {
     top: 50%;
     left: 50%;
@@ -468,7 +469,6 @@ body {
     height: 100%;
     min-width: 100%;
     transform: translate(-50%, -50%);
-    object-fit: cover;
 }
 
 /* затемняющий оверлей */
