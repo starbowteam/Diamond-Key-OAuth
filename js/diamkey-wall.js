@@ -164,10 +164,7 @@ function renderCoverHTML(profile, isOwnProfile, showBackBtn = false) {
     let coverBgHTML = '';
     if (profile.cover && profile.cover.startsWith('image:')) {
         const src = profile.cover.replace('image:', '');
-        const scale = profile.cover_scale || 1;
-        const posX = profile.cover_pos_x || 0;
-        const posY = profile.cover_pos_y || 0;
-        coverBgHTML = `<img class="cover-image cover-bg-layer" src="${escapeHtml(src)}" onload="applyCoverTransform(this, ${posX}, ${posY}, ${scale})">`;
+        coverBgHTML = `<img class="cover-image cover-bg-layer" src="${escapeHtml(src)}">`;
     } else if (profile.cover && (profile.cover.startsWith('gradient:') || profile.cover.startsWith('color:'))) {
         const bg = profile.cover.startsWith('gradient:')
             ? `background: linear-gradient(135deg, ${profile.cover.split(':')[1]}, ${profile.cover.split(':')[2]});`
@@ -280,7 +277,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
             <div class="profile-nickname-center">
                 <div class="nickname-badge">
                     ${escapeHtml(profile.name || login)}
-                    ${isOwnProfile ? `<button class="action-btn-mini" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')" title="Дополнения"><i class="fas fa-puzzle-piece"></i></button>` : ''}
+                    <button class="action-btn-mini" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')" title="Дополнения"><i class="fas fa-puzzle-piece"></i></button>
                     <button class="ai-btn-nick" onclick="event.stopPropagation(); window.openAIModal('${login}')" title="Анализ профиля AI"><i class="fas fa-info-circle"></i></button>
                 </div>
             </div>
