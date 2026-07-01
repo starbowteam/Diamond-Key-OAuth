@@ -1,4 +1,4 @@
-// diamkey-router.js — SPA-роутинг с новым маршрутом /add/plus
+// diamkey-router.js — SPA-роутинг с новым маршрутом /add/plus и скроллом вверх
 
 function navigateTo(path, replace = false) {
     if (replace) { history.replaceState(null, null, path); }
@@ -64,8 +64,10 @@ function handleRoute() {
     if (path === '/home') {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/add') {
         activatePage('page-add');
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/add/gpx') {
         activatePage('page-add-gpx', true);
         if (typeof initGPX === 'function') {
@@ -83,6 +85,7 @@ function handleRoute() {
             if (currentUser && uploadBtn) uploadBtn.style.display = 'inline-flex';
             else if (uploadBtn) uploadBtn.style.display = 'none';
         }
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/add/plus') {
         // Динамически создаём страницу для Diamond Plus
         const main = document.getElementById('mainContent');
@@ -101,31 +104,46 @@ function handleRoute() {
             plusPage.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><p class="text-muted">Загрузка...</p></div>';
         }
         activatePage('page-add-plus', true);
+        // Гарантированно прокручиваем страницу вверх
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        // Запускаем частицы после рендера
+        setTimeout(() => {
+            if (typeof initParticles === 'function') {
+                initParticles();
+            }
+        }, 200);
     } else if (path === '/users') {
         activatePage('page-users');
         if (typeof loadUsers === 'function') loadUsers();
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path.startsWith('/users/')) {
         const login = path.split('/users/')[1];
         activatePage('page-users', true);
         setTimeout(() => { if (typeof openUserProfile === 'function') openUserProfile(login); }, 0);
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/profile') {
         if (!currentUser) { navigateTo('/home'); return; }
         activatePage('page-profile', true);
         setTimeout(() => { if (typeof renderMyProfile === 'function') renderMyProfile(); }, 0);
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path.startsWith('/profile/') && path.endsWith('/gpxview')) {
         const login = path.split('/profile/')[1].split('/gpxview')[0];
         activatePage('page-profile-gpx', true);
         setTimeout(() => { if (typeof renderProfileGpxView === 'function') renderProfileGpxView(login); }, 0);
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/qr-confirm') {
         activatePage('page-qr-confirm', true);
         const ticket = params.get('ticket');
         if (ticket && typeof renderQrConfirm === 'function') renderQrConfirm(ticket);
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/data') {
         activatePage('page-data', true);
         if (typeof renderDatabasePage === 'function') renderDatabasePage();
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else {
         activatePage('page-home');
         if (typeof loadHomeData === 'function') loadHomeData();
+        window.scrollTo({ top: 0, behavior: 'instant' });
     }
 
     // Подсветка активной иконки
