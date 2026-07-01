@@ -1,4 +1,4 @@
-// diamkey-wall.js — полный файл: профиль, стена, GPX, Diamond Plus, Database, реакции
+// diamkey-wall.js — полный файл с правками
 
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
@@ -22,16 +22,23 @@ async function loadAnnouncement() {
     }
 }
 
-// Маппинг старых ключей на эмодзи
 const EMOJI_MAP = { heart: '❤️', like: '👍', fire: '🔥' };
 const BASE_EMOJIS = ['❤️', '👍', '🔥'];
 
+// Множественные реакции: рендер
 function renderReactions(reactionsObj, postId) {
     const reactions = reactionsObj || {};
     const storageKey = `reacted_${postId}`;
-    const userReaction = localStorage.getItem(storageKey);
+    let userReactions = [];
+    try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) userReactions = parsed;
+            else if (typeof parsed === 'string') userReactions = [parsed]; // миграция старых данных
+        }
+    } catch (e) { userReactions = []; }
 
-    // Приводим старые ключи к эмодзи
     const normalized = {};
     for (const [key, count] of Object.entries(reactions)) {
         const emoji = EMOJI_MAP[key] || key;
@@ -39,32 +46,31 @@ function renderReactions(reactionsObj, postId) {
     }
 
     let html = '';
-    // Базовые три эмодзи всегда показываем (даже если 0)
+    // Базовые всегда видны
     BASE_EMOJIS.forEach(emoji => {
         const count = normalized[emoji] || 0;
-        const activeClass = (userReaction === emoji) ? ' active' : '';
+        const activeClass = userReactions.includes(emoji) ? ' active' : '';
         html += `<button class="reaction-btn${activeClass}" data-emoji="${emoji}">${emoji} <span>${count}</span></button>`;
     });
-
-    // Кнопка "..."
-    html += `<button class="reaction-btn reaction-more" onclick="window.openReactionPicker('${postId}')">···</button>`;
 
     // Дополнительные эмодзи (не базовые) с ненулевым количеством
-    const extraEmojis = Object.entries(normalized).filter(([emoji]) => !BASE_EMOJIS.includes(emoji) && normalized[emoji] > 0);
-    extraEmojis.sort((a, b) => b[1] - a[1]);
+    const extraEmojis = Object.entries(normalized)
+        .filter(([emoji]) => !BASE_EMOJIS.includes(emoji) && normalized[emoji] > 0)
+        .sort((a, b) => b[1] - a[1]);
     extraEmojis.forEach(([emoji, count]) => {
-        const activeClass = (userReaction === emoji) ? ' active' : '';
+        const activeClass = userReactions.includes(emoji) ? ' active' : '';
         html += `<button class="reaction-btn${activeClass}" data-emoji="${emoji}">${emoji} <span>${count}</span></button>`;
     });
 
+    // Кнопка "···" всегда последняя
+    html += `<button class="reaction-btn reaction-more" onclick="window.openReactionPicker('${postId}')">···</button>`;
     return html;
 }
 
-// Универсальная функция toggleReaction (поддерживает текстовые и голосовые посты)
+// Множественные реакции: переключение (можно ставить сколько угодно)
 async function toggleReaction(postId, emoji) {
     if (!currentUser) return showToast('Войдите');
     const storageKey = `reacted_${postId}`;
-    const previousEmoji = localStorage.getItem(storageKey);
 
     let table, idField, idValue;
     if (typeof postId === 'string' && postId.startsWith('voice_')) {
@@ -82,27 +88,35 @@ async function toggleReaction(postId, emoji) {
         console.warn('Reaction: post not found in', table);
         return;
     }
-    let reactions = post.reactions || {};
 
-    // Приводим старые ключи к эмодзи
+    let reactions = post.reactions || {};
     const normalized = {};
     for (const [key, count] of Object.entries(reactions)) {
         const e = EMOJI_MAP[key] || key;
         normalized[e] = (normalized[e] || 0) + count;
     }
 
-    if (previousEmoji === emoji) {
+    // Загружаем текущие реакции пользователя
+    let userReactions = [];
+    try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) userReactions = parsed;
+            else if (typeof parsed === 'string') userReactions = [parsed];
+        }
+    } catch (e) { userReactions = []; }
+
+    // Переключаем: если уже есть – убираем, иначе добавляем
+    if (userReactions.includes(emoji)) {
+        userReactions = userReactions.filter(e => e !== emoji);
         normalized[emoji] = Math.max((normalized[emoji] || 0) - 1, 0);
         if (normalized[emoji] === 0) delete normalized[emoji];
-        localStorage.removeItem(storageKey);
     } else {
-        if (previousEmoji) {
-            normalized[previousEmoji] = Math.max((normalized[previousEmoji] || 0) - 1, 0);
-            if (normalized[previousEmoji] === 0) delete normalized[previousEmoji];
-        }
+        userReactions.push(emoji);
         normalized[emoji] = (normalized[emoji] || 0) + 1;
-        localStorage.setItem(storageKey, emoji);
     }
+    localStorage.setItem(storageKey, JSON.stringify(userReactions));
 
     const { error: updateError } = await _supabase.from(table).update({ reactions: normalized }).eq(idField, idValue);
     if (updateError) {
@@ -126,28 +140,15 @@ async function toggleReaction(postId, emoji) {
     }
 
     // Уведомление владельцу
-    if (table === 'profile_wall') {
-        const { data: owner } = await _supabase.from('profile_wall').select('profile_login').eq('id', idValue).maybeSingle();
-        if (owner && owner.profile_login !== currentUser.login) {
-            await _supabase.from('notifications').insert({
-                user_login: owner.profile_login,
-                type: 'wall_reaction',
-                from_login: currentUser.login,
-                content: `${currentUser.name || currentUser.login} поставил(а) ${emoji} на вашу запись`,
-                read: false
-            });
-        }
-    } else if (table === 'wall_audio') {
-        const { data: owner } = await _supabase.from('wall_audio').select('profile_login').eq('id', idValue).maybeSingle();
-        if (owner && owner.profile_login !== currentUser.login) {
-            await _supabase.from('notifications').insert({
-                user_login: owner.profile_login,
-                type: 'wall_reaction',
-                from_login: currentUser.login,
-                content: `${currentUser.name || currentUser.login} поставил(а) ${emoji} на вашу голосовую заметку`,
-                read: false
-            });
-        }
+    const { data: owner } = await _supabase.from(table).select('profile_login').eq(idField, idValue).maybeSingle();
+    if (owner && owner.profile_login !== currentUser.login) {
+        await _supabase.from('notifications').insert({
+            user_login: owner.profile_login,
+            type: 'wall_reaction',
+            from_login: currentUser.login,
+            content: `${currentUser.name || currentUser.login} поставил(а) ${emoji} на вашу запись`,
+            read: false
+        });
     }
 }
 
@@ -189,8 +190,10 @@ function renderCoverHTML(profile, isOwnProfile, showBackBtn = false) {
     }
     if (isOwnProfile && !showBackBtn) {
         buttons += `
-            <button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)" style="margin-right:8px;"><i class="fas fa-pen"></i> Обложка</button>
-            <button class="edit-cover-btn" onclick="changeAvatar()"><i class="fas fa-camera"></i> Аватар</button>
+            <div style="position:absolute; top:16px; right:24px; display:flex; flex-direction:column; gap:8px; z-index:5;">
+                <button style="background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); border-radius: 30px; padding: 6px 14px; color: white; font-weight: 500; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; opacity: 0.7;" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>
+                <button style="background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); border-radius: 30px; padding: 6px 14px; color: white; font-weight: 500; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; opacity: 0.7;" onclick="changeAvatar()"><i class="fas fa-camera"></i> Аватар</button>
+            </div>
         `;
     }
 
