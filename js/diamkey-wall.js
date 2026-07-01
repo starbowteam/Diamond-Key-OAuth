@@ -22,66 +22,100 @@ async function loadAnnouncement() {
     }
 }
 
-// Новая функция рендера реакций с произвольными эмодзи + кнопка "···"
+// Маппинг старых ключей на эмодзи
+const EMOJI_MAP = { heart: '❤️', like: '👍', fire: '🔥' };
+const BASE_EMOJIS = ['❤️', '👍', '🔥'];
+
 function renderReactions(reactionsObj, postId) {
     const reactions = reactionsObj || {};
     const storageKey = `reacted_${postId}`;
     const userReaction = localStorage.getItem(storageKey);
-    // Получаем все эмодзи с количеством > 0, сортируем по убыванию
-    const entries = Object.entries(reactions).filter(([emoji, count]) => count > 0).sort((a, b) => b[1] - a[1]);
+
+    // Приводим старые ключи к эмодзи
+    const normalized = {};
+    for (const [key, count] of Object.entries(reactions)) {
+        const emoji = EMOJI_MAP[key] || key;
+        normalized[emoji] = (normalized[emoji] || 0) + count;
+    }
+
     let html = '';
-    entries.forEach(([emoji, count]) => {
+    // Базовые три эмодзи всегда показываем (даже если 0)
+    BASE_EMOJIS.forEach(emoji => {
+        const count = normalized[emoji] || 0;
         const activeClass = (userReaction === emoji) ? ' active' : '';
         html += `<button class="reaction-btn${activeClass}" data-emoji="${emoji}">${emoji} <span>${count}</span></button>`;
     });
-    // Кнопка "..." для открытия модалки выбора эмодзи
-    html += `<button class="reaction-btn reaction-more" onclick="window.openReactionPicker(${postId})">···</button>`;
+
+    // Кнопка "..."
+    html += `<button class="reaction-btn reaction-more" onclick="window.openReactionPicker('${postId}')">···</button>`;
+
+    // Дополнительные эмодзи (не базовые) с ненулевым количеством
+    const extraEmojis = Object.entries(normalized).filter(([emoji]) => !BASE_EMOJIS.includes(emoji) && normalized[emoji] > 0);
+    extraEmojis.sort((a, b) => b[1] - a[1]);
+    extraEmojis.forEach(([emoji, count]) => {
+        const activeClass = (userReaction === emoji) ? ' active' : '';
+        html += `<button class="reaction-btn${activeClass}" data-emoji="${emoji}">${emoji} <span>${count}</span></button>`;
+    });
+
     return html;
 }
 
-// Новая toggleReaction, работающая с любым эмодзи
+// Универсальная функция toggleReaction (поддерживает текстовые и голосовые посты)
 async function toggleReaction(postId, emoji) {
     if (!currentUser) return showToast('Войдите');
     const storageKey = `reacted_${postId}`;
     const previousEmoji = localStorage.getItem(storageKey);
 
-    // Получаем текущие реакции
-    const { data: post, error } = await _supabase.from('profile_wall').select('reactions').eq('id', postId).maybeSingle();
+    let table, idField, idValue;
+    if (typeof postId === 'string' && postId.startsWith('voice_')) {
+        table = 'wall_audio';
+        idField = 'id';
+        idValue = parseInt(postId.replace('voice_', ''));
+    } else {
+        table = 'profile_wall';
+        idField = 'id';
+        idValue = parseInt(postId);
+    }
+
+    const { data: post, error } = await _supabase.from(table).select('reactions').eq(idField, idValue).maybeSingle();
     if (error || !post) {
-        console.warn('Reaction: post not found');
+        console.warn('Reaction: post not found in', table);
         return;
     }
     let reactions = post.reactions || {};
 
+    // Приводим старые ключи к эмодзи
+    const normalized = {};
+    for (const [key, count] of Object.entries(reactions)) {
+        const e = EMOJI_MAP[key] || key;
+        normalized[e] = (normalized[e] || 0) + count;
+    }
+
     if (previousEmoji === emoji) {
-        // Повторное нажатие – убираем реакцию
-        reactions[emoji] = Math.max((reactions[emoji] || 0) - 1, 0);
-        if (reactions[emoji] === 0) delete reactions[emoji];
+        normalized[emoji] = Math.max((normalized[emoji] || 0) - 1, 0);
+        if (normalized[emoji] === 0) delete normalized[emoji];
         localStorage.removeItem(storageKey);
     } else {
-        // Если была другая реакция, убираем её
         if (previousEmoji) {
-            reactions[previousEmoji] = Math.max((reactions[previousEmoji] || 0) - 1, 0);
-            if (reactions[previousEmoji] === 0) delete reactions[previousEmoji];
+            normalized[previousEmoji] = Math.max((normalized[previousEmoji] || 0) - 1, 0);
+            if (normalized[previousEmoji] === 0) delete normalized[previousEmoji];
         }
-        // Добавляем новую
-        reactions[emoji] = (reactions[emoji] || 0) + 1;
+        normalized[emoji] = (normalized[emoji] || 0) + 1;
         localStorage.setItem(storageKey, emoji);
     }
 
-    const { error: updateError } = await _supabase.from('profile_wall').update({ reactions }).eq('id', postId);
+    const { error: updateError } = await _supabase.from(table).update({ reactions: normalized }).eq(idField, idValue);
     if (updateError) {
         console.error('[DiamKey] Ошибка обновления реакций:', updateError);
         return showToast('Ошибка');
     }
 
-    // Обновляем панель реакций в DOM
+    // Обновляем DOM
     const postEl = document.querySelector(`.wall-post[data-post-id="${postId}"]`);
     if (postEl) {
         const footer = postEl.querySelector('.wall-post-footer');
         if (footer) {
-            footer.innerHTML = renderReactions(reactions, postId);
-            // Привязываем обработчики к кнопкам реакций
+            footer.innerHTML = renderReactions(normalized, postId);
             footer.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -91,39 +125,40 @@ async function toggleReaction(postId, emoji) {
         }
     }
 
-    // Уведомление владельцу поста (если не сам себе)
-    const { data: owner } = await _supabase.from('profile_wall').select('profile_login').eq('id', postId).maybeSingle();
-    if (owner && owner.profile_login !== currentUser.login) {
-        await _supabase.from('notifications').insert({
-            user_login: owner.profile_login,
-            type: 'wall_reaction',
-            from_login: currentUser.login,
-            content: `${currentUser.name || currentUser.login} поставил(а) реакцию ${emoji} на вашу запись`,
-            read: false
-        });
+    // Уведомление владельцу
+    if (table === 'profile_wall') {
+        const { data: owner } = await _supabase.from('profile_wall').select('profile_login').eq('id', idValue).maybeSingle();
+        if (owner && owner.profile_login !== currentUser.login) {
+            await _supabase.from('notifications').insert({
+                user_login: owner.profile_login,
+                type: 'wall_reaction',
+                from_login: currentUser.login,
+                content: `${currentUser.name || currentUser.login} поставил(а) ${emoji} на вашу запись`,
+                read: false
+            });
+        }
+    } else if (table === 'wall_audio') {
+        const { data: owner } = await _supabase.from('wall_audio').select('profile_login').eq('id', idValue).maybeSingle();
+        if (owner && owner.profile_login !== currentUser.login) {
+            await _supabase.from('notifications').insert({
+                user_login: owner.profile_login,
+                type: 'wall_reaction',
+                from_login: currentUser.login,
+                content: `${currentUser.name || currentUser.login} поставил(а) ${emoji} на вашу голосовую заметку`,
+                read: false
+            });
+        }
     }
 }
 
 function getBadgeGradientClass(badgeName) {
     const map = {
-        'Bronze Buyer': 'badge-bronze',
-        'Silver Buyer': 'badge-silver',
-        'Gold Buyer': 'badge-gold',
-        'Diamond Buyer': 'badge-diamond',
-        'Emerald Buyer': 'badge-emerald',
-        'Amethyst Buyer': 'badge-amethyst',
-        'Legendary Buyer': 'badge-legendary',
-        'Покупатель Века!': 'badge-century',
-        'Creator | Seller': 'badge-creator-seller',
-        'Diamond Lady': 'badge-diamond-lady',
-        'Control Diamond': 'badge-control-diamond',
-        'Bot Manager': 'badge-bot-manager',
-        'Assistant': 'badge-assistant',
-        'Ticket Hold': 'badge-ticket-hold',
-        'Sales Manager': 'badge-sales-manager',
-        'Partner Manager': 'badge-partner-manager',
-        'Advertiser': 'badge-advertiser',
-        'Diamond Richest': 'badge-diamond-richest',
+        'Bronze Buyer': 'badge-bronze', 'Silver Buyer': 'badge-silver', 'Gold Buyer': 'badge-gold',
+        'Diamond Buyer': 'badge-diamond', 'Emerald Buyer': 'badge-emerald', 'Amethyst Buyer': 'badge-amethyst',
+        'Legendary Buyer': 'badge-legendary', 'Покупатель Века!': 'badge-century', 'Creator | Seller': 'badge-creator-seller',
+        'Diamond Lady': 'badge-diamond-lady', 'Control Diamond': 'badge-control-diamond', 'Bot Manager': 'badge-bot-manager',
+        'Assistant': 'badge-assistant', 'Ticket Hold': 'badge-ticket-hold', 'Sales Manager': 'badge-sales-manager',
+        'Partner Manager': 'badge-partner-manager', 'Advertiser': 'badge-advertiser', 'Diamond Richest': 'badge-diamond-richest',
         'Work': 'badge-work'
     };
     return map[badgeName] || '';
@@ -153,7 +188,10 @@ function renderCoverHTML(profile, isOwnProfile, showBackBtn = false) {
         buttons += '<button class="back-btn-profile" onclick="goBackToUsersList()"><i class="fas fa-arrow-left"></i> Назад</button>';
     }
     if (isOwnProfile && !showBackBtn) {
-        buttons += '<button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)"><i class="fas fa-pen"></i> Обложка</button>';
+        buttons += `
+            <button class="edit-cover-btn" onclick="openCoverSetupModal(currentUser)" style="margin-right:8px;"><i class="fas fa-pen"></i> Обложка</button>
+            <button class="edit-cover-btn" onclick="changeAvatar()"><i class="fas fa-camera"></i> Аватар</button>
+        `;
     }
 
     return `
@@ -164,26 +202,33 @@ function renderCoverHTML(profile, isOwnProfile, showBackBtn = false) {
     `;
 }
 
+function changeAvatar() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            await updateProfile({ avatar: ev.target.result });
+            if (typeof renderMyProfile === 'function') renderMyProfile();
+            showToast('Аватар обновлён');
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
 function getStatusHTML(login, lastSeen) {
-    if (!lastSeen) {
-        return `<div class="status-badge offline">Не в сети</div>`;
-    }
+    if (!lastSeen) return `<div class="status-badge offline">Не в сети</div>`;
     const now = Date.now();
-    const last = new Date(lastSeen).getTime();
-    const diff = now - last;
-
-    if (diff < 120000) {
-        return `<div class="status-badge online">В сети</div>`;
-    }
-
+    const diff = now - new Date(lastSeen).getTime();
+    if (diff < 120000) return `<div class="status-badge online">В сети</div>`;
     const minutes = Math.floor(diff / 60000);
-    if (minutes < 60) {
-        return `<div class="status-badge offline">Был(а) ${minutes} мин. назад</div>`;
-    }
+    if (minutes < 60) return `<div class="status-badge offline">Был(а) ${minutes} мин. назад</div>`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-        return `<div class="status-badge offline">Был(а) ${hours} ч. назад</div>`;
-    }
+    if (hours < 24) return `<div class="status-badge offline">Был(а) ${hours} ч. назад</div>`;
     const days = Math.floor(hours / 24);
     return `<div class="status-badge offline">Был(а) ${days} д. назад</div>`;
 }
@@ -224,7 +269,6 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const diamondPlusTitle = 'Diamond Plus';
     const diamondPlusSubtitle = isOwnProfile ? 'Подписка скоро будет доступна XD' : 'Не подписан, подписки не существует XD';
     const diamondPlusClass = isOwnProfile ? 'diamond-plus-card' : '';
-
     const diamondPlusAction = isOwnProfile ? `onclick="navigateTo('/diamond-plus')"` : `onclick="showToast('В разработке')"`;
 
     return `
@@ -236,7 +280,10 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
                 </div>
             </div>
             <div class="profile-nickname-center">
-                <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
+                <div class="nickname-badge">
+                    ${escapeHtml(profile.name || login)}
+                    <button class="ai-btn-nick" onclick="event.stopPropagation(); window.openAIModal('${login}')" title="Анализ профиля AI"><i class="fas fa-info-circle"></i></button>
+                </div>
             </div>
             <div class="profile-body">
                 <div class="description-card" id="profileDescription">${escapeHtml(desc)}</div>
@@ -338,10 +385,7 @@ async function openUserProfile(login) {
 
         if (userWallSection) {
             userWallSection.style.display = 'block';
-
-            // Получаем смешанные посты (текстовые + голосовые)
             const allPosts = await (typeof getMixedWallPosts === 'function' ? getMixedWallPosts(login, wallPosts) : wallPosts);
-
             let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
             userWallSection.innerHTML = `
@@ -382,7 +426,7 @@ async function openUserProfile(login) {
                 };
             }
 
-            // Привязываем обработчики к кнопкам реакций в уже отрендеренных постах
+            // Привязка реакций
             userWallSection.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -402,10 +446,7 @@ function goBackToUsersList() {
     const userView = document.getElementById('userProfileView');
     const userWallSection = document.getElementById('userWallSection');
     if (usersPanel) usersPanel.style.display = 'block';
-    if (userView) {
-        userView.style.display = 'none';
-        userView.className = 'glass-panel profile-top';
-    }
+    if (userView) { userView.style.display = 'none'; userView.className = 'glass-panel profile-top'; }
     if (userWallSection) userWallSection.style.display = 'none';
     navigateTo('/users');
     if (typeof loadUsers === 'function') loadUsers();
@@ -427,12 +468,7 @@ async function renderMyProfile() {
 
         if (!profile) return;
 
-        const { data: presence } = await _supabase
-            .from('user_presence')
-            .select('last_seen')
-            .eq('login', login)
-            .maybeSingle();
-
+        const { data: presence } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
         const statusHTML = getStatusHTML(login, presence?.last_seen);
         const desc = profile.description || defaultDescription(profile.name || login);
 
@@ -453,7 +489,6 @@ async function renderMyProfile() {
         }
 
         const coverBlock = renderCoverHTML(profile, true);
-
         const allPosts = await (typeof getMixedWallPosts === 'function' ? getMixedWallPosts(login, wallPosts) : wallPosts);
         let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
@@ -461,13 +496,15 @@ async function renderMyProfile() {
             <div class="profile-panel">
                 ${coverBlock}
                 <div class="avatar-section">
-                    <div class="avatar-wrapper" id="myAvatarWrapper">
+                    <div class="avatar-wrapper">
                         ${avatarHTML(profile.avatar, 100)}
-                        <div class="avatar-overlay"><i class="fas fa-pencil-alt"></i></div>
                     </div>
                 </div>
                 <div class="profile-nickname-center">
-                    <div class="nickname-badge">${escapeHtml(profile.name || login)}</div>
+                    <div class="nickname-badge">
+                        ${escapeHtml(profile.name || login)}
+                        <button class="ai-btn-nick" onclick="event.stopPropagation(); window.openAIModal('${login}')" title="Анализ профиля AI"><i class="fas fa-info-circle"></i></button>
+                    </div>
                 </div>
                 <div class="profile-body">
                     <div class="description-card" id="myDescription">${escapeHtml(desc)}</div>
@@ -507,17 +544,6 @@ async function renderMyProfile() {
 
         startPlusGlitch();
 
-        document.getElementById('myAvatarWrapper').onclick = () => {
-            const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
-            input.onchange = async (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = async (ev) => { await updateProfile({ avatar: ev.target.result }); renderMyProfile(); showToast('Аватар обновлён'); };
-                reader.readAsDataURL(file);
-            };
-            input.click();
-        };
-
         const descEl = document.getElementById('myDescription');
         if (descEl) {
             descEl.addEventListener('click', () => {
@@ -535,7 +561,7 @@ async function renderMyProfile() {
             showToast('Описание сохранено');
         };
 
-        // Привязываем реакции
+        // Привязка реакций
         pageProfile.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
