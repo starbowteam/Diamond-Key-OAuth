@@ -443,7 +443,7 @@ body {
 }
 
 .profile-cover {
-    height: 180px; /* восстановлена исходная высота */
+    height: 180px;
     position: relative;
     overflow: hidden;
     cursor: default;
@@ -458,17 +458,16 @@ body {
     width: 100%;
     height: 100%;
     transition: filter 0.3s ease;
-    object-fit: cover;
 }
-
-/* изображения внутри cover-bg-layer всегда растягиваются и центрируются */
+/* когда фон – изображение, центрируем его и растягиваем как cover */
 .profile-cover img.cover-bg-layer {
     top: 50%;
     left: 50%;
-    width: auto;
+    width: 100%;
     height: 100%;
     min-width: 100%;
     transform: translate(-50%, -50%);
+    object-fit: cover;
 }
 
 /* затемняющий оверлей */
@@ -740,7 +739,9 @@ body {
     transform: translateX(4px);
 }
 
-.badges-panel {
+/* Бейджи – теперь аккуратные */
+.badges-panel,
+.badges-panel-centered {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: var(--radius-md);
