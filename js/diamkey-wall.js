@@ -325,24 +325,14 @@ async function openUserProfile(login) {
 
         if (userWallSection) {
             userWallSection.style.display = 'block';
-            let wallHTML = '';
-            if (wallPosts && wallPosts.length) {
-                wallHTML = wallPosts.map(p => `
-                    <div class="wall-post glass-panel" data-post-id="${p.id}">
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                            ${avatarHTML(p.user_avatar, 32)}
-                            <strong>${escapeHtml(p.user_name || p.user_login)}</strong>
-                            <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(p.created_at).toLocaleString()}</span>
-                        </div>
-                        <p>${escapeHtml(p.content)}</p>
-                        <div class="wall-post-footer">${renderReactions(p.reactions, p.id)}</div>
-                    </div>
-                `).join('');
-            } else {
-                wallHTML = '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
-            }
+
+            // Получаем объединённый список постов (текстовые + голосовые)
+            const allPosts = await (typeof getMixedWallPosts === 'function' ? getMixedWallPosts(login, wallPosts) : wallPosts);
+
+            let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
+
             userWallSection.innerHTML = `
-                <div class="wall-input" style="display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border-radius:18px; padding:8px 16px;">
+                <div class="wall-input" style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border-radius:18px; padding:8px 16px;">
                     <div style="width:36px; height:36px; border-radius:50%; overflow:hidden; flex-shrink:0;">
                         ${avatarHTML(currentUser?.avatar, 36)}
                     </div>
@@ -387,10 +377,7 @@ async function openUserProfile(login) {
                 });
             });
 
-            // ИНТЕГРАЦИЯ ГОЛОСОВЫХ ЗАМЕТОК
-            if (typeof integrateVoiceWall === 'function') {
-                await integrateVoiceWall(login, userWallSection);
-            }
+            // Голосовой ввод больше не требует отдельного вызова, он сам находит .wall-input
         }
     } catch (e) {
         console.error('[DiamKey] Ошибка в openUserProfile:', e);
@@ -454,7 +441,10 @@ async function renderMyProfile() {
         }
 
         const coverBlock = renderCoverHTML(profile, true);
-        let wallHTML = wallPosts.length ? buildWallHTML(wallPosts) : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
+
+        // Объединяем посты
+        const allPosts = await (typeof getMixedWallPosts === 'function' ? getMixedWallPosts(login, wallPosts) : wallPosts);
+        let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
         pageProfile.innerHTML = `
             <div class="profile-panel">
@@ -496,7 +486,7 @@ async function renderMyProfile() {
                 </div>
             </div>
             <div class="glass-panel profile-wall">
-                <div class="wall-input">
+                <div class="wall-input" style="display:flex; align-items:center; gap:8px;">
                     <textarea id="myWallMessage" rows="1" placeholder="Написать на стене..." style="flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:18px; padding:14px 18px; color:var(--text-primary); resize:none; font-size:15px;"></textarea>
                     <button class="btn btn-send" id="postMyWallBtn"><i class="fas fa-paper-plane"></i></button>
                 </div>
@@ -552,11 +542,7 @@ async function renderMyProfile() {
             renderMyProfile();
         };
 
-        // ИНТЕГРАЦИЯ ГОЛОСОВЫХ ЗАМЕТОК
-        const myWallSection = pageProfile.querySelector('.profile-wall');
-        if (myWallSection && typeof integrateVoiceWall === 'function') {
-            await integrateVoiceWall(currentUser.login, myWallSection);
-        }
+        // Голосовой ввод сам добавится благодаря наблюдателю в voice.js
     } catch (e) {
         console.error('[DiamKey] Ошибка загрузки своего профиля:', e);
         pageProfile.innerHTML = '<div class="glass-panel" style="text-align:center; padding:40px;"><p class="text-muted">Ошибка загрузки</p></div>';
@@ -989,4 +975,19 @@ function renderQrConfirm(ticket) {
             page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход отклонён</h2></div>';
         });
     }
+}
+
+// Вспомогательная функция для рендера текстового поста (старый формат)
+function renderTextPostHTML(post) {
+    return `
+      <div class="wall-post glass-panel" data-post-id="${post.id}">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          ${avatarHTML(post.user_avatar, 32)}
+          <strong>${escapeHtml(post.user_name || post.user_login)}</strong>
+          <span class="text-muted" style="margin-left:auto;font-size:0.8rem;">${new Date(post.created_at).toLocaleString()}</span>
+        </div>
+        <p>${escapeHtml(post.content)}</p>
+        <div class="wall-post-footer">${renderReactions(post.reactions, post.id)}</div>
+      </div>
+    `;
 }
