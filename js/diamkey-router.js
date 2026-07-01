@@ -1,4 +1,4 @@
-// diamkey-router.js — SPA-роутинг с новым маршрутом /add/plus и скроллом вверх
+// diamkey-router.js — SPA-роутинг + выравнивание карточек в Add
 
 function navigateTo(path, replace = false) {
     if (replace) { history.replaceState(null, null, path); }
@@ -67,6 +67,30 @@ function handleRoute() {
         window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/add') {
         activatePage('page-add');
+        // Принудительно делаем карточки одинаковой высоты после небольшой задержки
+        setTimeout(() => {
+            const cards = document.querySelectorAll('#page-add .add-service-card');
+            if (cards.length > 0) {
+                let maxHeight = 0;
+                // Сбрасываем заданную высоту, чтобы измерить реальную
+                cards.forEach(card => {
+                    card.style.minHeight = '';
+                    card.style.height = '';
+                });
+                // Находим максимальную высоту
+                cards.forEach(card => {
+                    const h = card.offsetHeight;
+                    if (h > maxHeight) maxHeight = h;
+                });
+                // Устанавливаем всем карточкам одинаковую высоту
+                if (maxHeight > 0) {
+                    cards.forEach(card => {
+                        card.style.minHeight = maxHeight + 'px';
+                        card.style.height = maxHeight + 'px';
+                    });
+                }
+            }
+        }, 100);
         window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/add/gpx') {
         activatePage('page-add-gpx', true);
@@ -87,7 +111,6 @@ function handleRoute() {
         }
         window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/add/plus') {
-        // Динамически создаём страницу для Diamond Plus
         const main = document.getElementById('mainContent');
         let plusPage = document.getElementById('page-add-plus');
         if (!plusPage) {
@@ -97,16 +120,13 @@ function handleRoute() {
             plusPage.setAttribute('data-dynamic-page', 'true');
             main.appendChild(plusPage);
         }
-        // Рендерим контент
         if (typeof renderAddPlusPage === 'function') {
             plusPage.innerHTML = renderAddPlusPage();
         } else {
             plusPage.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><p class="text-muted">Загрузка...</p></div>';
         }
         activatePage('page-add-plus', true);
-        // Гарантированно прокручиваем страницу вверх
         window.scrollTo({ top: 0, behavior: 'instant' });
-        // Запускаем частицы после рендера
         setTimeout(() => {
             if (typeof initParticles === 'function') {
                 initParticles();
