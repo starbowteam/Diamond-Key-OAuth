@@ -1,4 +1,4 @@
-// diamkey-ai-profile.js — AI модалка профиля
+// diamkey-ai-profile.js — AI модалка профиля (исправлено)
 (function() {
   const style = document.createElement('style');
   style.textContent = `
@@ -18,11 +18,48 @@
       vertical-align: middle;
     }
     .ai-btn-nick:hover { background: rgba(192,192,208,0.3); color: #fff; }
+    .ai-modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0.25s;
+    }
+    .ai-modal-overlay.active { opacity: 1; visibility: visible; }
+    .ai-modal-content {
+      background: var(--bg-glass, rgba(18,18,24,0.85));
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border-glass, rgba(255,255,255,0.12));
+      border-radius: 28px;
+      padding: 28px;
+      max-width: 440px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+    .ai-modal-content .ai-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    }
+    .ai-modal-content .ai-header img {
+      width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+      border: 1px solid var(--border-glass);
+    }
+    .ai-modal-content .ai-body { color: var(--text-muted); font-size: 15px; line-height: 1.6; }
+    .ai-modal-content .btn-close-ai {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 8px 20px;
+      color: var(--text-primary);
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      float: right;
+    }
   `;
   document.head.appendChild(style);
 
   const modal = document.createElement('div');
   modal.className = 'ai-modal-overlay';
+  modal.id = 'aiModal';
   modal.innerHTML = `
     <div class="ai-modal-content">
       <div class="ai-header">
@@ -39,12 +76,18 @@
     </div>
   `;
   document.body.appendChild(modal);
-  document.getElementById('closeAiModalBtn').addEventListener('click', () => modal.classList.remove('active'));
-  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('active'); });
+
+  document.getElementById('closeAiModalBtn').addEventListener('click', () => {
+    modal.classList.remove('active');
+  });
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.classList.remove('active');
+  });
 
   window.openAIModal = async function(profileLogin) {
     modal.classList.add('active');
     const body = document.getElementById('aiBody');
+    if (!body) return;
     body.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-pulse" style="font-size:24px; color:var(--accent);"></i><p>Анализирую профиль...</p></div>`;
 
     try {
@@ -54,7 +97,11 @@
         getWall(profileLogin),
         getUserBadges(profileLogin)
       ]);
-      if (!profile) { body.innerHTML = '<p style="color:var(--danger);">Профиль не найден.</p>'; return; }
+
+      if (!profile) {
+        body.innerHTML = '<p style="color:var(--danger);">Профиль не найден.</p>';
+        return;
+      }
 
       const daysInDiamKey = profile.created_at
         ? Math.floor((Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24))
@@ -63,30 +110,43 @@
       const badgesStr = badgeList.length ? badgeList.join(', ') : 'нет';
 
       const { data: configData } = await _supabase.from('service_config').select('mistral_api_key').eq('id',1).maybeSingle();
-      if (!configData?.mistral_api_key) { body.innerHTML = '<p style="color:var(--danger);">API-ключ не настроен.</p>'; return; }
+      if (!configData?.mistral_api_key) {
+        body.innerHTML = '<p style="color:var(--danger);">API-ключ не настроен.</p>';
+        return;
+      }
 
       const systemPrompt = `Ты — Diamond AI, помощник на сайте DiamKey. Проанализируй профиль пользователя и дай персонализированный дружелюбный отзыв. Данные: логин: ${profileLogin}, имя: ${profile.name || profileLogin}, дней в DiamKey: ${daysInDiamKey}, записей на стене: ${wallPosts.length}, бейджи: ${badgesStr}. Сделай комплимент, отметь сильные стороны, дай 1-2 совета. Будь остроумным, но добрым. Отвечай на русском, чистым текстом, без маркдауна, 3-5 предложений.`;
 
       const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + configData.mistral_api_key },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + configData.mistral_api_key
+        },
         body: JSON.stringify({
           model: 'mistral-small-latest',
-          messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: 'Дай анализ моего профиля.' }],
-          max_tokens: 400, temperature: 0.8
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Дай анализ моего профиля, пожалуйста.' }
+          ],
+          max_tokens: 400,
+          temperature: 0.8
         })
       });
-      const json = await response.json();
-      const reply = json.choices?.[0]?.message?.content || 'Не удалось получить ответ.';
 
-      body.innerHTML = `<p style="font-size:15px; line-height:1.5; color:var(--text-primary); margin-bottom:16px;">${escapeHtml(reply)}</p>
+      const json = await response.json();
+      const reply = json.choices?.[0]?.message?.content || 'Не удалось получить ответ от AI.';
+
+      body.innerHTML = `
+        <p style="font-size:15px; line-height:1.5; color:var(--text-primary); margin-bottom:16px;">${escapeHtml(reply)}</p>
         <div class="ai-stats" style="display:flex; gap:12px; flex-wrap:wrap;">
-          <div class="ai-stat-item"><i class="fas fa-calendar-alt"></i> <strong>${daysInDiamKey}</strong> дн.</div>
+          <div class="ai-stat-item"><i class="fas fa-calendar-alt"></i> <strong>${daysInDiamKey}</strong> дн. в DiamKey</div>
           <div class="ai-stat-item"><i class="fas fa-comment"></i> <strong>${wallPosts.length}</strong> записей</div>
           <div class="ai-stat-item"><i class="fas fa-medal"></i> ${badgeList.length ? badgeList.map(b => `<span style="font-weight:600;">${escapeHtml(b)}</span>`).join(', ') : 'нет бейджей'}</div>
-        </div>`;
+        </div>
+      `;
     } catch (e) {
-      console.error(e);
+      console.error('AI Profile Error:', e);
       body.innerHTML = '<p style="color:var(--danger);">Ошибка загрузки данных.</p>';
     }
   };
