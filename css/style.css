@@ -628,7 +628,7 @@ body {
     color: #fff;
 }
 
-/* ===== ОПИСАНИЕ И БЕЙДЖИ – ЦЕНТРИРОВАНЫ, ОДИНАКОВАЯ ШИРИНА ===== */
+/* ===== ОПИСАНИЕ И БЕЙДЖИ – ЦЕНТРИРОВАНЫ, ОДНА СТРОКА ===== */
 .description-card-new {
     background: rgba(255,255,255,0.03);
     border: 1px solid var(--border-glass);
@@ -649,17 +649,29 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 14px;
     padding: 6px 10px;
-    display: flex;
-    flex-wrap: wrap;
+    display: inline-flex;
+    flex-wrap: nowrap;
     gap: 6px;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-width: 130px;
-    max-width: 260px;
-    width: fit-content;
-    margin: 0 auto 12px auto;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    margin: 0 auto 12px auto;
+    /* центрирование блока */
+    text-align: center;
 }
+/* чтобы скролл был аккуратным */
+.badges-panel-centered::-webkit-scrollbar {
+    height: 4px;
+}
+.badges-panel-centered::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 2px;
+}
+
 .badges-empty {
     color: var(--text-muted);
     font-size: 13px;
@@ -678,6 +690,7 @@ body {
     font-size: 13px;
     font-weight: 600;
     transition: 0.2s;
+    flex-shrink: 0;
 }
 .badge-item:hover { background: rgba(255,255,255,0.1); }
 .badge-icon {
