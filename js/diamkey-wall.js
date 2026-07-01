@@ -32,6 +32,9 @@ profileStyles.textContent = `
   .profile-cover:hover .cover-dark-overlay {
     background: rgba(0,0,0,0.3);
   }
+  .cover-actions, .cover-actions * {
+    filter: none !important;
+  }
   .cover-actions {
     position: absolute;
     top: 50%;
@@ -826,7 +829,6 @@ function startPlusGlitch() {
 
 // Полноценная страница Diamond Plus (для /add/plus)
 function renderAddPlusPage() {
-    // Используем существующую структуру plus-panel с карточками и FAQ
     return `
         <div class="plus-panel" id="plusPanelContainer">
             <canvas id="particleCanvas"></canvas>
