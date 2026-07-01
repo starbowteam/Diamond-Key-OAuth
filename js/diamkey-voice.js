@@ -1,4 +1,4 @@
-// diamkey-voice.js — Голосовые заметки (встроены в стену)
+// diamkey-voice.js — Голосовые заметки (исправленная интеграция)
 (function() {
   let mediaRecorder = null;
   let audioChunks = [];
@@ -8,7 +8,6 @@
   let currentAudioUrl = null;
   let currentAudioBlob = null;
   let currentDuration = 0;
-  let activeInputContainer = null;
 
   // Стили
   const style = document.createElement('style');
@@ -174,66 +173,17 @@
     });
   }
 
-  function setupVoiceInput(container) {
-    if (!container || container.querySelector('.voice-mic-btn')) return;
-
-    const textarea = container.querySelector('textarea');
-    const sendBtn = container.querySelector('button');
-    if (!textarea || !sendBtn) return;
-
-    const micBtn = document.createElement('button');
-    micBtn.className = 'voice-mic-btn';
-    micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-    micBtn.title = 'Записать голосовое';
-    sendBtn.parentNode.insertBefore(micBtn, sendBtn);
-
-    micBtn.addEventListener('click', async () => {
-      if (!currentUser) return showToast('Войдите');
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
-
-        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-        mediaRecorder.onstop = () => {
-          currentAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          currentAudioUrl = URL.createObjectURL(currentAudioBlob);
-          currentDuration = recordingSeconds;
-          showPreviewState(container);
-        };
-
-        mediaRecorder.start();
-        recordingSeconds = 0;
-        startRecordingUI(container);
-      } catch (e) {
-        console.error(e);
-        showToast('Нет доступа к микрофону');
-      }
-    });
-  }
-
+  // Сохраняем исходное состояние контейнера (textarea, кнопки) и подменяем на интерфейс записи
   function startRecordingUI(container) {
-    activeInputContainer = container;
-    const textarea = container.querySelector('textarea');
-    const sendBtn = container.querySelector('button');
-    const micBtn = container.querySelector('.voice-mic-btn');
-    textarea.style.display = 'none';
-    micBtn.style.display = 'none';
-    sendBtn.style.display = 'none';
-
-    let recArea = container.querySelector('.voice-recording-area');
-    if (!recArea) {
-      recArea = document.createElement('div');
-      recArea.className = 'voice-recording-area';
-      container.insertBefore(recArea, sendBtn);
-    }
-    recArea.style.display = 'flex';
-    recArea.innerHTML = `
-      <div class="voice-waveform-large" id="voiceWaveLarge"></div>
-      <span class="voice-timer-large" id="voiceTimerLarge">00:00</span>
-      <button class="voice-stop-btn" id="voiceStopBtn"><i class="fas fa-stop"></i></button>
+    // Сохраняем оригинальный HTML
+    container.setAttribute('data-original-html', container.innerHTML);
+    container.innerHTML = `
+      <div class="voice-recording-area">
+        <div class="voice-waveform-large" id="voiceWaveLarge"></div>
+        <span class="voice-timer-large" id="voiceTimerLarge">00:00</span>
+        <button class="voice-stop-btn" id="voiceStopBtn"><i class="fas fa-stop"></i></button>
+      </div>
     `;
-
     createBars(document.getElementById('voiceWaveLarge'), 20);
     document.getElementById('voiceStopBtn').addEventListener('click', stopRecording);
 
@@ -256,34 +206,19 @@
   }
 
   function showPreviewState(container) {
-    const recArea = container.querySelector('.voice-recording-area');
-    if (recArea) recArea.style.display = 'none';
-
-    const textarea = container.querySelector('textarea');
-    const sendBtn = container.querySelector('button');
-    const micBtn = container.querySelector('.voice-mic-btn');
-    textarea.style.display = 'none';
-    sendBtn.style.display = 'none';
-    if (micBtn) micBtn.style.display = 'none';
-
-    let previewArea = container.querySelector('.voice-preview-area');
-    if (!previewArea) {
-      previewArea = document.createElement('div');
-      previewArea.className = 'voice-preview-area';
-      container.appendChild(previewArea);
-    }
-    previewArea.style.display = 'flex';
-    previewArea.innerHTML = `
-      <div class="voice-preview-player">
-        <button class="voice-preview-play" id="voicePreviewPlay"><i class="fas fa-play"></i></button>
-        <span class="voice-preview-time" id="voicePreviewCurrent">0:00</span>
-        <div class="voice-preview-progress" id="voicePreviewProgress">
-          <div class="voice-preview-fill" id="voicePreviewFill"></div>
+    container.innerHTML = `
+      <div class="voice-preview-area">
+        <div class="voice-preview-player">
+          <button class="voice-preview-play" id="voicePreviewPlay"><i class="fas fa-play"></i></button>
+          <span class="voice-preview-time" id="voicePreviewCurrent">0:00</span>
+          <div class="voice-preview-progress" id="voicePreviewProgress">
+            <div class="voice-preview-fill" id="voicePreviewFill"></div>
+          </div>
+          <span class="voice-preview-time" id="voicePreviewDuration">${formatTime(currentDuration)}</span>
         </div>
-        <span class="voice-preview-time" id="voicePreviewDuration">${formatTime(currentDuration)}</span>
+        <button class="voice-delete-btn" id="voiceDeleteBtn"><i class="fas fa-trash"></i></button>
+        <button class="voice-send-btn" id="voiceSendBtn"><i class="fas fa-paper-plane"></i></button>
       </div>
-      <button class="voice-delete-btn" id="voiceDeleteBtn"><i class="fas fa-trash"></i></button>
-      <button class="voice-send-btn" id="voiceSendBtn"><i class="fas fa-paper-plane"></i></button>
     `;
 
     const audio = new Audio(currentAudioUrl);
@@ -396,21 +331,55 @@
   }
 
   function resetInputUI(container) {
-    const textarea = container.querySelector('textarea');
-    const sendBtn = container.querySelector('button');
-    const micBtn = container.querySelector('.voice-mic-btn');
-    const recArea = container.querySelector('.voice-recording-area');
-    const previewArea = container.querySelector('.voice-preview-area');
-
-    if (recArea) recArea.style.display = 'none';
-    if (previewArea) previewArea.style.display = 'none';
-    if (textarea) textarea.style.display = '';
-    if (sendBtn) sendBtn.style.display = '';
-    if (micBtn) micBtn.style.display = '';
-    if (recArea) recArea.innerHTML = '';
-    if (previewArea) previewArea.innerHTML = '';
+    const originalHTML = container.getAttribute('data-original-html');
+    if (originalHTML) {
+      container.innerHTML = originalHTML;
+      container.removeAttribute('data-original-html');
+      // Переинициализируем кнопку микрофона после восстановления
+      setupVoiceInput(container);
+    }
   }
 
+  // Настройка кнопки микрофона в контейнере .wall-input
+  function setupVoiceInput(container) {
+    if (!container || container.querySelector('.voice-mic-btn')) return;
+
+    const textarea = container.querySelector('textarea');
+    const sendBtn = container.querySelector('button.btn-send');
+    if (!textarea || !sendBtn) return;
+
+    const micBtn = document.createElement('button');
+    micBtn.className = 'voice-mic-btn';
+    micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+    micBtn.title = 'Записать голосовое';
+    sendBtn.parentNode.insertBefore(micBtn, sendBtn);
+
+    micBtn.addEventListener('click', async () => {
+      if (!currentUser) return showToast('Войдите');
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+          currentAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          currentAudioUrl = URL.createObjectURL(currentAudioBlob);
+          currentDuration = recordingSeconds;
+          showPreviewState(container);
+        };
+
+        mediaRecorder.start();
+        recordingSeconds = 0;
+        startRecordingUI(container);
+      } catch (e) {
+        console.error(e);
+        showToast('Нет доступа к микрофону');
+      }
+    });
+  }
+
+  // Поиск всех форм ввода и добавление микрофона
   function setupAllInputs() {
     document.querySelectorAll('.wall-input').forEach(container => setupVoiceInput(container));
   }
@@ -423,6 +392,7 @@
     setupAllInputs();
   }
 
+  // Загрузка голосовых сообщений и отображение в стене
   async function loadVoicePosts(login, container) {
     const { data: voicePosts } = await _supabase
       .from('wall_audio')
@@ -455,6 +425,7 @@
     }
   }
 
+  // Глобальные функции плеера
   window.toggleVoicePlayback = function(btn, url) {
     if (window._globalVoiceAudio && window._globalVoiceBtn !== btn) {
       window._globalVoiceAudio.pause();
@@ -501,9 +472,9 @@
     bar.querySelector('.voice-msg-fill').style.width = (pct*100) + '%';
   };
 
+  // Экспортируемая функция для интеграции
   window.integrateVoiceWall = async function(login, wallContainer) {
     setupVoiceInput(wallContainer);
     await loadVoicePosts(login, wallContainer);
   };
-
 })();
