@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="/css/style.css?v=14">
+    <link rel="stylesheet" href="/css/style.css?v=15">
 </head>
 <body>
     <div class="smooth-loader-overlay" id="smoothLoader">
@@ -33,8 +33,6 @@
             <a class="sidebar-icon" href="/users"><i class="fas fa-users"></i></a>
             <a class="sidebar-icon" href="/profile"><i class="fas fa-user"></i></a>
             <a class="sidebar-icon" href="/data"><i class="fas fa-database"></i></a>
-            <a class="sidebar-icon" href="https://diamond-ai.ru" target="_blank"><img src="/assets/diamond-ai.ico" style="width:30px;height:30px;"></a>
-            <a class="sidebar-icon" href="https://dirmess.ru" target="_blank"><img src="/assets/dirmess.ico" style="width:30px;height:30px;"></a>
             <div class="sidebar-bottom">
                 <a class="sidebar-icon" id="qrScannerBtn" title="Сканер QR-кода"><i class="fas fa-qrcode"></i></a>
                 <a class="sidebar-icon" id="badgeAdminBtn" title="Выдать бейдж" style="display:none;"><i class="fas fa-medal"></i></a>
@@ -84,7 +82,8 @@
             <section class="page" id="page-add">
                 <div class="section-title">Дополнения <span>DiamKey</span></div>
                 <p class="subtitle">Расширьте возможности вашего аккаунта с помощью сервисов экосистемы Diamond</p>
-                <div class="add-services-grid">
+                <div class="add-services-grid" id="addServicesGrid">
+                    <!-- GPX -->
                     <div class="add-service-card glass-panel gpx-promo" onclick="navigateTo('/add/gpx')">
                         <div class="gpx-promo-left">
                             <i class="fas fa-map-marker-alt"></i>
@@ -96,6 +95,7 @@
                             <div class="three-deco"></div>
                         </div>
                     </div>
+                    <!-- Diamond Plus -->
                     <div class="add-service-card glass-panel add-plus-promo" onclick="navigateTo('/add/plus')">
                         <div class="add-plus-left">
                             <i class="fas fa-crown"></i>
@@ -105,6 +105,30 @@
                         </div>
                         <div class="add-plus-right">
                             <div class="add-plus-shape"></div>
+                        </div>
+                    </div>
+                    <!-- Diamond AI -->
+                    <div class="add-service-card glass-panel add-ai-promo" onclick="window.open('https://diamond-ai.ru', '_blank')">
+                        <div class="add-ai-left">
+                            <img src="/assets/diamond-ai.ico" style="width:48px; height:48px; margin-bottom:16px;">
+                            <h3>Diamond AI</h3>
+                            <p>Передовой искусственный интеллект. Отвечает на вопросы, анализирует, помогает.</p>
+                            <button class="btn btn-primary">Открыть</button>
+                        </div>
+                        <div class="add-ai-right">
+                            <div class="ai-shape"></div>
+                        </div>
+                    </div>
+                    <!-- Dirmess -->
+                    <div class="add-service-card glass-panel add-dirmess-promo" onclick="window.open('https://dirmess.ru', '_blank')">
+                        <div class="add-dirmess-left">
+                            <img src="/assets/dirmess.ico" style="width:48px; height:48px; margin-bottom:16px;">
+                            <h3>Dirmess</h3>
+                            <p>Защищённый мессенджер для безопасного общения. Сквозное шифрование, приватность.</p>
+                            <button class="btn btn-primary">Открыть</button>
+                        </div>
+                        <div class="add-dirmess-right">
+                            <div class="dirmess-shape"></div>
                         </div>
                     </div>
                 </div>
@@ -168,7 +192,7 @@
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:800px; display:flex; overflow:hidden; padding:0;">
             <div class="login-image" style="flex:1; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0%, transparent 60%); padding:40px;">
-                <img src="/assets/diamond-ai.png" alt="DiamKey" style="width:100%; max-width:300px; animation: float 3s ease-in-out infinite;">
+                <img src="/assets/favicon.ico" alt="DiamKey" style="width:100%; max-width:300px; animation: float 3s ease-in-out infinite;">
             </div>
             <div class="login-form" style="flex:1; padding:40px 32px; display:flex; flex-direction:column; justify-content:center;">
                 <h2 id="loginCipherTitle" style="font-size:28px; font-weight:800; letter-spacing:2px; margin-bottom:24px; background:linear-gradient(135deg, #f5f5f7, #b0b0b0); -webkit-background-clip:text; background-clip:text; color:transparent;">DIAMKEY</h2>
@@ -242,17 +266,17 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
-    <script src="/js/diamkey-core.js?v=14"></script>
-    <script src="/js/diamkey-router.js?v=14"></script>
-    <script src="/js/diamkey-ui.js?v=14"></script>
-    <script src="/js/diamkey-wall.js?v=14"></script>
-    <script src="/js/diamkey-gpx.js?v=14"></script>
-    <script src="/js/diamkey-qr.js?v=14"></script>
-    <script src="/js/diamkey-scanner.js?v=14"></script>
-    <script src="/js/diamkey-bot.js?v=14"></script>
-    <script src="/js/diamkey-users.js?v=14"></script>
-    <script src="/js/diamkey-voice.js?v=14"></script>
-    <script src="/js/diamkey-ai-profile.js?v=14"></script>
-    <script src="/js/diamkey-reactions.js?v=14"></script>
+    <script src="/js/diamkey-core.js?v=15"></script>
+    <script src="/js/diamkey-router.js?v=15"></script>
+    <script src="/js/diamkey-ui.js?v=15"></script>
+    <script src="/js/diamkey-wall.js?v=15"></script>
+    <script src="/js/diamkey-gpx.js?v=15"></script>
+    <script src="/js/diamkey-qr.js?v=15"></script>
+    <script src="/js/diamkey-scanner.js?v=15"></script>
+    <script src="/js/diamkey-bot.js?v=15"></script>
+    <script src="/js/diamkey-users.js?v=15"></script>
+    <script src="/js/diamkey-voice.js?v=15"></script>
+    <script src="/js/diamkey-ai-profile.js?v=15"></script>
+    <script src="/js/diamkey-reactions.js?v=15"></script>
 </body>
 </html>
