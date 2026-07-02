@@ -324,114 +324,110 @@ body {
 .benefit-card h3 { font-size: 20px; margin-bottom: 10px; }
 .benefit-card p { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
 
-/* ===== КАРТОЧКИ В ADD – СТРОГО ОДИНАКОВЫЕ ===== */
+/* ===== КАРТОЧКИ В ADD – ТЕПЕРЬ 4 ШТУКИ, В ОДИН РЯД ===== */
 .add-services-grid {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     align-items: stretch;
-    gap: 24px;
+    gap: 16px;
     margin-bottom: 32px;
+    overflow-x: auto;
 }
 .add-service-card {
-    flex: 1 1 400px;
-    max-width: 500px;
-    min-width: 300px;
+    flex: 0 0 220px;
+    max-width: 220px;
+    min-width: 200px;
     display: flex;
     flex-direction: column;
     min-height: 320px;
+    transition: all var(--transition);
 }
+.add-service-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+/* внутренние промо-блоки заполняют высоту */
 .add-service-card .gpx-promo,
-.add-service-card .add-plus-promo {
+.add-service-card .add-plus-promo,
+.add-service-card .add-ai-promo,
+.add-service-card .add-dirmess-promo {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 32px 16px;
+    cursor: pointer;
+}
+.add-service-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 16px 0 12px;
+    padding-bottom: 12px;
+    background: linear-gradient(to right, var(--accent), transparent) bottom center no-repeat;
+    background-size: 60% 2px;
+    display: inline-block;
+}
+.add-service-card p {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    max-width: 180px;
+}
+.add-service-card .btn {
+    padding: 10px 24px;
+    font-size: 14px;
+    margin-top: auto;
 }
 
-/* ===== КАРТОЧКА GPX ===== */
-.gpx-promo { display: flex; flex-direction: row; align-items: center; gap: 40px; padding: 48px; cursor: pointer; }
-.gpx-promo-left { flex: 3; display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding-left: 16px; }
-.gpx-promo-left i { font-size: 48px; color: var(--accent); margin-bottom: 16px; margin-left: 0; }
-.gpx-promo-left h3 {
-    font-size: 28px; font-weight: 700; margin-bottom: 20px; padding-bottom: 12px;
-    background: linear-gradient(to right, var(--accent), transparent) bottom left no-repeat;
-    background-size: 100% 2px; border-bottom: none; display: inline-block;
-}
-.gpx-promo-left p { color: var(--text-muted); font-size: 16px; line-height: 1.6; margin-bottom: 28px; max-width: 400px; }
-.gpx-promo-right { flex: 1; display: flex; align-items: center; justify-content: center; }
-
-.three-deco {
-    width: 140px; height: 140px;
+/* фигуры для карточек */
+.three-deco,
+.add-plus-shape,
+.ai-shape,
+.dirmess-shape {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
     background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 70%);
     border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-    box-shadow: 0 0 30px rgba(160,160,176,0.4), inset 0 0 20px rgba(255,255,255,0.1);
     animation: morph 8s ease-in-out infinite;
 }
+.add-plus-shape {
+    box-shadow: 0 0 20px rgba(192,192,208,0.4), inset 0 0 15px rgba(255,255,255,0.15);
+    animation: morph 8s ease-in-out infinite, silverGlow 3s ease-in-out infinite;
+}
+.ai-shape {
+    box-shadow: 0 0 20px rgba(170,0,255,0.4);
+    animation: morph 8s ease-in-out infinite, aiGlow 3s ease-in-out infinite;
+}
+.dirmess-shape {
+    box-shadow: 0 0 20px rgba(0,200,255,0.4);
+    animation: morph 8s ease-in-out infinite, dirmessGlitch 2s ease-in-out infinite;
+}
+
 @keyframes morph {
     0%, 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
     50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
 }
-
-/* ===== КАРТОЧКА DIAMOND PLUS В ADD ===== */
-.add-plus-promo {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 40px;
-    padding: 48px;
-    cursor: pointer;
-}
-.add-plus-left {
-    flex: 3;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    padding-left: 16px;
-}
-.add-plus-left i {
-    font-size: 48px;
-    color: var(--accent);
-    margin-bottom: 16px;
-}
-.add-plus-left h3 {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    background: linear-gradient(to right, var(--accent), transparent) bottom left no-repeat;
-    background-size: 100% 2px;
-    display: inline-block;
-}
-.add-plus-left p {
-    color: var(--text-muted);
-    font-size: 16px;
-    line-height: 1.6;
-    margin-bottom: 28px;
-    max-width: 400px;
-}
-.add-plus-right {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.add-plus-shape {
-    width: 140px;
-    height: 140px;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 70%);
-    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-    box-shadow: 0 0 30px rgba(192,192,208,0.6), inset 0 0 20px rgba(255,255,255,0.2);
-    animation: morph 8s ease-in-out infinite, silverGlow 3s ease-in-out infinite;
-}
 @keyframes silverGlow {
-    0%, 100% { box-shadow: 0 0 20px rgba(192,192,208,0.4), inset 0 0 15px rgba(255,255,255,0.15); }
-    50% { box-shadow: 0 0 40px rgba(220,220,240,0.8), inset 0 0 25px rgba(255,255,255,0.3); }
+    0%, 100% { box-shadow: 0 0 15px rgba(192,192,208,0.3); }
+    50% { box-shadow: 0 0 30px rgba(220,220,240,0.7); }
+}
+@keyframes aiGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(170,0,255,0.3); }
+    50% { box-shadow: 0 0 35px rgba(170,0,255,0.8); }
+}
+@keyframes dirmessGlitch {
+    0%, 100% { box-shadow: 0 0 15px rgba(0,200,255,0.3); transform: scale(1); }
+    25% { box-shadow: 0 0 25px rgba(0,200,255,0.7); transform: scale(1.05) translateX(-2px); }
+    50% { box-shadow: 0 0 35px rgba(0,200,255,0.9); transform: scale(0.95) translateX(2px); }
+    75% { box-shadow: 0 0 25px rgba(0,200,255,0.7); transform: scale(1.02) translateY(-2px); }
 }
 
-/* ===== ПРОФИЛЬ – ОБЛОЖКА С РАСТЯГИВАНИЕМ ===== */
+/* ===== ПРОФИЛЬ ===== */
 .profile-panel {
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
@@ -628,7 +624,6 @@ body {
     color: #fff;
 }
 
-/* ===== ОПИСАНИЕ И БЕЙДЖИ – ЦЕНТРИРОВАНЫ, ОДНА СТРОКА ===== */
 .description-card-new {
     background: rgba(255,255,255,0.03);
     border: 1px solid var(--border-glass);
@@ -649,19 +644,18 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 14px;
     padding: 6px 10px;
-    display: flex;               /* теперь блочный flex, margin auto работает */
+    display: flex;
     flex-wrap: nowrap;
     gap: 6px;
     align-items: center;
     justify-content: flex-start;
     min-width: 130px;
     max-width: 100%;
-    width: fit-content;          /* ширина по содержимому */
+    width: fit-content;
     overflow-x: auto;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-    margin: 0 auto 12px auto;   /* центрирование */
+    margin: 0 auto 12px auto;
 }
-/* скроллбар */
 .badges-panel-centered::-webkit-scrollbar {
     height: 4px;
 }
@@ -1575,18 +1569,15 @@ body {
     .login-form { padding: 24px !important; }
     #gpx-map { height: 300px; }
     .gpx-stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .gpx-promo { flex-direction: column; padding: 32px 24px; }
-    .gpx-promo-left { text-align: center; align-items: center; padding-left: 0; }
-    .gpx-promo-left i { font-size: 40px; }
-    .gpx-promo-left h3 { font-size: 24px; }
-    .gpx-promo-left p { font-size: 16px; text-align: center; }
-    .gpx-promo-right { display: none; }
-    .add-plus-promo { flex-direction: column; padding: 32px 24px; }
-    .add-plus-left { text-align: center; align-items: center; padding-left: 0; }
-    .add-plus-left i { font-size: 40px; }
-    .add-plus-left h3 { font-size: 24px; }
-    .add-plus-left p { font-size: 16px; text-align: center; }
-    .add-plus-right { display: none; }
+    .add-services-grid {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .add-service-card {
+        flex: 0 0 160px;
+        max-width: 180px;
+        min-width: 150px;
+    }
     .profile-header { flex-wrap: wrap; gap: 16px; }
     .profile-info h2 { font-size: 24px; }
     .user-card { padding: 18px; }
