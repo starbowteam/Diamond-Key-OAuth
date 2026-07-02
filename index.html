@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="/css/style.css?v=16">
+    <link rel="stylesheet" href="/css/style.css?v=17">
 </head>
 <body>
     <div class="smooth-loader-overlay" id="smoothLoader">
@@ -30,6 +30,7 @@
         <nav class="sidebar" id="sidebar">
             <a class="sidebar-icon" href="/home"><i class="fas fa-home"></i></a>
             <a class="sidebar-icon" href="/add"><i class="fas fa-puzzle-piece"></i></a>
+            <a class="sidebar-icon" href="/chats"><i class="fas fa-comments"></i></a>
             <a class="sidebar-icon" href="/users"><i class="fas fa-users"></i></a>
             <a class="sidebar-icon" href="/profile"><i class="fas fa-user"></i></a>
             <a class="sidebar-icon" href="/data"><i class="fas fa-database"></i></a>
@@ -40,6 +41,7 @@
             </div>
         </nav>
         <main class="main-content" id="mainContent">
+            <!-- Home -->
             <section class="page" id="page-home">
                 <div class="glass-panel hero">
                     <img src="/assets/favicon.ico" class="hero-logo" alt="DiamKey">
@@ -78,60 +80,30 @@
                     </div>
                 </div>
             </section>
+            <!-- Add -->
             <section class="page" id="page-add">
                 <div class="section-title">Дополнения <span>DiamKey</span></div>
                 <p class="subtitle">Расширьте возможности вашего аккаунта с помощью сервисов экосистемы Diamond</p>
                 <div class="add-services-grid" id="addServicesGrid">
-                    <!-- GPX -->
                     <div class="add-service-card glass-panel" onclick="navigateTo('/add/gpx')">
-                        <div class="add-card-left">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <div class="three-deco"></div>
-                        </div>
-                        <div class="add-card-right">
-                            <h3>Diamond GPX</h3>
-                            <p>Загружайте GPS-треки, анализируйте маршруты, смотрите статистику и делитесь прогулками с друзьями.</p>
-                            <button class="btn btn-primary">Открыть</button>
-                        </div>
+                        <div class="add-card-left"><i class="fas fa-map-marker-alt"></i><div class="three-deco"></div></div>
+                        <div class="add-card-right"><h3>Diamond GPX</h3><p>Загружайте GPS-треки, анализируйте маршруты, смотрите статистику и делитесь прогулками с друзьями.</p><button class="btn btn-primary">Открыть</button></div>
                     </div>
-                    <!-- Diamond Plus -->
                     <div class="add-service-card glass-panel" onclick="navigateTo('/add/plus')">
-                        <div class="add-card-left">
-                            <i class="fas fa-crown"></i>
-                            <div class="add-plus-shape"></div>
-                        </div>
-                        <div class="add-card-right">
-                            <h3>Diamond Plus</h3>
-                            <p>Подписка, открывающая весь потенциал DiamKey. Расширенные настройки, безлимитный AI, премиум-бейдж и ранний доступ к новинкам.</p>
-                            <button class="btn btn-primary">Открыть</button>
-                        </div>
+                        <div class="add-card-left"><i class="fas fa-crown"></i><div class="add-plus-shape"></div></div>
+                        <div class="add-card-right"><h3>Diamond Plus</h3><p>Подписка, открывающая весь потенциал DiamKey.</p><button class="btn btn-primary">Открыть</button></div>
                     </div>
-                    <!-- Diamond AI -->
                     <div class="add-service-card glass-panel" onclick="window.open('https://diamond-ai.ru', '_blank')">
-                        <div class="add-card-left">
-                            <img src="/assets/diamond-ai.ico" alt="AI" style="width:48px;height:48px;">
-                            <div class="ai-shape"></div>
-                        </div>
-                        <div class="add-card-right">
-                            <h3>Diamond AI</h3>
-                            <p>Передовой искусственный интеллект. Отвечает на вопросы, анализирует, помогает.</p>
-                            <button class="btn btn-primary">Открыть</button>
-                        </div>
+                        <div class="add-card-left"><img src="/assets/diamond-ai.ico" alt="AI" style="width:48px;height:48px;"><div class="ai-shape"></div></div>
+                        <div class="add-card-right"><h3>Diamond AI</h3><p>Передовой искусственный интеллект.</p><button class="btn btn-primary">Открыть</button></div>
                     </div>
-                    <!-- Dirmess -->
                     <div class="add-service-card glass-panel" onclick="window.open('https://dirmess.ru', '_blank')">
-                        <div class="add-card-left">
-                            <img src="/assets/dirmess.ico" alt="Dirmess" style="width:48px;height:48px;">
-                            <div class="dirmess-shape"></div>
-                        </div>
-                        <div class="add-card-right">
-                            <h3>Dirmess</h3>
-                            <p>Защищённый мессенджер для безопасного общения. Сквозное шифрование, приватность.</p>
-                            <button class="btn btn-primary">Открыть</button>
-                        </div>
+                        <div class="add-card-left"><img src="/assets/dirmess.ico" alt="Dirmess" style="width:48px;height:48px;"><div class="dirmess-shape"></div></div>
+                        <div class="add-card-right"><h3>Dirmess</h3><p>Защищённый мессенджер для безопасного общения.</p><button class="btn btn-primary">Открыть</button></div>
                     </div>
                 </div>
             </section>
+            <!-- GPX -->
             <section class="page" id="page-add-gpx">
                 <div class="glass-panel gpx-container">
                     <div class="gpx-toolbar">
@@ -157,22 +129,18 @@
                     <div id="gpxOwnerInfo" class="glass-panel" style="display:none; text-align:center;"></div>
                 </div>
             </section>
+            <!-- Users -->
             <section class="page" id="page-users">
                 <div class="glass-panel" id="usersPanel">
                     <h2><i class="fas fa-users"></i> Пользователи</h2>
                     <div class="sort-container" id="sortContainer"></div>
                     <input type="text" id="userSearch" placeholder="Поиск по нику...">
-                    <div id="usersList">
-                        <div class="loader-container">
-                            <div class="loader-icon"><i class="fas fa-user-astronaut"></i></div>
-                            <div class="loader-progress"><div class="loader-bar" id="usersLoaderBar"></div></div>
-                            <div class="loader-status" id="usersLoaderStatus">Загрузка пользователей...</div>
-                        </div>
-                    </div>
+                    <div id="usersList"><div class="loader-container"><div class="loader-icon"><i class="fas fa-user-astronaut"></i></div><div class="loader-progress"><div class="loader-bar" id="usersLoaderBar"></div></div><div class="loader-status" id="usersLoaderStatus">Загрузка пользователей...</div></div></div>
                 </div>
                 <div class="glass-panel profile-top" id="userProfileView" style="display:none;"></div>
                 <div class="glass-panel profile-wall" id="userWallSection" style="display:none;"></div>
             </section>
+            <!-- Profile -->
             <section class="page" id="page-profile">
                 <div class="glass-panel profile-top" id="myProfileTop"></div>
                 <div class="glass-panel profile-gpx" id="myGpxSection"></div>
@@ -182,6 +150,56 @@
                 <div class="glass-panel profile-section" id="profileGpxProfile"></div>
                 <div class="glass-panel gpx-section" id="profileGpxSection" style="display:none;"></div>
             </section>
+            <!-- Chats -->
+            <section class="page" id="page-chats">
+                <div class="chats-container">
+                    <div class="chat-list-panel">
+                        <div class="chat-list-header">
+                            <h2><i class="fas fa-comment-dots"></i> Сообщения</h2>
+                            <div class="chat-search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="chatSearchInput" placeholder="Поиск по имени...">
+                            </div>
+                        </div>
+                        <div class="chat-list" id="chatListContainer"></div>
+                    </div>
+                    <div class="chat-view-panel" id="chatViewPanel">
+                        <div class="chat-empty-state" id="noChatSelected">
+                            <i class="fas fa-comments" style="font-size:48px; margin-bottom:12px;"></i>
+                            <p>Выберите чат, чтобы начать общение</p>
+                        </div>
+                        <div id="activeChatView" style="display:none; flex-direction:column; height:100%;">
+                            <div class="chat-header">
+                                <div class="chat-header-avatar" id="chatHeaderAvatar"><i class="fas fa-user"></i></div>
+                                <div class="chat-header-info">
+                                    <div class="chat-header-name" id="chatHeaderName"></div>
+                                    <div class="chat-header-status" id="chatHeaderStatus"></div>
+                                </div>
+                                <div class="chat-actions">
+                                    <button class="chat-action-btn" onclick="startCall('voice')"><i class="fas fa-phone"></i></button>
+                                    <button class="chat-action-btn" onclick="startCall('video')"><i class="fas fa-video"></i></button>
+                                </div>
+                            </div>
+                            <div class="chat-messages" id="chatMessagesContainer"></div>
+                            <div class="chat-input-area">
+                                <input type="text" id="chatMessageInput" placeholder="Введите сообщение...">
+                                <button class="chat-send-btn" id="chatSendBtn"><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                            <div class="call-overlay" id="callOverlay" style="display:none;">
+                                <div class="call-avatar"><i class="fas fa-user"></i></div>
+                                <div class="call-name" id="callName"></div>
+                                <div class="call-status" id="callStatusText"></div>
+                                <div class="call-controls">
+                                    <button class="call-btn"><i class="fas fa-microphone"></i></button>
+                                    <button class="call-btn"><i class="fas fa-volume-up"></i></button>
+                                    <button class="call-btn end-call" onclick="endCall()"><i class="fas fa-phone-slash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Data -->
             <section class="page" id="page-data"></section>
         </main>
     </div>
@@ -199,15 +217,15 @@
                     <button class="auth-tab" id="tabRegister">Регистрация</button>
                 </div>
                 <div id="loginFormBlock">
-                    <input id="loginIdentity" placeholder="Логин" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
-                    <input id="loginPassword" type="password" placeholder="Пароль" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <input id="loginIdentity" placeholder="Логин">
+                    <input id="loginPassword" type="password" placeholder="Пароль">
                     <button class="btn btn-primary" id="doLoginBtn"><i class="fas fa-sign-in-alt"></i> Войти</button>
                 </div>
                 <div id="registerFormBlock" style="display:none;">
-                    <input id="regLoginInput" placeholder="Придумайте логин" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <input id="regLoginInput" placeholder="Придумайте логин">
                     <div class="login-status" id="regLoginStatus"></div>
-                    <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
-                    <input id="regPasswordConfirm" type="password" placeholder="Повторите пароль" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
+                    <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)">
+                    <input id="regPasswordConfirm" type="password" placeholder="Повторите пароль">
                     <button class="btn btn-primary" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
                 </div>
             </div>
@@ -218,9 +236,7 @@
     <div class="modal" id="badgeModal" onclick="if(event.target===this) closeModal('badgeModal')">
         <div class="modal-content glass-panel badge-modal-content" onclick="event.stopPropagation()">
             <h3><i class="fas fa-medal"></i> Выдать бейдж</h3>
-            <div class="badge-search">
-                <input type="text" id="badgeUserSearch" placeholder="Поиск пользователя...">
-            </div>
+            <div class="badge-search"><input type="text" id="badgeUserSearch" placeholder="Поиск пользователя..."></div>
             <div class="badge-user-list" id="badgeUserList"></div>
             <div id="badgeListContainer" style="display:none;">
                 <p class="text-muted" style="margin-bottom:12px;">Выберите бейдж для <strong id="selectedBadgeUser"></strong>:</p>
@@ -231,10 +247,8 @@
         </div>
     </div>
 
-    <!-- Модалка настройки обложки -->
     <div id="coverSetupModalContainer"></div>
 
-    <!-- Модалка названия GPX -->
     <div class="modal" id="gpxNameModal" onclick="if(event.target===this) closeModal('gpxNameModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <h3>Название прогулки</h3>
@@ -246,7 +260,6 @@
         </div>
     </div>
 
-    <!-- Модалка редактирования описания -->
     <div class="modal" id="editDescriptionModal" onclick="if(event.target===this) closeModal('editDescriptionModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()">
             <h3>Редактировать описание</h3>
@@ -258,17 +271,26 @@
         </div>
     </div>
 
+    <!-- Модалка друзей -->
+    <div class="modal" id="friendsModal" onclick="if(event.target===this) closeModal('friendsModal')">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:400px;">
+            <h3><i class="fas fa-user-friends"></i> Друзья</h3>
+            <div id="friendsListContent" style="max-height:300px; overflow-y:auto;"></div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
-    <script src="/js/diamkey-core.js?v=16"></script>
-    <script src="/js/diamkey-router.js?v=16"></script>
-    <script src="/js/diamkey-ui.js?v=16"></script>
-    <script src="/js/diamkey-wall.js?v=16"></script>
-    <script src="/js/diamkey-gpx.js?v=16"></script>
-    <script src="/js/diamkey-bot.js?v=16"></script>
-    <script src="/js/diamkey-users.js?v=16"></script>
-    <script src="/js/diamkey-voice.js?v=16"></script>
-    <script src="/js/diamkey-ai-profile.js?v=16"></script>
-    <script src="/js/diamkey-reactions.js?v=16"></script>
+    <script src="/js/diamkey-core.js?v=17"></script>
+    <script src="/js/diamkey-router.js?v=17"></script>
+    <script src="/js/diamkey-ui.js?v=17"></script>
+    <script src="/js/diamkey-wall.js?v=17"></script>
+    <script src="/js/diamkey-gpx.js?v=17"></script>
+    <script src="/js/diamkey-bot.js?v=17"></script>
+    <script src="/js/diamkey-users.js?v=17"></script>
+    <script src="/js/diamkey-voice.js?v=17"></script>
+    <script src="/js/diamkey-ai-profile.js?v=17"></script>
+    <script src="/js/diamkey-reactions.js?v=17"></script>
+    <script src="/js/diamkey-chats.js?v=17"></script>
 </body>
 </html>
