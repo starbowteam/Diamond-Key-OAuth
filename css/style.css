@@ -649,21 +649,19 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 14px;
     padding: 6px 10px;
-    display: inline-flex;
+    display: flex;               /* теперь блочный flex, margin auto работает */
     flex-wrap: nowrap;
     gap: 6px;
     align-items: center;
     justify-content: flex-start;
     min-width: 130px;
     max-width: 100%;
+    width: fit-content;          /* ширина по содержимому */
     overflow-x: auto;
-    white-space: nowrap;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-    margin: 0 auto 12px auto;
-    /* центрирование блока */
-    text-align: center;
+    margin: 0 auto 12px auto;   /* центрирование */
 }
-/* чтобы скролл был аккуратным */
+/* скроллбар */
 .badges-panel-centered::-webkit-scrollbar {
     height: 4px;
 }
