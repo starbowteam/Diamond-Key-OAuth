@@ -1,4 +1,4 @@
-// diamkey-wall.js — полный файл (стили в style.css)
+// diamkey-wall.js — профиль, стена, GPX-вью, Diamond Plus, Database, реакции, обложка, друзья
 
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
@@ -266,6 +266,34 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const isOwnProfile = (currentUser && currentUser.login === login);
     const showBackBtn = !isOwnProfile;
 
+    // Кнопка друзей (только для своего профиля)
+    let friendsHtml = '';
+    if (isOwnProfile) {
+        const friendsCount = getFriendsList().length;
+        friendsHtml = `<div class="friends-count-btn" onclick="showFriendsModal()"><i class="fas fa-user-friends"></i> Друзья: ${friendsCount}</div>`;
+    }
+
+    // Кнопка дружбы в нике (для чужого профиля)
+    let friendNickBtn = '';
+    if (!isOwnProfile) {
+        const status = getFriendStatus(login);
+        if (status === 'accepted') {
+            friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Удалить из друзей"><i class="fas fa-check"></i></button>`;
+        } else if (status === 'pending') {
+            friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Заявка отправлена"><i class="fas fa-clock"></i></button>`;
+        } else {
+            friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Добавить в друзья"><i class="fas fa-user-plus"></i></button>`;
+        }
+    }
+
+    // Кнопки Дополнения и AI (под бейджами)
+    const actionsRow = `
+        <div class="actions-row">
+            <button class="action-btn" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')"><i class="fas fa-puzzle-piece"></i> Дополнения</button>
+            <button class="action-btn" onclick="event.stopPropagation(); window.openAIModal('${login}')"><i class="fas fa-info-circle"></i> AI анализ</button>
+        </div>
+    `;
+
     return `
         <div class="profile-panel">
             ${renderCoverHTML(profile, isOwnProfile, showBackBtn)}
@@ -277,12 +305,13 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
             <div class="profile-nickname-center">
                 <div class="nickname-badge">
                     ${escapeHtml(profile.name || login)}
-                    <button class="action-btn-mini" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')" title="Дополнения"><i class="fas fa-puzzle-piece"></i></button>
-                    <button class="ai-btn-nick" onclick="event.stopPropagation(); window.openAIModal('${login}')" title="Анализ профиля AI"><i class="fas fa-info-circle"></i></button>
+                    ${friendNickBtn}
                 </div>
             </div>
             <div class="description-card-new" id="profileDescription">${escapeHtml(desc)}</div>
             <div class="badges-panel-centered">${badgesHTML}</div>
+            ${friendsHtml}
+            ${actionsRow}
             <div class="meta-row-centered">
                 ${statusHTML}
                 <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
@@ -467,6 +496,8 @@ async function renderMyProfile() {
         const allPosts = await (typeof getMixedWallPosts === 'function' ? getMixedWallPosts(login, wallPosts) : wallPosts);
         let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
+        const friendsCount = getFriendsList().length;
+
         pageProfile.innerHTML = `
             <div class="profile-panel">
                 ${coverBlock}
@@ -478,12 +509,15 @@ async function renderMyProfile() {
                 <div class="profile-nickname-center">
                     <div class="nickname-badge">
                         ${escapeHtml(profile.name || login)}
-                        <button class="action-btn-mini" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')" title="Дополнения"><i class="fas fa-puzzle-piece"></i></button>
-                        <button class="ai-btn-nick" onclick="event.stopPropagation(); window.openAIModal('${login}')" title="Анализ профиля AI"><i class="fas fa-info-circle"></i></button>
                     </div>
                 </div>
                 <div class="description-card-new" id="myDescription">${escapeHtml(desc)}</div>
                 <div class="badges-panel-centered">${badgesHTML}</div>
+                <div class="friends-count-btn" onclick="showFriendsModal()"><i class="fas fa-user-friends"></i> Друзья: ${friendsCount}</div>
+                <div class="actions-row">
+                    <button class="action-btn" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')"><i class="fas fa-puzzle-piece"></i> Дополнения</button>
+                    <button class="action-btn" onclick="event.stopPropagation(); window.openAIModal('${login}')"><i class="fas fa-info-circle"></i> AI анализ</button>
+                </div>
                 <div class="meta-row-centered">
                     ${statusHTML}
                     <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
@@ -889,41 +923,6 @@ async function viewGpxRoute(fileId) {
     navigateTo(`/add/gpx?id=${fileId}`);
 }
 
-function renderQrConfirm(ticket) {
-    const page = document.getElementById('page-qr-confirm');
-    if (!page) return;
-    const isLoggedIn = !!currentUser;
-    let controlsHTML = isLoggedIn ? `
-        <div style="margin-bottom:20px;"><span>Вы вошли как <strong>${escapeHtml(currentUser.login)}</strong></span></div>
-        <button class="btn btn-success" id="acceptQrBtn"><i class="fas fa-check-circle"></i> Принять</button>
-        <button class="btn btn-danger" id="rejectQrBtn"><i class="fas fa-times-circle"></i> Отклонить</button>
-    ` : `<p>Сначала войдите в DiamKey</p><button class="btn" onclick="navigateTo('/home')"><i class="fas fa-sign-in-alt"></i> Войти</button>`;
-
-    page.innerHTML = `
-        <div class="glass-panel" style="text-align:center; padding:40px; max-width:400px; margin:0 auto;">
-            <img src="/assets/favicon.ico" style="width:64px;height:64px;border-radius:50%;margin-bottom:20px;animation: float 3s ease-in-out infinite;">
-            <h2>Подтверждение входа</h2>
-            <p class="text-muted">Запрос на вход через QR-код</p>
-            <div id="qrConfirmControls">${controlsHTML}</div>
-            <p class="error-msg" id="qrConfirmError" style="display:none;"></p>
-        </div>`;
-    if (isLoggedIn) {
-        document.getElementById('acceptQrBtn').addEventListener('click', async () => {
-            const { error } = await _supabase.from('qr_tickets').update({ login: currentUser.login, status: 'accepted' }).eq('ticket', ticket);
-            if (error) {
-                document.getElementById('qrConfirmError').textContent = 'Ошибка';
-                document.getElementById('qrConfirmError').style.display = 'block';
-                return;
-            }
-            page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход подтверждён!</h2></div>';
-        });
-        document.getElementById('rejectQrBtn').addEventListener('click', async () => {
-            await _supabase.from('qr_tickets').update({ status: 'rejected' }).eq('ticket', ticket);
-            page.innerHTML = '<div class="glass-panel" style="text-align:center;padding:40px;"><h2>Вход отклонён</h2></div>';
-        });
-    }
-}
-
 function initParticles() {
     const canvas = document.getElementById('particleCanvas');
     if (!canvas) return;
@@ -977,4 +976,49 @@ function initParticles() {
         requestAnimationFrame(draw);
     }
     draw();
+}
+
+// Обработчик кнопки дружбы в чужом профиле
+function handleFriendAction(login) {
+    const status = getFriendStatus(login);
+    if (status === 'accepted') {
+        removeFriend(login);
+        showToast('Удалён из друзей');
+    } else if (status === 'pending') {
+        removeFriend(login);
+        showToast('Заявка отменена');
+    } else {
+        sendFriendRequest(login);
+        showToast('Заявка отправлена');
+    }
+    // Обновить профиль
+    if (typeof openUserProfile === 'function') {
+        openUserProfile(login);
+    }
+}
+
+// Модалка друзей
+function showFriendsModal() {
+    const modal = document.getElementById('friendsModal');
+    const listContainer = document.getElementById('friendsListContent');
+    if (!modal || !listContainer) return;
+
+    const friends = getFriendsList();
+    if (friends.length === 0) {
+        listContainer.innerHTML = '<p class="text-muted" style="text-align:center; padding:20px;">У вас пока нет друзей</p>';
+    } else {
+        // Загружаем имена друзей
+        getUsers().then(users => {
+            const friendUsers = users.filter(u => friends.includes(u.login));
+            listContainer.innerHTML = friendUsers.map(u => `
+                <div class="badge-user-row" style="cursor:pointer;" onclick="navigateTo('/users/${u.login}'); closeModal('friendsModal');">
+                    ${u.avatar ? `<img src="${u.avatar}" alt="${u.login}">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
+                    <span>${escapeHtml(u.name || u.login)}</span>
+                </div>
+            `).join('');
+        });
+    }
+
+    modal.style.display = 'flex';
+    modal.classList.add('active');
 }
