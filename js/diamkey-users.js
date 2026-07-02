@@ -1,3 +1,5 @@
+// diamkey-users.js — список пользователей с кнопками дружбы
+
 async function loadUsers() {
     const container = document.getElementById('usersList');
     const sortContainer = document.getElementById('sortContainer');
@@ -57,18 +59,45 @@ async function loadUsers() {
                 ? new Date(b.created_at) - new Date(a.created_at)
                 : a.login.localeCompare(b.login)
         );
-        container.innerHTML = sorted.map(u => `
-            <div class="user-card glass-panel" data-login="${u.login}" style="cursor:pointer;">
-                ${avatarHTML(u.avatar, 44)}
-                <div><h4>${escapeHtml(u.name || u.login)}</h4><span>@${u.login}</span></div>
-            </div>
-        `).join('');
 
-        container.querySelectorAll('.user-card').forEach(card => {
-            card.addEventListener('click', () => {
-                navigateTo('/users/' + card.dataset.login);
-            });
-        });
+        container.innerHTML = sorted.map(u => {
+            const status = getFriendStatus(u.login);
+            let actionBtn = '';
+            if (status === 'accepted') {
+                actionBtn = `
+                    <div class="user-card-actions">
+                        <button class="btn-friend-card accepted" onclick="event.stopPropagation(); handleFriendAction('${u.login}')"><i class="fas fa-check"></i> Друзья</button>
+                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); handleFriendAction('${u.login}')"><i class="fas fa-user-times"></i></button>
+                    </div>
+                `;
+            } else if (status === 'pending') {
+                actionBtn = `
+                    <div class="user-card-actions">
+                        <button class="btn-friend-card pending" onclick="event.stopPropagation(); handleFriendAction('${u.login}')"><i class="fas fa-clock"></i> Ожидание</button>
+                    </div>
+                `;
+            } else {
+                actionBtn = `
+                    <div class="user-card-actions">
+                        <button class="btn-friend-card add" onclick="event.stopPropagation(); handleFriendAction('${u.login}')"><i class="fas fa-user-plus"></i> Добавить в друзья</button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="user-card glass-panel" data-login="${u.login}" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:18px;" onclick="navigateTo('/users/${u.login}')">
+                        ${avatarHTML(u.avatar, 44)}
+                        <div>
+                            <h4>${escapeHtml(u.name || u.login)}</h4>
+                            <span>@${u.login}</span>
+                        </div>
+                    </div>
+                    ${actionBtn}
+                </div>
+            `;
+        }).join('');
+
         updateFilterButton();
     }
 
