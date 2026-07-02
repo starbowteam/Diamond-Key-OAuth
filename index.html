@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="/css/style.css?v=15">
+    <link rel="stylesheet" href="/css/style.css?v=16">
 </head>
 <body>
     <div class="smooth-loader-overlay" id="smoothLoader">
@@ -84,51 +84,51 @@
                 <p class="subtitle">Расширьте возможности вашего аккаунта с помощью сервисов экосистемы Diamond</p>
                 <div class="add-services-grid" id="addServicesGrid">
                     <!-- GPX -->
-                    <div class="add-service-card glass-panel gpx-promo" onclick="navigateTo('/add/gpx')">
-                        <div class="gpx-promo-left">
+                    <div class="add-service-card glass-panel" onclick="navigateTo('/add/gpx')">
+                        <div class="add-card-left">
                             <i class="fas fa-map-marker-alt"></i>
+                            <div class="three-deco"></div>
+                        </div>
+                        <div class="add-card-right">
                             <h3>Diamond GPX</h3>
                             <p>Загружайте GPS-треки, анализируйте маршруты, смотрите статистику и делитесь прогулками с друзьями.</p>
                             <button class="btn btn-primary">Открыть</button>
                         </div>
-                        <div class="gpx-promo-right">
-                            <div class="three-deco"></div>
-                        </div>
                     </div>
                     <!-- Diamond Plus -->
-                    <div class="add-service-card glass-panel add-plus-promo" onclick="navigateTo('/add/plus')">
-                        <div class="add-plus-left">
+                    <div class="add-service-card glass-panel" onclick="navigateTo('/add/plus')">
+                        <div class="add-card-left">
                             <i class="fas fa-crown"></i>
+                            <div class="add-plus-shape"></div>
+                        </div>
+                        <div class="add-card-right">
                             <h3>Diamond Plus</h3>
                             <p>Подписка, открывающая весь потенциал DiamKey. Расширенные настройки, безлимитный AI, премиум-бейдж и ранний доступ к новинкам.</p>
                             <button class="btn btn-primary">Открыть</button>
                         </div>
-                        <div class="add-plus-right">
-                            <div class="add-plus-shape"></div>
-                        </div>
                     </div>
                     <!-- Diamond AI -->
-                    <div class="add-service-card glass-panel add-ai-promo" onclick="window.open('https://diamond-ai.ru', '_blank')">
-                        <div class="add-ai-left">
-                            <img src="/assets/diamond-ai.ico" style="width:48px; height:48px; margin-bottom:16px;">
+                    <div class="add-service-card glass-panel" onclick="window.open('https://diamond-ai.ru', '_blank')">
+                        <div class="add-card-left">
+                            <img src="/assets/diamond-ai.ico" alt="AI" style="width:48px;height:48px;">
+                            <div class="ai-shape"></div>
+                        </div>
+                        <div class="add-card-right">
                             <h3>Diamond AI</h3>
                             <p>Передовой искусственный интеллект. Отвечает на вопросы, анализирует, помогает.</p>
                             <button class="btn btn-primary">Открыть</button>
                         </div>
-                        <div class="add-ai-right">
-                            <div class="ai-shape"></div>
-                        </div>
                     </div>
                     <!-- Dirmess -->
-                    <div class="add-service-card glass-panel add-dirmess-promo" onclick="window.open('https://dirmess.ru', '_blank')">
-                        <div class="add-dirmess-left">
-                            <img src="/assets/dirmess.ico" style="width:48px; height:48px; margin-bottom:16px;">
+                    <div class="add-service-card glass-panel" onclick="window.open('https://dirmess.ru', '_blank')">
+                        <div class="add-card-left">
+                            <img src="/assets/dirmess.ico" alt="Dirmess" style="width:48px;height:48px;">
+                            <div class="dirmess-shape"></div>
+                        </div>
+                        <div class="add-card-right">
                             <h3>Dirmess</h3>
                             <p>Защищённый мессенджер для безопасного общения. Сквозное шифрование, приватность.</p>
                             <button class="btn btn-primary">Открыть</button>
-                        </div>
-                        <div class="add-dirmess-right">
-                            <div class="dirmess-shape"></div>
                         </div>
                     </div>
                 </div>
@@ -266,17 +266,17 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
-    <script src="/js/diamkey-core.js?v=15"></script>
-    <script src="/js/diamkey-router.js?v=15"></script>
-    <script src="/js/diamkey-ui.js?v=15"></script>
-    <script src="/js/diamkey-wall.js?v=15"></script>
-    <script src="/js/diamkey-gpx.js?v=15"></script>
-    <script src="/js/diamkey-qr.js?v=15"></script>
-    <script src="/js/diamkey-scanner.js?v=15"></script>
-    <script src="/js/diamkey-bot.js?v=15"></script>
-    <script src="/js/diamkey-users.js?v=15"></script>
-    <script src="/js/diamkey-voice.js?v=15"></script>
-    <script src="/js/diamkey-ai-profile.js?v=15"></script>
-    <script src="/js/diamkey-reactions.js?v=15"></script>
+    <script src="/js/diamkey-core.js?v=16"></script>
+    <script src="/js/diamkey-router.js?v=16"></script>
+    <script src="/js/diamkey-ui.js?v=16"></script>
+    <script src="/js/diamkey-wall.js?v=16"></script>
+    <script src="/js/diamkey-gpx.js?v=16"></script>
+    <script src="/js/diamkey-qr.js?v=16"></script>
+    <script src="/js/diamkey-scanner.js?v=16"></script>
+    <script src="/js/diamkey-bot.js?v=16"></script>
+    <script src="/js/diamkey-users.js?v=16"></script>
+    <script src="/js/diamkey-voice.js?v=16"></script>
+    <script src="/js/diamkey-ai-profile.js?v=16"></script>
+    <script src="/js/diamkey-reactions.js?v=16"></script>
 </body>
 </html>
