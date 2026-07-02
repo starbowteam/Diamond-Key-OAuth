@@ -38,11 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tabLogin = document.getElementById('tabLogin');
     const tabRegister = document.getElementById('tabRegister');
-    const tabQr = document.getElementById('tabQr');
     const loginBlock = document.getElementById('loginFormBlock');
     const registerBlock = document.getElementById('registerFormBlock');
-    const qrBlock = document.getElementById('qrFormBlock');
-    const qrContainer = document.getElementById('qrContainer');
 
     const loginIdentity = document.getElementById('loginIdentity');
     const regLoginInput = document.getElementById('regLoginInput');
@@ -84,31 +81,15 @@ document.addEventListener('DOMContentLoaded', () => {
     tabLogin?.addEventListener('click', () => {
         tabLogin.classList.add('active');
         tabRegister.classList.remove('active');
-        tabQr?.classList.remove('active');
         loginBlock.style.display = 'block';
         registerBlock.style.display = 'none';
-        if (qrBlock) qrBlock.style.display = 'none';
-        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); qrGenerated = false; }
     });
 
     tabRegister?.addEventListener('click', () => {
         tabRegister.classList.add('active');
         tabLogin.classList.remove('active');
-        tabQr?.classList.remove('active');
         registerBlock.style.display = 'block';
         loginBlock.style.display = 'none';
-        if (qrBlock) qrBlock.style.display = 'none';
-        if (qrContainer) { qrContainer.innerHTML = ''; qrContainer.style.display = 'none'; clearInterval(qrPollingInterval); qrGenerated = false; }
-    });
-
-    tabQr?.addEventListener('click', () => {
-        tabQr.classList.add('active');
-        tabLogin.classList.remove('active');
-        tabRegister.classList.remove('active');
-        loginBlock.style.display = 'none';
-        registerBlock.style.display = 'none';
-        if (qrBlock) qrBlock.style.display = 'block';
-        if (!qrGenerated) generateQrInModal();
     });
 
     document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
@@ -695,10 +676,8 @@ function updateSidebarVisibility() {
         btn.style.display = isLoggedIn ? '' : 'none';
     });
     const logoutBtn = document.getElementById('logoutSidebarBtn');
-    const scannerBtn = document.getElementById('qrScannerBtn');
     const badgeAdminBtn = document.getElementById('badgeAdminBtn');
     if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'flex' : 'none';
-    if (scannerBtn) scannerBtn.style.display = isLoggedIn ? 'flex' : 'none';
     if (badgeAdminBtn) {
         badgeAdminBtn.style.display = (currentUser && currentUser.login === 'viktorshopa') ? 'flex' : 'none';
     }
