@@ -324,7 +324,7 @@ body {
 .benefit-card h3 { font-size: 20px; margin-bottom: 10px; }
 .benefit-card p { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
 
-/* ===== КАРТОЧКИ В ADD – ТЕПЕРЬ 4 ШТУКИ, В ОДИН РЯД ===== */
+/* ===== КАРТОЧКИ В ADD – ТЕПЕРЬ 4 КВАДРАТА ===== */
 .add-services-grid {
     display: flex;
     flex-direction: row;
@@ -336,36 +336,25 @@ body {
     overflow-x: auto;
 }
 .add-service-card {
-    flex: 0 0 220px;
-    max-width: 220px;
-    min-width: 200px;
+    flex: 0 0 240px;
+    max-width: 240px;
+    min-width: 240px;
+    width: 240px;
+    min-height: 240px;
+    height: 240px;
     display: flex;
     flex-direction: column;
-    min-height: 320px;
     transition: all var(--transition);
-}
-.add-service-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-}
-/* внутренние промо-блоки заполняют высоту */
-.add-service-card .gpx-promo,
-.add-service-card .add-plus-promo,
-.add-service-card .add-ai-promo,
-.add-service-card .add-dirmess-promo {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    padding: 24px 16px;
+    justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 32px 16px;
-    cursor: pointer;
 }
 .add-service-card h3 {
     font-size: 18px;
     font-weight: 700;
-    margin: 16px 0 12px;
-    padding-bottom: 12px;
+    margin: 12px 0 8px;
+    padding-bottom: 8px;
     background: linear-gradient(to right, var(--accent), transparent) bottom center no-repeat;
     background-size: 60% 2px;
     display: inline-block;
@@ -374,12 +363,12 @@ body {
     color: var(--text-muted);
     font-size: 13px;
     line-height: 1.5;
-    margin-bottom: 20px;
-    max-width: 180px;
+    margin-bottom: 12px;
+    max-width: 200px;
 }
 .add-service-card .btn {
-    padding: 10px 24px;
-    font-size: 14px;
+    padding: 8px 20px;
+    font-size: 13px;
     margin-top: auto;
 }
 
@@ -388,23 +377,23 @@ body {
 .add-plus-shape,
 .ai-shape,
 .dirmess-shape {
-    width: 100px;
-    height: 100px;
-    margin: 0 auto;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 8px;
     background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 70%);
     border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
     animation: morph 8s ease-in-out infinite;
 }
 .add-plus-shape {
-    box-shadow: 0 0 20px rgba(192,192,208,0.4), inset 0 0 15px rgba(255,255,255,0.15);
+    box-shadow: 0 0 15px rgba(192,192,208,0.4), inset 0 0 10px rgba(255,255,255,0.15);
     animation: morph 8s ease-in-out infinite, silverGlow 3s ease-in-out infinite;
 }
 .ai-shape {
-    box-shadow: 0 0 20px rgba(170,0,255,0.4);
+    box-shadow: 0 0 15px rgba(170,0,255,0.4);
     animation: morph 8s ease-in-out infinite, aiGlow 3s ease-in-out infinite;
 }
 .dirmess-shape {
-    box-shadow: 0 0 20px rgba(0,200,255,0.4);
+    box-shadow: 0 0 15px rgba(0,200,255,0.4);
     animation: morph 8s ease-in-out infinite, dirmessGlitch 2s ease-in-out infinite;
 }
 
@@ -413,21 +402,21 @@ body {
     50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
 }
 @keyframes silverGlow {
-    0%, 100% { box-shadow: 0 0 15px rgba(192,192,208,0.3); }
-    50% { box-shadow: 0 0 30px rgba(220,220,240,0.7); }
+    0%, 100% { box-shadow: 0 0 10px rgba(192,192,208,0.3); }
+    50% { box-shadow: 0 0 25px rgba(220,220,240,0.7); }
 }
 @keyframes aiGlow {
-    0%, 100% { box-shadow: 0 0 15px rgba(170,0,255,0.3); }
-    50% { box-shadow: 0 0 35px rgba(170,0,255,0.8); }
+    0%, 100% { box-shadow: 0 0 10px rgba(170,0,255,0.3); }
+    50% { box-shadow: 0 0 30px rgba(170,0,255,0.8); }
 }
 @keyframes dirmessGlitch {
-    0%, 100% { box-shadow: 0 0 15px rgba(0,200,255,0.3); transform: scale(1); }
-    25% { box-shadow: 0 0 25px rgba(0,200,255,0.7); transform: scale(1.05) translateX(-2px); }
-    50% { box-shadow: 0 0 35px rgba(0,200,255,0.9); transform: scale(0.95) translateX(2px); }
-    75% { box-shadow: 0 0 25px rgba(0,200,255,0.7); transform: scale(1.02) translateY(-2px); }
+    0%, 100% { box-shadow: 0 0 10px rgba(0,200,255,0.3); transform: scale(1); }
+    25% { box-shadow: 0 0 20px rgba(0,200,255,0.7); transform: scale(1.03) translateX(-1px); }
+    50% { box-shadow: 0 0 30px rgba(0,200,255,0.9); transform: scale(0.97) translateX(1px); }
+    75% { box-shadow: 0 0 20px rgba(0,200,255,0.7); transform: scale(1.02) translateY(-1px); }
 }
 
-/* ===== ПРОФИЛЬ ===== */
+/* ===== ПРОФИЛЬ – ОБЛОЖКА С РАСТЯГИВАНИЕМ ===== */
 .profile-panel {
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
@@ -1577,6 +1566,8 @@ body {
         flex: 0 0 160px;
         max-width: 180px;
         min-width: 150px;
+        min-height: 200px;
+        height: auto;
     }
     .profile-header { flex-wrap: wrap; gap: 16px; }
     .profile-info h2 { font-size: 24px; }
