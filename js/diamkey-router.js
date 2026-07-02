@@ -14,9 +14,7 @@ function updateSidebarVisibility() {
         btn.style.display = isLoggedIn ? '' : 'none';
     });
     const logoutBtn = document.getElementById('logoutSidebarBtn');
-    const scannerBtn = document.getElementById('qrScannerBtn');
     if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'flex' : 'none';
-    if (scannerBtn) scannerBtn.style.display = isLoggedIn ? 'flex' : 'none';
 }
 
 function handleRoute() {
@@ -150,11 +148,6 @@ function handleRoute() {
         const login = path.split('/profile/')[1].split('/gpxview')[0];
         activatePage('page-profile-gpx', true);
         setTimeout(() => { if (typeof renderProfileGpxView === 'function') renderProfileGpxView(login); }, 0);
-        window.scrollTo({ top: 0, behavior: 'instant' });
-    } else if (path === '/qr-confirm') {
-        activatePage('page-qr-confirm', true);
-        const ticket = params.get('ticket');
-        if (ticket && typeof renderQrConfirm === 'function') renderQrConfirm(ticket);
         window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/data') {
         activatePage('page-data', true);
