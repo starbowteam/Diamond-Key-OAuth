@@ -34,7 +34,6 @@
             <a class="sidebar-icon" href="/profile"><i class="fas fa-user"></i></a>
             <a class="sidebar-icon" href="/data"><i class="fas fa-database"></i></a>
             <div class="sidebar-bottom">
-                <a class="sidebar-icon" id="qrScannerBtn" title="Сканер QR-кода"><i class="fas fa-qrcode"></i></a>
                 <a class="sidebar-icon" id="badgeAdminBtn" title="Выдать бейдж" style="display:none;"><i class="fas fa-medal"></i></a>
                 <a class="sidebar-icon" href="https://discord.gg/diamondshop" target="_blank" id="discordSidebarIcon"><i class="fab fa-discord"></i></a>
                 <button class="sidebar-icon" id="logoutSidebarBtn"><i class="fas fa-sign-out-alt"></i></button>
@@ -183,12 +182,11 @@
                 <div class="glass-panel profile-section" id="profileGpxProfile"></div>
                 <div class="glass-panel gpx-section" id="profileGpxSection" style="display:none;"></div>
             </section>
-            <section class="page" id="page-qr-confirm"></section>
             <section class="page" id="page-data"></section>
         </main>
     </div>
 
-    <!-- Модалка входа/регистрации/QR -->
+    <!-- Модалка входа/регистрации -->
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
         <div class="modal-content glass-panel" onclick="event.stopPropagation()" style="max-width:800px; display:flex; overflow:hidden; padding:0;">
             <div class="login-image" style="flex:1; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0%, transparent 60%); padding:40px;">
@@ -199,7 +197,6 @@
                 <div class="auth-tabs">
                     <button class="auth-tab active" id="tabLogin">Вход</button>
                     <button class="auth-tab" id="tabRegister">Регистрация</button>
-                    <button class="auth-tab" id="tabQr"><i class="fas fa-qrcode"></i> QR-код</button>
                 </div>
                 <div id="loginFormBlock">
                     <input id="loginIdentity" placeholder="Логин" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
@@ -212,9 +209,6 @@
                     <input id="regPasswordInput" type="password" placeholder="Пароль (мин. 6 символов)" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
                     <input id="regPasswordConfirm" type="password" placeholder="Повторите пароль" style="width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-glass); border-radius:12px; color:var(--text-primary);">
                     <button class="btn btn-primary" id="doRegisterBtn"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
-                </div>
-                <div id="qrFormBlock" style="display:none; text-align:center; padding:20px;">
-                    <div id="qrContainer" style="margin-top:20px;"></div>
                 </div>
             </div>
         </div>
@@ -271,8 +265,6 @@
     <script src="/js/diamkey-ui.js?v=16"></script>
     <script src="/js/diamkey-wall.js?v=16"></script>
     <script src="/js/diamkey-gpx.js?v=16"></script>
-    <script src="/js/diamkey-qr.js?v=16"></script>
-    <script src="/js/diamkey-scanner.js?v=16"></script>
     <script src="/js/diamkey-bot.js?v=16"></script>
     <script src="/js/diamkey-users.js?v=16"></script>
     <script src="/js/diamkey-voice.js?v=16"></script>
