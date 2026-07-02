@@ -1,4 +1,4 @@
-// diamkey-router.js — SPA-роутинг + выравнивание карточек в Add
+// diamkey-router.js — SPA-роутинг + выравнивание карточек в Add + маршрут /chats
 
 function navigateTo(path, replace = false) {
     if (replace) { history.replaceState(null, null, path); }
@@ -65,22 +65,18 @@ function handleRoute() {
         window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/add') {
         activatePage('page-add');
-        // Принудительно делаем карточки одинаковой высоты после небольшой задержки
         setTimeout(() => {
             const cards = document.querySelectorAll('#page-add .add-service-card');
             if (cards.length > 0) {
                 let maxHeight = 0;
-                // Сбрасываем заданную высоту, чтобы измерить реальную
                 cards.forEach(card => {
                     card.style.minHeight = '';
                     card.style.height = '';
                 });
-                // Находим максимальную высоту
                 cards.forEach(card => {
                     const h = card.offsetHeight;
                     if (h > maxHeight) maxHeight = h;
                 });
-                // Устанавливаем всем карточкам одинаковую высоту
                 if (maxHeight > 0) {
                     cards.forEach(card => {
                         card.style.minHeight = maxHeight + 'px';
@@ -149,6 +145,10 @@ function handleRoute() {
         activatePage('page-profile-gpx', true);
         setTimeout(() => { if (typeof renderProfileGpxView === 'function') renderProfileGpxView(login); }, 0);
         window.scrollTo({ top: 0, behavior: 'instant' });
+    } else if (path === '/chats') {
+        activatePage('page-chats', true);
+        if (typeof renderChats === 'function') renderChats();
+        window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (path === '/data') {
         activatePage('page-data', true);
         if (typeof renderDatabasePage === 'function') renderDatabasePage();
@@ -166,7 +166,8 @@ function handleRoute() {
         if (href === path || 
             (path.startsWith('/add') && href === '/add') || 
             (path.startsWith('/users') && href === '/users') || 
-            (path.startsWith('/profile') && href === '/profile')) {
+            (path.startsWith('/profile') && href === '/profile') ||
+            (path.startsWith('/chats') && href === '/chats')) {
             btn.classList.add('active');
         }
     });
