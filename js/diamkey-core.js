@@ -1,3 +1,4 @@
+// diamkey-core.js — ядро DiamKey (друзья, чаты, Supabase)
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -311,4 +312,69 @@ async function toggleGpxReaction(fileId, type) {
             renderProfileGpxView(login);
         }
     }
+}
+
+// ======== ДРУЗЬЯ (localStorage, позже Supabase) ========
+function getFriendsStorage() {
+    const raw = localStorage.getItem('diamkey_friends');
+    return raw ? JSON.parse(raw) : {};
+}
+
+function saveFriendsStorage(data) {
+    localStorage.setItem('diamkey_friends', JSON.stringify(data));
+}
+
+function getFriendStatus(targetLogin) {
+    if (!currentUser) return 'none';
+    const friends = getFriendsStorage();
+    const key = `${currentUser.login}_${targetLogin}`;
+    return friends[key] || 'none';
+}
+
+function sendFriendRequest(targetLogin) {
+    if (!currentUser) return;
+    const friends = getFriendsStorage();
+    const key = `${currentUser.login}_${targetLogin}`;
+    friends[key] = 'pending';
+    saveFriendsStorage(friends);
+}
+
+function acceptFriendRequest(fromLogin) {
+    if (!currentUser) return;
+    const friends = getFriendsStorage();
+    const key = `${fromLogin}_${currentUser.login}`;
+    friends[key] = 'accepted';
+    saveFriendsStorage(friends);
+}
+
+function removeFriend(targetLogin) {
+    if (!currentUser) return;
+    const friends = getFriendsStorage();
+    const key1 = `${currentUser.login}_${targetLogin}`;
+    const key2 = `${targetLogin}_${currentUser.login}`;
+    delete friends[key1];
+    delete friends[key2];
+    saveFriendsStorage(friends);
+}
+
+function getFriendsList() {
+    if (!currentUser) return [];
+    const friends = getFriendsStorage();
+    const list = [];
+    for (const [key, status] of Object.entries(friends)) {
+        if (status !== 'accepted') continue;
+        const [a, b] = key.split('_');
+        if (a === currentUser.login) list.push(b);
+        else if (b === currentUser.login) list.push(a);
+    }
+    return [...new Set(list)];
+}
+
+// ======== СИСТЕМНОЕ СООБЩЕНИЕ ДЛЯ ЧАТОВ ========
+function getSystemMessage(contactLogin) {
+    return {
+        from: 'system',
+        text: `Это ваш чат с ${escapeHtml(contactLogin)}! Можете начинать свое общение.`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
 }
