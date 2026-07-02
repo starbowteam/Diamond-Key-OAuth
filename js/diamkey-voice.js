@@ -1,4 +1,4 @@
-// diamkey-voice.js — Голосовые заметки с живой звуковой волной
+// diamkey-voice.js — Голосовые заметки с живой звуковой волной (исправлено)
 (function() {
   let mediaRecorder = null;
   let audioChunks = [];
@@ -26,10 +26,12 @@
     .voice-waveform-large {
       display: flex; align-items: center; gap: 2px; height: 38px; flex: 1;
       background: rgba(255,255,255,0.04); border-radius: 12px; padding: 0 12px; overflow: hidden;
+      justify-content: space-between;
     }
     .voice-bar-large {
-      width: 3px; background: var(--accent); border-radius: 2px;
-      transition: height 0.05s; min-height: 3px;
+      flex: 1;
+      background: var(--accent); border-radius: 2px;
+      transition: height 0.05s; min-height: 3px; max-width: 4px;
     }
     .voice-timer-large { font-family: monospace; font-size: 15px; color: var(--text-primary); min-width: 45px; text-align: center; }
     .voice-preview-player { display: flex; align-items: center; gap: 8px; flex: 1; background: rgba(255,255,255,0.04); border-radius: 12px; padding: 6px 12px; }
@@ -47,52 +49,43 @@
     return `${m}:${(s % 60).toString().padStart(2, '0')}`;
   }
 
-  // Создаём столбики для волны (изначально пустые, заполняются по мере записи)
   let bars = [];
-  const BAR_COUNT = 40; // количество столбиков
-  let filledBars = 0;   // сколько уже заполнено (по времени)
+  const BAR_COUNT = 60; // 60 столбиков на минуту
 
   function createBars(container) {
     container.innerHTML = '';
     bars = [];
-    filledBars = 0;
     for (let i = 0; i < BAR_COUNT; i++) {
       const bar = document.createElement('div');
       bar.className = 'voice-bar-large';
-      bar.style.height = '3px'; // минимальная высота
+      bar.style.height = '3px'; // начальная высота
+      bar.style.flex = '1';
       container.appendChild(bar);
       bars.push(bar);
     }
   }
 
-  // Анимация волны через requestAnimationFrame + данные анализатора
   function startWaveAnimation(container) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 1;
-    canvas.height = 1;
-    // Используем analyser из AudioContext
     function updateBars() {
       if (!analyser) return;
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(dataArray);
 
-      // Сколько баров уже активны (по времени записи)
+      // Сколько столбиков уже активны (зависит от времени)
       const activeBars = Math.floor((recordingSeconds / MAX_DURATION) * BAR_COUNT);
-      // Ограничиваем общее число баров
-      const maxBars = Math.min(BAR_COUNT, activeBars + 4);
 
       for (let i = 0; i < BAR_COUNT; i++) {
-        if (i < maxBars) {
-          // Берём кусочек данных из спектра
+        if (i < activeBars) {
+          // Активный столбик: реагирует на громкость
           const dataIndex = Math.floor((i / BAR_COUNT) * dataArray.length);
           const value = dataArray[dataIndex] || 0;
           const height = Math.max(3, (value / 255) * 32);
           bars[i].style.height = height + 'px';
           bars[i].style.opacity = '1';
         } else {
+          // Ещё не активный: минимальная высота, почти прозрачный
           bars[i].style.height = '3px';
-          bars[i].style.opacity = '0.3';
+          bars[i].style.opacity = '0.2';
         }
       }
       animationFrameId = requestAnimationFrame(updateBars);
@@ -131,7 +124,6 @@
       mediaRecorder.stop();
       clearInterval(recordingTimer);
       stopWaveAnimation();
-      // Останавливаем AudioContext
       if (audioContext && audioContext.state !== 'closed') {
         audioContext.close().catch(() => {});
         audioContext = null;
@@ -269,7 +261,6 @@
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         source.connect(analyser);
-        // MediaRecorder для записи
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
