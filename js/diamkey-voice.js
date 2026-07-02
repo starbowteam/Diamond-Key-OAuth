@@ -1,10 +1,13 @@
-// diamkey-voice.js — Голосовые заметки с реакциями
+// diamkey-voice.js — Голосовые заметки с живой звуковой волной
 (function() {
   let mediaRecorder = null;
   let audioChunks = [];
   let recordingSeconds = 0;
   let recordingTimer = null;
-  let waveformInterval = null;
+  let animationFrameId = null;
+  let audioContext = null;
+  let analyser = null;
+  let source = null;
   let currentAudioUrl = null;
   let currentAudioBlob = null;
   let currentDuration = 0;
@@ -20,8 +23,14 @@
     }
     .wall-input .btn-send { background: rgba(192,192,208,0.15); border-color: var(--accent); color: var(--accent); }
     .voice-recording-area, .voice-preview-area { display: flex; align-items: center; gap: 8px; flex: 1; }
-    .voice-waveform-large { display: flex; align-items: center; gap: 2px; height: 38px; flex: 1; background: rgba(255,255,255,0.04); border-radius: 12px; padding: 0 12px; }
-    .voice-bar-large { width: 3px; background: var(--accent); border-radius: 2px; transition: height 0.1s; }
+    .voice-waveform-large {
+      display: flex; align-items: center; gap: 2px; height: 38px; flex: 1;
+      background: rgba(255,255,255,0.04); border-radius: 12px; padding: 0 12px; overflow: hidden;
+    }
+    .voice-bar-large {
+      width: 3px; background: var(--accent); border-radius: 2px;
+      transition: height 0.05s; min-height: 3px;
+    }
     .voice-timer-large { font-family: monospace; font-size: 15px; color: var(--text-primary); min-width: 45px; text-align: center; }
     .voice-preview-player { display: flex; align-items: center; gap: 8px; flex: 1; background: rgba(255,255,255,0.04); border-radius: 12px; padding: 6px 12px; }
     .voice-preview-play { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--accent); background: rgba(255,255,255,0.06); color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
@@ -38,19 +47,64 @@
     return `${m}:${(s % 60).toString().padStart(2, '0')}`;
   }
 
-  function createBars(container, count = 16) {
+  // Создаём столбики для волны (изначально пустые, заполняются по мере записи)
+  let bars = [];
+  const BAR_COUNT = 40; // количество столбиков
+  let filledBars = 0;   // сколько уже заполнено (по времени)
+
+  function createBars(container) {
     container.innerHTML = '';
-    for (let i = 0; i < count; i++) {
+    bars = [];
+    filledBars = 0;
+    for (let i = 0; i < BAR_COUNT; i++) {
       const bar = document.createElement('div');
       bar.className = 'voice-bar-large';
-      bar.style.height = '6px';
+      bar.style.height = '3px'; // минимальная высота
       container.appendChild(bar);
+      bars.push(bar);
     }
   }
 
-  function animateBars(container) {
-    const bars = container.querySelectorAll('.voice-bar-large');
-    bars.forEach(b => b.style.height = (Math.random() * 20 + 4) + 'px');
+  // Анимация волны через requestAnimationFrame + данные анализатора
+  function startWaveAnimation(container) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1;
+    canvas.height = 1;
+    // Используем analyser из AudioContext
+    function updateBars() {
+      if (!analyser) return;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+
+      // Сколько баров уже активны (по времени записи)
+      const activeBars = Math.floor((recordingSeconds / MAX_DURATION) * BAR_COUNT);
+      // Ограничиваем общее число баров
+      const maxBars = Math.min(BAR_COUNT, activeBars + 4);
+
+      for (let i = 0; i < BAR_COUNT; i++) {
+        if (i < maxBars) {
+          // Берём кусочек данных из спектра
+          const dataIndex = Math.floor((i / BAR_COUNT) * dataArray.length);
+          const value = dataArray[dataIndex] || 0;
+          const height = Math.max(3, (value / 255) * 32);
+          bars[i].style.height = height + 'px';
+          bars[i].style.opacity = '1';
+        } else {
+          bars[i].style.height = '3px';
+          bars[i].style.opacity = '0.3';
+        }
+      }
+      animationFrameId = requestAnimationFrame(updateBars);
+    }
+    updateBars();
+  }
+
+  function stopWaveAnimation() {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
   }
 
   function startRecordingUI(container) {
@@ -62,22 +116,28 @@
         <button class="voice-stop-btn" id="voiceStopBtn"><i class="fas fa-stop"></i></button>
       </div>
     `;
-    createBars(document.getElementById('voiceWaveLarge'), 20);
+    createBars(document.getElementById('voiceWaveLarge'));
     document.getElementById('voiceStopBtn').addEventListener('click', stopRecording);
+
     recordingTimer = setInterval(() => {
       recordingSeconds++;
       document.getElementById('voiceTimerLarge').textContent = formatTime(recordingSeconds);
-      animateBars(document.getElementById('voiceWaveLarge'));
       if (recordingSeconds >= MAX_DURATION) stopRecording();
     }, 1000);
-    waveformInterval = setInterval(() => animateBars(document.getElementById('voiceWaveLarge')), 200);
   }
 
   function stopRecording() {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       mediaRecorder.stop();
       clearInterval(recordingTimer);
-      clearInterval(waveformInterval);
+      stopWaveAnimation();
+      // Останавливаем AudioContext
+      if (audioContext && audioContext.state !== 'closed') {
+        audioContext.close().catch(() => {});
+        audioContext = null;
+        analyser = null;
+        source = null;
+      }
       mediaRecorder.stream.getTracks().forEach(t => t.stop());
       mediaRecorder = null;
     }
@@ -204,6 +264,12 @@
       if (!currentUser) return showToast('Войдите');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        // MediaRecorder для записи
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
@@ -216,7 +282,15 @@
         mediaRecorder.start();
         recordingSeconds = 0;
         startRecordingUI(container);
-      } catch (e) { console.error(e); showToast('Нет доступа к микрофону'); }
+        startWaveAnimation(document.getElementById('voiceWaveLarge'));
+      } catch (e) {
+        console.error(e);
+        showToast('Нет доступа к микрофону');
+        if (audioContext) {
+          audioContext.close().catch(() => {});
+          audioContext = null;
+        }
+      }
     });
   }
 
@@ -242,7 +316,6 @@
     }));
   }
 
-  // Обновлённый рендер голосового поста с реакциями
   function renderVoicePost(msg) {
     return `
       <div class="wall-post glass-panel voice-message" data-post-id="${msg.id}">
@@ -309,7 +382,6 @@
 
   window.integrateVoiceWall = async function() {};
 
-  // Экспорт для смешанных постов
   window.getMixedWallPosts = async function(login, textPosts) {
     const voicePosts = await getVoicePosts(login);
     return [...textPosts, ...voicePosts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
