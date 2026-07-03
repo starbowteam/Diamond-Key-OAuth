@@ -15,13 +15,16 @@ async function loadUsers() {
         document.getElementById('usersLoaderStatus').textContent = `Загрузка ${width}%`;
     }, 250);
 
-    const users = await getUsers();
+    let users = await getUsers();
+    // Исключаем самого себя
+    if (currentUser) {
+        users = users.filter(u => u.login !== currentUser.login);
+    }
     clearInterval(interval);
     document.getElementById('usersLoaderBar').style.width = '100%';
     document.getElementById('usersLoaderStatus').textContent = 'Готово!';
     await new Promise(r => setTimeout(r, 400));
 
-    // Фильтры: Все, Друзья, Заявки
     sortContainer.innerHTML = `
         <span class="text-muted">Сортировка:</span>
         <button class="sort-btn active" data-filter="all">Все</button>
@@ -55,72 +58,49 @@ async function loadUsers() {
     }
 
     async function render() {
-        // Применяем фильтр по бейджам
         let filtered = await filterUsersByBadge(activeBadgeFilter?.id);
-
-        // Применяем фильтр друзей/заявок
         if (currentFilter === 'friends') {
-            const friendLogins = getFriendsList();
-            filtered = filtered.filter(u => friendLogins.includes(u.login));
+            const fList = getFriendsList();
+            filtered = filtered.filter(u => fList.includes(u.login));
         } else if (currentFilter === 'requests') {
             const incoming = getIncomingRequests();
             filtered = filtered.filter(u => incoming.includes(u.login));
         }
-
-        // Сортировка
-        const sorted = [...filtered].sort((a, b) => a.login.localeCompare(b.login));
-
+        const sorted = [...filtered].sort((a,b) => a.login.localeCompare(b.login));
         if (sorted.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);"><i class="fas fa-users" style="font-size:32px; margin-bottom:12px;"></i><p>Никого нет</p></div>';
+            container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">Никого нет</div>';
             return;
         }
-
         container.innerHTML = sorted.map(u => {
             const status = getFriendStatus(u.login);
             let actionHTML = '';
-
             if (status === 'accepted') {
-                actionHTML = `
-                    <div class="user-card-actions">
-                        <button class="btn-friend-card accepted" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-check"></i> Друзья</button>
-                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-user-times"></i></button>
-                    </div>
-                `;
+                actionHTML = `<div class="user-card-actions">
+                    <button class="btn-friend-card accepted" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-check"></i> Друзья</button>
+                    <button class="btn-friend-card remove" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-user-times"></i></button>
+                </div>`;
             } else if (status === 'pending_sent') {
-                actionHTML = `
-                    <div class="user-card-actions">
-                        <button class="btn-friend-card pending" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-clock"></i> Ожидание</button>
-                    </div>
-                `;
+                actionHTML = `<div class="user-card-actions">
+                    <button class="btn-friend-card pending" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-clock"></i> Ожидание</button>
+                </div>`;
             } else if (status === 'pending_received') {
-                actionHTML = `
-                    <div class="user-card-actions">
-                        <button class="btn-friend-card add" onclick="event.stopPropagation(); acceptFriendRequest('${u.login}'); loadUsers(); updateFriendNotificationDot();"><i class="fas fa-user-check"></i> Принять</button>
-                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); rejectFriendRequest('${u.login}'); loadUsers(); updateFriendNotificationDot();"><i class="fas fa-times"></i> Отклонить</button>
-                    </div>
-                `;
+                actionHTML = `<div class="user-card-actions">
+                    <button class="btn-friend-card add" onclick="event.stopPropagation(); acceptFriendRequest('${u.login}'); loadUsers(); updateFriendNotificationDot();"><i class="fas fa-user-check"></i> Принять</button>
+                    <button class="btn-friend-card remove" onclick="event.stopPropagation(); rejectFriendRequest('${u.login}'); loadUsers(); updateFriendNotificationDot();"><i class="fas fa-times"></i> Отклонить</button>
+                </div>`;
             } else {
-                actionHTML = `
-                    <div class="user-card-actions">
-                        <button class="btn-friend-card add" onclick="event.stopPropagation(); sendFriendRequest('${u.login}'); loadUsers();"><i class="fas fa-user-plus"></i> Добавить в друзья</button>
-                    </div>
-                `;
+                actionHTML = `<div class="user-card-actions">
+                    <button class="btn-friend-card add" onclick="event.stopPropagation(); sendFriendRequest('${u.login}'); loadUsers();"><i class="fas fa-user-plus"></i> Добавить в друзья</button>
+                </div>`;
             }
-
-            return `
-                <div class="user-card glass-panel" data-login="${u.login}" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;">
-                    <div style="display:flex; align-items:center; gap:18px;" onclick="navigateTo('/users/${u.login}')">
-                        ${avatarHTML(u.avatar, 44)}
-                        <div>
-                            <h4>${escapeHtml(u.name || u.login)}</h4>
-                            <span>@${u.login}</span>
-                        </div>
-                    </div>
-                    ${actionHTML}
+            return `<div class="user-card glass-panel" data-login="${u.login}" style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:18px;" onclick="navigateTo('/users/${u.login}')">
+                    ${avatarHTML(u.avatar, 44)}
+                    <div><h4>${escapeHtml(u.name || u.login)}</h4><span>@${u.login}</span></div>
                 </div>
-            `;
+                ${actionHTML}
+            </div>`;
         }).join('');
-
         updateFilterButton();
     }
 
@@ -134,10 +114,7 @@ async function loadUsers() {
     });
 
     document.getElementById('badgeFilterBtn').addEventListener('click', () => {
-        openBadgeFilterModal(allBadges, (badge) => {
-            activeBadgeFilter = badge;
-            render();
-        });
+        openBadgeFilterModal(allBadges, (badge) => { activeBadgeFilter = badge; render(); });
     });
 
     document.getElementById('userSearch').addEventListener('input', (e) => {
