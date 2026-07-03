@@ -314,7 +314,7 @@ async function toggleGpxReaction(fileId, type) {
     }
 }
 
-// ======== ДРУЗЬЯ (localStorage, позже Supabase) ========
+// ======== ДРУЗЬЯ (исправленная версия) ========
 function getFriendsStorage() {
     const raw = localStorage.getItem('diamkey_friends');
     return raw ? JSON.parse(raw) : {};
@@ -324,39 +324,68 @@ function saveFriendsStorage(data) {
     localStorage.setItem('diamkey_friends', JSON.stringify(data));
 }
 
+// Устанавливает статус для пары (оба направления)
+function setFriendPairStatus(login1, login2, status) {
+    const friends = getFriendsStorage();
+    if (status === null) {
+        delete friends[`${login1}_${login2}`];
+        delete friends[`${login2}_${login1}`];
+    } else {
+        friends[`${login1}_${login2}`] = status;
+        friends[`${login2}_${login1}`] = status;
+    }
+    saveFriendsStorage(friends);
+    updateFriendNotificationDot();
+}
+
+// Получить статус дружбы между текущим пользователем и target
 function getFriendStatus(targetLogin) {
     if (!currentUser) return 'none';
     const friends = getFriendsStorage();
-    const key = `${currentUser.login}_${targetLogin}`;
-    return friends[key] || 'none';
-}
-
-function sendFriendRequest(targetLogin) {
-    if (!currentUser) return;
-    const friends = getFriendsStorage();
-    const key = `${currentUser.login}_${targetLogin}`;
-    friends[key] = 'pending';
-    saveFriendsStorage(friends);
-}
-
-function acceptFriendRequest(fromLogin) {
-    if (!currentUser) return;
-    const friends = getFriendsStorage();
-    const key = `${fromLogin}_${currentUser.login}`;
-    friends[key] = 'accepted';
-    saveFriendsStorage(friends);
-}
-
-function removeFriend(targetLogin) {
-    if (!currentUser) return;
-    const friends = getFriendsStorage();
     const key1 = `${currentUser.login}_${targetLogin}`;
     const key2 = `${targetLogin}_${currentUser.login}`;
-    delete friends[key1];
-    delete friends[key2];
-    saveFriendsStorage(friends);
+    const status1 = friends[key1];
+    const status2 = friends[key2];
+    // accepted в любом направлении
+    if (status1 === 'accepted' || status2 === 'accepted') return 'accepted';
+    // pending: определяем, кто отправил
+    if (status1 === 'pending' && status2 === 'pending') {
+        // Если оба pending (маловероятно), считаем как исходящую, если первый ключ наш
+        return 'pending_sent'; // или можно проверить, кто раньше, но пока так
+    }
+    if (status1 === 'pending') return 'pending_sent'; // мы отправили
+    if (status2 === 'pending') return 'pending_received'; // нам отправили
+    return 'none';
 }
 
+// Отправить заявку
+function sendFriendRequest(targetLogin) {
+    if (!currentUser) return;
+    setFriendPairStatus(currentUser.login, targetLogin, 'pending');
+}
+
+// Принять заявку от fromLogin
+function acceptFriendRequest(fromLogin) {
+    if (!currentUser) return;
+    setFriendPairStatus(currentUser.login, fromLogin, 'accepted');
+}
+
+// Отклонить заявку (просто удаляем pending)
+function rejectFriendRequest(fromLogin) {
+    if (!currentUser) return;
+    const status = getFriendStatus(fromLogin);
+    if (status === 'pending_received') {
+        setFriendPairStatus(currentUser.login, fromLogin, null);
+    }
+}
+
+// Удалить из друзей (или отменить заявку)
+function removeFriend(targetLogin) {
+    if (!currentUser) return;
+    setFriendPairStatus(currentUser.login, targetLogin, null);
+}
+
+// Получить список друзей (accepted)
 function getFriendsList() {
     if (!currentUser) return [];
     const friends = getFriendsStorage();
@@ -369,6 +398,56 @@ function getFriendsList() {
     }
     return [...new Set(list)];
 }
+
+// Получить список входящих заявок (от кого pending к нам)
+function getIncomingRequests() {
+    if (!currentUser) return [];
+    const friends = getFriendsStorage();
+    const requests = [];
+    for (const [key, status] of Object.entries(friends)) {
+        if (status !== 'pending') continue;
+        const [a, b] = key.split('_');
+        if (b === currentUser.login) requests.push(a); // нам отправили (ключ a_b, где b - мы)
+        // также если a === currentUser.login и статус pending, это исходящая, не входящая
+    }
+    return [...new Set(requests)];
+}
+
+// Получить список исходящих заявок (кому мы отправили pending)
+function getOutgoingRequests() {
+    if (!currentUser) return [];
+    const friends = getFriendsStorage();
+    const requests = [];
+    for (const [key, status] of Object.entries(friends)) {
+        if (status !== 'pending') continue;
+        const [a, b] = key.split('_');
+        if (a === currentUser.login) requests.push(b); // мы отправили (ключ a_b, где a - мы)
+    }
+    return [...new Set(requests)];
+}
+
+// Обновление красной точки на иконке "Пользователи"
+function updateFriendNotificationDot() {
+    const usersIcon = document.querySelector('.sidebar-icon[href="/users"]');
+    if (!usersIcon) return;
+    const dot = usersIcon.querySelector('.badge-dot');
+    const incoming = getIncomingRequests();
+    if (incoming.length > 0) {
+        if (!dot) {
+            const newDot = document.createElement('span');
+            newDot.className = 'badge-dot';
+            newDot.style.display = 'block';
+            usersIcon.appendChild(newDot);
+        } else {
+            dot.style.display = 'block';
+        }
+    } else {
+        if (dot) dot.style.display = 'none';
+    }
+}
+
+// Инициализация точки при загрузке
+document.addEventListener('DOMContentLoaded', updateFriendNotificationDot);
 
 // ======== СИСТЕМНОЕ СООБЩЕНИЕ ДЛЯ ЧАТОВ ========
 function getSystemMessage(contactLogin) {
