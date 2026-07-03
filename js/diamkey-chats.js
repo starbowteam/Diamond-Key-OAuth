@@ -1,4 +1,4 @@
-// diamkey-chats.js — управление чатами DiamKey
+// diamkey-chats.js — чаты DiamKey (только для друзей, симметричное хранение)
 function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
@@ -7,7 +7,6 @@ function renderChats() {
 
     const chatListContainer = document.getElementById('chatListContainer');
     const chatSearchInput = document.getElementById('chatSearchInput');
-    const chatViewPanel = document.getElementById('chatViewPanel');
     const noChatSelected = document.getElementById('noChatSelected');
     const activeChatView = document.getElementById('activeChatView');
     const chatMessagesContainer = document.getElementById('chatMessagesContainer');
@@ -22,41 +21,38 @@ function renderChats() {
 
     let currentChatLogin = null;
 
-    // Функция для получения сообщений чата из localStorage
+    // Симметричный ключ для чата между двумя пользователями
+    function getChatKey(loginA, loginB) {
+        const sorted = [loginA, loginB].sort();
+        return `diamkey_chat_${sorted[0]}_${sorted[1]}`;
+    }
+
     function getChatMessages(login) {
-        const key = `diamkey_chat_${currentUser.login}_${login}`;
+        const key = getChatKey(currentUser.login, login);
         const raw = localStorage.getItem(key);
         return raw ? JSON.parse(raw) : [];
     }
 
-    // Функция для сохранения сообщений чата в localStorage
     function saveChatMessages(login, messages) {
-        const key = `diamkey_chat_${currentUser.login}_${login}`;
+        const key = getChatKey(currentUser.login, login);
         localStorage.setItem(key, JSON.stringify(messages));
     }
 
-    // Функция для получения последнего сообщения
     function getLastMessage(login) {
         const messages = getChatMessages(login);
-        if (messages.length === 0) {
-            return { text: 'Нет сообщений', time: '' };
-        }
-        const lastMsg = messages[messages.length - 1];
+        if (messages.length === 0) return { text: 'Нет сообщений', time: '' };
+        const last = messages[messages.length - 1];
         return {
-            text: lastMsg.from === 'system' ? lastMsg.text : (lastMsg.from === 'me' ? 'Вы: ' : '') + lastMsg.text,
-            time: lastMsg.time
+            text: last.from === 'system' ? last.text : (last.from === 'me' ? 'Вы: ' : '') + last.text,
+            time: last.time
         };
     }
 
-    // Функция для отображения списка чатов
     function renderChatList(filterText = '') {
         if (!chatListContainer) return;
         const friends = getFriendsList();
         const lowerFilter = filterText.toLowerCase();
-        const filtered = friends.filter(login => {
-            if (!filterText) return true;
-            return login.toLowerCase().includes(lowerFilter);
-        });
+        const filtered = friends.filter(login => !filterText || login.toLowerCase().includes(lowerFilter));
 
         if (filtered.length === 0) {
             chatListContainer.innerHTML = `
@@ -71,68 +67,47 @@ function renderChats() {
         chatListContainer.innerHTML = filtered.map(login => {
             const lastMsg = getLastMessage(login);
             const activeClass = currentChatLogin === login ? 'active' : '';
-            const unreadCount = 0; // В будущем можно добавить счётчик непрочитанных
             return `
-                <div class="chat-item ${activeClass}" onclick="selectChat('${login}')">
-                    <div class="chat-item-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
+                <div class="chat-item ${activeClass}" onclick="window._selectChat('${login}')">
+                    <div class="chat-item-avatar"><i class="fas fa-user"></i></div>
                     <div class="chat-item-info">
                         <div class="chat-item-name">${escapeHtml(login)}</div>
                         <div class="chat-item-lastmsg">${escapeHtml(lastMsg.text)}</div>
                     </div>
                     <div class="chat-item-meta">
                         <div class="chat-item-time">${lastMsg.time}</div>
-                        ${unreadCount > 0 ? `<div class="unread-badge">${unreadCount}</div>` : ''}
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    // Функция выбора чата
-    window.selectChat = function(login) {
+    window._selectChat = function(login) {
         currentChatLogin = login;
-
-        // Показываем активный чат
         noChatSelected.style.display = 'none';
         activeChatView.style.display = 'flex';
 
-        // Обновляем шапку чата
         chatHeaderName.textContent = login;
         chatHeaderStatus.textContent = 'В сети';
         chatHeaderStatus.className = 'chat-header-status online';
         chatHeaderAvatar.innerHTML = '<i class="fas fa-user"></i>';
 
-        // Проверяем онлайн-статус
         isUserOnline(login).then(online => {
-            if (online) {
-                chatHeaderStatus.textContent = 'В сети';
-                chatHeaderStatus.className = 'chat-header-status online';
-            } else {
-                chatHeaderStatus.textContent = 'Не в сети';
-                chatHeaderStatus.className = 'chat-header-status offline';
-            }
+            chatHeaderStatus.textContent = online ? 'В сети' : 'Не в сети';
+            chatHeaderStatus.className = 'chat-header-status ' + (online ? 'online' : 'offline');
         });
 
-        // Загружаем сообщения
         let messages = getChatMessages(login);
-
-        // Если сообщений нет, добавляем системное сообщение
         if (messages.length === 0) {
-            const systemMsg = getSystemMessage(login);
-            messages.push(systemMsg);
+            const sysMsg = getSystemMessage(login);
+            messages.push(sysMsg);
             saveChatMessages(login, messages);
         }
 
-        // Отображаем сообщения
         renderMessages(login, messages);
-
-        // Обновляем список чатов
         renderChatList(chatSearchInput?.value || '');
     };
 
-    // Функция отображения сообщений
     function renderMessages(login, messages) {
         if (!chatMessagesContainer) return;
         chatMessagesContainer.innerHTML = messages.map(msg => {
@@ -150,11 +125,9 @@ function renderChats() {
                 </div>
             `;
         }).join('');
-        // Прокручиваем вниз
         chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
 
-    // Функция отправки сообщения
     function sendMessage() {
         if (!currentChatLogin) return;
         const text = chatMessageInput.value.trim();
@@ -164,13 +137,9 @@ function renderChats() {
         const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         const messages = getChatMessages(currentChatLogin);
-        messages.push({
-            from: 'me',
-            text: text,
-            time: time
-        });
-
+        messages.push({ from: 'me', text, time });
         saveChatMessages(currentChatLogin, messages);
+
         renderMessages(currentChatLogin, messages);
         renderChatList(chatSearchInput?.value || '');
 
@@ -178,26 +147,14 @@ function renderChats() {
         chatMessageInput.focus();
     }
 
-    // Обработчики событий
-    if (chatSendBtn) {
-        chatSendBtn.addEventListener('click', sendMessage);
-    }
+    chatSendBtn?.addEventListener('click', sendMessage);
+    chatMessageInput?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+    chatSearchInput?.addEventListener('input', function() {
+        renderChatList(this.value);
+    });
 
-    if (chatMessageInput) {
-        chatMessageInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-    }
-
-    if (chatSearchInput) {
-        chatSearchInput.addEventListener('input', function() {
-            renderChatList(this.value);
-        });
-    }
-
-    // Звонки (заглушки)
     window.startCall = function(type) {
         if (!currentChatLogin) return;
         callOverlay.style.display = 'flex';
@@ -209,12 +166,10 @@ function renderChats() {
         callOverlay.style.display = 'none';
     };
 
-    // Инициализация
     renderChatList();
 
-    // Если есть друзья, выбираем первого
     const friends = getFriendsList();
     if (friends.length > 0 && !currentChatLogin) {
-        window.selectChat(friends[0]);
+        window._selectChat(friends[0]);
     }
 }
