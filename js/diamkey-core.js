@@ -203,114 +203,109 @@ async function isUserOnline(login) {
 }
 
 // ======== ДРУЗЬЯ ========
-function getFriendsStorage() {
-    const raw = localStorage.getItem('diamkey_friends');
-    return raw ? JSON.parse(raw) : {};
-}
+function getFriendsStorage() { return {}; } // Заглушка, не используется, всё через Supabase
 
-function saveFriendsStorage(data) {
-    localStorage.setItem('diamkey_friends', JSON.stringify(data));
-}
-
-function sendFriendRequest(targetLogin) {
-    if (!currentUser || targetLogin === currentUser.login) return;
-    const friends = getFriendsStorage();
-    const key = `${currentUser.login}_${targetLogin}`;
-    if (friends[key] !== 'accepted') {
-        friends[key] = 'pending';
-        saveFriendsStorage(friends);
-    }
-}
-
-function acceptFriendRequest(fromLogin) {
-    if (!currentUser || fromLogin === currentUser.login) return;
-    const friends = getFriendsStorage();
-    const key = `${fromLogin}_${currentUser.login}`;
-    if (friends[key] === 'pending') {
-        friends[key] = 'accepted';
-        friends[`${currentUser.login}_${fromLogin}`] = 'accepted';
-        saveFriendsStorage(friends);
-    }
-}
-
-function rejectFriendRequest(fromLogin) {
-    if (!currentUser) return;
-    const friends = getFriendsStorage();
-    delete friends[`${fromLogin}_${currentUser.login}`];
-    saveFriendsStorage(friends);
-}
-
-function removeFriend(targetLogin) {
-    if (!currentUser) return;
-    const friends = getFriendsStorage();
-    delete friends[`${currentUser.login}_${targetLogin}`];
-    delete friends[`${targetLogin}_${currentUser.login}`];
-    saveFriendsStorage(friends);
-}
-
-function getFriendStatus(targetLogin) {
+async function getFriendStatus(targetLogin) {
     if (!currentUser || targetLogin === currentUser.login) return 'self';
-    const friends = getFriendsStorage();
-    const sentKey = `${currentUser.login}_${targetLogin}`;
-    const receivedKey = `${targetLogin}_${currentUser.login}`;
-    if (friends[sentKey] === 'accepted' || friends[receivedKey] === 'accepted') return 'accepted';
-    if (friends[receivedKey] === 'pending') return 'pending_received';
-    if (friends[sentKey] === 'pending') return 'pending_sent';
+    const { data, error } = await _supabase.from('friends')
+        .select('status')
+        .or(`user_login.eq.${currentUser.login},friend_login.eq.${currentUser.login}`)
+        .or(`user_login.eq.${targetLogin},friend_login.eq.${targetLogin}`);
+    if (error || !data) return 'none';
+    const accepted = data.some(r => r.status === 'accepted' &&
+        ((r.user_login === currentUser.login && r.friend_login === targetLogin) ||
+         (r.user_login === targetLogin && r.friend_login === currentUser.login)));
+    if (accepted) return 'accepted';
+    const pendingSent = data.some(r => r.status === 'pending' && r.user_login === currentUser.login && r.friend_login === targetLogin);
+    if (pendingSent) return 'pending_sent';
+    const pendingReceived = data.some(r => r.status === 'pending' && r.user_login === targetLogin && r.friend_login === currentUser.login);
+    if (pendingReceived) return 'pending_received';
     return 'none';
 }
 
-function getFriendsList() {
+async function sendFriendRequest(targetLogin) {
+    if (!currentUser || targetLogin === currentUser.login) return;
+    await _supabase.from('friends').upsert({ user_login: currentUser.login, friend_login: targetLogin, status: 'pending' }, { onConflict: 'user_login, friend_login' });
+}
+
+async function acceptFriendRequest(fromLogin) {
+    if (!currentUser) return;
+    await _supabase.from('friends').update({ status: 'accepted' }).eq('user_login', fromLogin).eq('friend_login', currentUser.login);
+    // Обе стороны
+    await _supabase.from('friends').upsert({ user_login: currentUser.login, friend_login: fromLogin, status: 'accepted' }, { onConflict: 'user_login, friend_login' });
+}
+
+async function rejectFriendRequest(fromLogin) {
+    if (!currentUser) return;
+    await _supabase.from('friends').delete().eq('user_login', fromLogin).eq('friend_login', currentUser.login);
+}
+
+async function removeFriend(targetLogin) {
+    if (!currentUser) return;
+    await _supabase.from('friends').delete().or(`user_login.eq.${currentUser.login},friend_login.eq.${currentUser.login}`).or(`user_login.eq.${targetLogin},friend_login.eq.${targetLogin}`);
+}
+
+async function getFriendsList() {
     if (!currentUser) return [];
-    const friends = getFriendsStorage();
+    const { data, error } = await _supabase.from('friends')
+        .select('user_login, friend_login')
+        .or(`user_login.eq.${currentUser.login},friend_login.eq.${currentUser.login}`)
+        .eq('status', 'accepted');
+    if (error || !data) return [];
     const list = [];
-    for (const [key, status] of Object.entries(friends)) {
-        if (status !== 'accepted') continue;
-        const [a, b] = key.split('_');
-        if (a === currentUser.login && b !== currentUser.login) list.push(b);
-        else if (b === currentUser.login && a !== currentUser.login) list.push(a);
-    }
+    data.forEach(r => {
+        if (r.user_login === currentUser.login) list.push(r.friend_login);
+        else list.push(r.user_login);
+    });
     return [...new Set(list)];
 }
 
-function getIncomingRequests() {
+async function getIncomingRequests() {
     if (!currentUser) return [];
-    const friends = getFriendsStorage();
-    const requests = [];
-    for (const [key, status] of Object.entries(friends)) {
-        if (status !== 'pending') continue;
-        const [a, b] = key.split('_');
-        if (b === currentUser.login && a !== currentUser.login) requests.push(a);
-    }
-    return [...new Set(requests)];
+    const { data, error } = await _supabase.from('friends')
+        .select('user_login')
+        .eq('friend_login', currentUser.login)
+        .eq('status', 'pending');
+    if (error || !data) return [];
+    return data.map(r => r.user_login);
 }
 
-// ======== УВЕДОМЛЕНИЯ (ТОЧКИ) ========
+// Количество друзей для любого пользователя
+async function getFriendCount(login) {
+    const { count, error } = await _supabase.from('friends')
+        .select('*', { count: 'exact', head: true })
+        .or(`user_login.eq.${login},friend_login.eq.${login}`)
+        .eq('status', 'accepted');
+    if (error) return 0;
+    return count || 0;
+}
+
+// Уведомления
 function updateFriendNotificationDot() {
     const usersIcon = document.querySelector('.sidebar-icon[href="/users"]');
     if (!usersIcon) return;
-    const incoming = getIncomingRequests();
-    let dot = usersIcon.querySelector('.badge-dot');
-    if (!dot) {
-        dot = document.createElement('span');
-        dot.className = 'badge-dot';
-        dot.style.display = 'none';
-        usersIcon.appendChild(dot);
-    }
-    dot.style.display = incoming.length > 0 ? 'block' : 'none';
+    getIncomingRequests().then(requests => {
+        let dot = usersIcon.querySelector('.badge-dot');
+        if (!dot) {
+            dot = document.createElement('span');
+            dot.className = 'badge-dot';
+            dot.style.display = 'none';
+            usersIcon.appendChild(dot);
+        }
+        dot.style.display = requests.length > 0 ? 'block' : 'none';
+    });
 }
 
 function getUnreadChats() {
     const raw = localStorage.getItem('diamkey_unread_chats');
     return raw ? JSON.parse(raw) : [];
 }
-
 function markChatAsRead(login) {
     if (!currentUser) return;
     const unread = getUnreadChats().filter(l => l !== login);
     localStorage.setItem('diamkey_unread_chats', JSON.stringify(unread));
     updateChatNotificationDot();
 }
-
 function addUnreadMessage(login) {
     if (!currentUser || login === currentUser.login) return;
     const unread = getUnreadChats();
@@ -320,7 +315,6 @@ function addUnreadMessage(login) {
         updateChatNotificationDot();
     }
 }
-
 function updateChatNotificationDot() {
     const chatsIcon = document.querySelector('.sidebar-icon[href="/chats"]');
     if (!chatsIcon) return;
