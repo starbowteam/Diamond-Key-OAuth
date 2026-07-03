@@ -237,6 +237,13 @@ function defaultDescription(login) {
     return `Я ${login}, пришёл к вам в DiamKey! Надеюсь подружиться!`;
 }
 
+// Функция для получения правильного окончания слова "друг"
+function getFriendsWord(count) {
+    if (count === 1) return 'друг';
+    if (count >= 2 && count <= 4) return 'друга';
+    return 'друзей';
+}
+
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const { data: presence } = await _supabase
         .from('user_presence')
@@ -266,24 +273,27 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const isOwnProfile = (currentUser && currentUser.login === login);
     const showBackBtn = !isOwnProfile;
 
-    // Кнопка друзей (только для своего профиля)
-    let friendsHtml = '';
-    if (isOwnProfile) {
-        const friendsCount = getFriendsList().length;
-        friendsHtml = `<div class="friends-count-btn" onclick="showFriendsModal()"><i class="fas fa-user-friends"></i> Друзья: ${friendsCount}</div>`;
-    }
-
     // Кнопка дружбы в нике (для чужого профиля)
     let friendNickBtn = '';
     if (!isOwnProfile) {
         const status = getFriendStatus(login);
         if (status === 'accepted') {
             friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Удалить из друзей"><i class="fas fa-check"></i></button>`;
-        } else if (status === 'pending') {
+        } else if (status === 'pending_sent') {
             friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Заявка отправлена"><i class="fas fa-clock"></i></button>`;
+        } else if (status === 'pending_received') {
+            friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Принять заявку" style="color: #2ecc71;"><i class="fas fa-user-check"></i></button>`;
         } else {
             friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Добавить в друзья"><i class="fas fa-user-plus"></i></button>`;
         }
+    }
+
+    // Счётчик друзей в рамке (рядом с датой)
+    let friendsCountHTML = '';
+    if (isOwnProfile) {
+        const count = getFriendsList().length;
+        const word = getFriendsWord(count);
+        friendsCountHTML = `<span class="regdate"><i class="fas fa-user-friends"></i> ${count} ${word}</span>`;
     }
 
     // Кнопки Дополнения и AI (под бейджами)
@@ -310,10 +320,10 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
             </div>
             <div class="description-card-new" id="profileDescription">${escapeHtml(desc)}</div>
             <div class="badges-panel-centered">${badgesHTML}</div>
-            ${friendsHtml}
             ${actionsRow}
             <div class="meta-row-centered">
                 ${statusHTML}
+                ${friendsCountHTML}
                 <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
         </div>
@@ -497,6 +507,7 @@ async function renderMyProfile() {
         let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
         const friendsCount = getFriendsList().length;
+        const friendsWord = getFriendsWord(friendsCount);
 
         pageProfile.innerHTML = `
             <div class="profile-panel">
@@ -513,13 +524,13 @@ async function renderMyProfile() {
                 </div>
                 <div class="description-card-new" id="myDescription">${escapeHtml(desc)}</div>
                 <div class="badges-panel-centered">${badgesHTML}</div>
-                <div class="friends-count-btn" onclick="showFriendsModal()"><i class="fas fa-user-friends"></i> Друзья: ${friendsCount}</div>
                 <div class="actions-row">
                     <button class="action-btn" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')"><i class="fas fa-puzzle-piece"></i> Дополнения</button>
                     <button class="action-btn" onclick="event.stopPropagation(); window.openAIModal('${login}')"><i class="fas fa-info-circle"></i> AI анализ</button>
                 </div>
                 <div class="meta-row-centered">
                     ${statusHTML}
+                    <span class="regdate"><i class="fas fa-user-friends"></i> ${friendsCount} ${friendsWord}</span>
                     <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                 </div>
             </div>
@@ -984,9 +995,12 @@ function handleFriendAction(login) {
     if (status === 'accepted') {
         removeFriend(login);
         showToast('Удалён из друзей');
-    } else if (status === 'pending') {
+    } else if (status === 'pending_sent') {
         removeFriend(login);
         showToast('Заявка отменена');
+    } else if (status === 'pending_received') {
+        acceptFriendRequest(login);
+        showToast('Заявка принята! Теперь вы друзья.');
     } else {
         sendFriendRequest(login);
         showToast('Заявка отправлена');
@@ -995,30 +1009,7 @@ function handleFriendAction(login) {
     if (typeof openUserProfile === 'function') {
         openUserProfile(login);
     }
-}
-
-// Модалка друзей
-function showFriendsModal() {
-    const modal = document.getElementById('friendsModal');
-    const listContainer = document.getElementById('friendsListContent');
-    if (!modal || !listContainer) return;
-
-    const friends = getFriendsList();
-    if (friends.length === 0) {
-        listContainer.innerHTML = '<p class="text-muted" style="text-align:center; padding:20px;">У вас пока нет друзей</p>';
-    } else {
-        // Загружаем имена друзей
-        getUsers().then(users => {
-            const friendUsers = users.filter(u => friends.includes(u.login));
-            listContainer.innerHTML = friendUsers.map(u => `
-                <div class="badge-user-row" style="cursor:pointer;" onclick="navigateTo('/users/${u.login}'); closeModal('friendsModal');">
-                    ${u.avatar ? `<img src="${u.avatar}" alt="${u.login}">` : '<i class="fas fa-user" style="font-size:24px;color:var(--text-muted);width:36px;height:36px;display:flex;align-items:center;justify-content:center;"></i>'}
-                    <span>${escapeHtml(u.name || u.login)}</span>
-                </div>
-            `).join('');
-        });
+    if (typeof loadUsers === 'function') {
+        loadUsers();
     }
-
-    modal.style.display = 'flex';
-    modal.classList.add('active');
 }
