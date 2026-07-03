@@ -77,31 +77,32 @@ async function loadUsers() {
 
         container.innerHTML = sorted.map(u => {
             const status = getFriendStatus(u.login);
-            let actionBtn = '';
+            let actionHTML = '';
+
             if (status === 'accepted') {
-                actionBtn = `
+                actionHTML = `
                     <div class="user-card-actions">
-                        <button class="btn-friend-card accepted" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-check"></i> Друзья</button>
-                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-user-times"></i></button>
+                        <button class="btn-friend-card accepted" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-check"></i> Друзья</button>
+                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-user-times"></i></button>
                     </div>
                 `;
             } else if (status === 'pending_sent') {
-                actionBtn = `
+                actionHTML = `
                     <div class="user-card-actions">
-                        <button class="btn-friend-card pending" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-clock"></i> Ожидание</button>
+                        <button class="btn-friend-card pending" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-clock"></i> Ожидание</button>
                     </div>
                 `;
             } else if (status === 'pending_received') {
-                actionBtn = `
+                actionHTML = `
                     <div class="user-card-actions">
-                        <button class="btn-friend-card add" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-user-check"></i> Принять</button>
-                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); rejectFriendRequest('${u.login}'); loadUsers();"><i class="fas fa-times"></i></button>
+                        <button class="btn-friend-card add" onclick="event.stopPropagation(); acceptFriendRequest('${u.login}'); loadUsers(); updateFriendNotificationDot();"><i class="fas fa-user-check"></i> Принять</button>
+                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); rejectFriendRequest('${u.login}'); loadUsers(); updateFriendNotificationDot();"><i class="fas fa-times"></i> Отклонить</button>
                     </div>
                 `;
             } else {
-                actionBtn = `
+                actionHTML = `
                     <div class="user-card-actions">
-                        <button class="btn-friend-card add" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-user-plus"></i> Добавить в друзья</button>
+                        <button class="btn-friend-card add" onclick="event.stopPropagation(); sendFriendRequest('${u.login}'); loadUsers();"><i class="fas fa-user-plus"></i> Добавить в друзья</button>
                     </div>
                 `;
             }
@@ -115,7 +116,7 @@ async function loadUsers() {
                             <span>@${u.login}</span>
                         </div>
                     </div>
-                    ${actionBtn}
+                    ${actionHTML}
                 </div>
             `;
         }).join('');
@@ -200,27 +201,4 @@ function openBadgeFilterModal(badges, onSelect) {
         modal.classList.remove('active');
         setTimeout(() => modal.remove(), 300);
     });
-}
-
-// Обработчик кнопки дружбы из списка пользователей
-function handleFriendActionFromList(login) {
-    const status = getFriendStatus(login);
-    if (status === 'accepted') {
-        removeFriend(login);
-        showToast('Удалён из друзей');
-    } else if (status === 'pending_sent') {
-        removeFriend(login);
-        showToast('Заявка отменена');
-    } else if (status === 'pending_received') {
-        acceptFriendRequest(login);
-        showToast('Заявка принята! Теперь вы друзья.');
-    } else {
-        sendFriendRequest(login);
-        showToast('Заявка отправлена');
-    }
-    loadUsers();
-    updateFriendNotificationDot();
-    if (typeof renderMyProfile === 'function' && document.getElementById('page-profile').classList.contains('active')) {
-        renderMyProfile();
-    }
 }
