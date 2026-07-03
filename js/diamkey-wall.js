@@ -237,7 +237,6 @@ function defaultDescription(login) {
     return `Я ${login}, пришёл к вам в DiamKey! Надеюсь подружиться!`;
 }
 
-// Функция для получения правильного окончания слова "друг"
 function getFriendsWord(count) {
     if (count === 1) return 'друг';
     if (count >= 2 && count <= 4) return 'друга';
@@ -273,7 +272,7 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const isOwnProfile = (currentUser && currentUser.login === login);
     const showBackBtn = !isOwnProfile;
 
-    // Кнопка дружбы в нике (для чужого профиля)
+    // Кнопка дружбы в нике
     let friendNickBtn = '';
     if (!isOwnProfile) {
         const status = getFriendStatus(login);
@@ -288,15 +287,15 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
         }
     }
 
-    // Счётчик друзей в рамке (рядом с датой)
+    // Счётчик друзей (работает для любого профиля)
     let friendsCountHTML = '';
-    if (isOwnProfile) {
-        const count = getFriendsList().length;
+    getFriendCount(login).then(count => {
         const word = getFriendsWord(count);
-        friendsCountHTML = `<span class="regdate"><i class="fas fa-user-friends"></i> ${count} ${word}</span>`;
-    }
+        const el = document.getElementById(`friendCount_${login}`);
+        if (el) el.innerHTML = `<i class="fas fa-user-friends"></i> ${count} ${word}`;
+    });
+    friendsCountHTML = `<span class="regdate" id="friendCount_${login}"><i class="fas fa-user-friends"></i> ...</span>`;
 
-    // Кнопки Дополнения и AI (под бейджами)
     const actionsRow = `
         <div class="actions-row">
             <button class="action-btn" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')"><i class="fas fa-puzzle-piece"></i> Дополнения</button>
@@ -506,8 +505,13 @@ async function renderMyProfile() {
         const allPosts = await (typeof getMixedWallPosts === 'function' ? getMixedWallPosts(login, wallPosts) : wallPosts);
         let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
-        const friendsCount = getFriendsList().length;
-        const friendsWord = getFriendsWord(friendsCount);
+        let friendsCountHTML = '';
+        getFriendCount(login).then(count => {
+            const word = getFriendsWord(count);
+            const el = document.getElementById('myFriendCount');
+            if (el) el.innerHTML = `<i class="fas fa-user-friends"></i> ${count} ${word}`;
+        });
+        friendsCountHTML = `<span class="regdate" id="myFriendCount"><i class="fas fa-user-friends"></i> ...</span>`;
 
         pageProfile.innerHTML = `
             <div class="profile-panel">
@@ -530,7 +534,7 @@ async function renderMyProfile() {
                 </div>
                 <div class="meta-row-centered">
                     ${statusHTML}
-                    <span class="regdate"><i class="fas fa-user-friends"></i> ${friendsCount} ${friendsWord}</span>
+                    ${friendsCountHTML}
                     <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                 </div>
             </div>
@@ -786,7 +790,6 @@ async function renderDatabasePage() {
                     <p class="db-card-desc">Diamond AI, DiamKey, Dirmess — все используют одно хранилище для ваших данных.</p>
                 </div>
             </div>
-
             <h2 style="text-align:center; margin-bottom:20px;">Тарифы</h2>
             <div class="db-plans">
                 <div class="plan-card">
@@ -815,7 +818,6 @@ async function renderDatabasePage() {
                     </ul>
                 </div>
             </div>
-
             <div class="db-faq-section">
                 <h2 class="db-faq-title">Часто спрашивают</h2>
                 <div class="db-faq-item" onclick="this.classList.toggle('open')">
@@ -839,7 +841,6 @@ async function renderDatabasePage() {
                     <div class="db-faq-a">У меня дома, в России. Я сам настраиваю безопасность и мониторинг.</div>
                 </div>
             </div>
-
             <div class="db-cta">
                 <button class="btn" onclick="showToast('Скоро будет!')"><i class="fas fa-database"></i> Скоро будет!</button>
             </div>
@@ -989,7 +990,6 @@ function initParticles() {
     draw();
 }
 
-// Обработчик кнопки дружбы в чужом профиле
 function handleFriendAction(login) {
     const status = getFriendStatus(login);
     if (status === 'accepted') {
@@ -1005,7 +1005,6 @@ function handleFriendAction(login) {
         sendFriendRequest(login);
         showToast('Заявка отправлена');
     }
-    // Обновить профиль
     if (typeof openUserProfile === 'function') {
         openUserProfile(login);
     }
