@@ -1,4 +1,4 @@
-// diamkey-chats.js — чаты DiamKey (только для друзей, симметричное хранение)
+// diamkey-chats.js — чаты DiamKey (исправлено)
 function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
@@ -21,7 +21,6 @@ function renderChats() {
 
     let currentChatLogin = null;
 
-    // Симметричный ключ для чата между двумя пользователями
     function getChatKey(loginA, loginB) {
         const sorted = [loginA, loginB].sort();
         return `diamkey_chat_${sorted[0]}_${sorted[1]}`;
@@ -42,10 +41,9 @@ function renderChats() {
         const messages = getChatMessages(login);
         if (messages.length === 0) return { text: 'Нет сообщений', time: '' };
         const last = messages[messages.length - 1];
-        return {
-            text: last.from === 'system' ? last.text : (last.from === 'me' ? 'Вы: ' : '') + last.text,
-            time: last.time
-        };
+        if (last.sender === 'system') return { text: last.text, time: last.time };
+        const senderName = (last.sender === currentUser.login) ? 'Вы' : login;
+        return { text: `${senderName}: ${last.text}`, time: last.time };
     }
 
     function renderChatList(filterText = '') {
@@ -55,30 +53,21 @@ function renderChats() {
         const filtered = friends.filter(login => !filterText || login.toLowerCase().includes(lowerFilter));
 
         if (filtered.length === 0) {
-            chatListContainer.innerHTML = `
-                <div style="text-align:center; padding:40px 20px; color:var(--text-muted);">
-                    <i class="fas fa-user-friends" style="font-size:32px; margin-bottom:12px;"></i>
-                    <p>${friends.length === 0 ? 'У вас пока нет друзей. Добавьте друзей, чтобы начать общение.' : 'Чаты не найдены'}</p>
-                </div>
-            `;
+            chatListContainer.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-muted);"><i class="fas fa-user-friends" style="font-size:32px; margin-bottom:12px;"></i><p>${friends.length === 0 ? 'У вас пока нет друзей. Добавьте друзей, чтобы начать общение.' : 'Чаты не найдены'}</p></div>`;
             return;
         }
 
         chatListContainer.innerHTML = filtered.map(login => {
             const lastMsg = getLastMessage(login);
             const activeClass = currentChatLogin === login ? 'active' : '';
-            return `
-                <div class="chat-item ${activeClass}" onclick="window._selectChat('${login}')">
-                    <div class="chat-item-avatar"><i class="fas fa-user"></i></div>
-                    <div class="chat-item-info">
-                        <div class="chat-item-name">${escapeHtml(login)}</div>
-                        <div class="chat-item-lastmsg">${escapeHtml(lastMsg.text)}</div>
-                    </div>
-                    <div class="chat-item-meta">
-                        <div class="chat-item-time">${lastMsg.time}</div>
-                    </div>
+            return `<div class="chat-item ${activeClass}" onclick="window._selectChat('${login}')">
+                <div class="chat-item-avatar"><i class="fas fa-user"></i></div>
+                <div class="chat-item-info">
+                    <div class="chat-item-name">${escapeHtml(login)}</div>
+                    <div class="chat-item-lastmsg">${escapeHtml(lastMsg.text)}</div>
                 </div>
-            `;
+                <div class="chat-item-meta"><div class="chat-item-time">${lastMsg.time}</div></div>
+            </div>`;
         }).join('');
     }
 
@@ -106,24 +95,23 @@ function renderChats() {
 
         renderMessages(login, messages);
         renderChatList(chatSearchInput?.value || '');
+        markChatAsRead(login); // снимаем точку
     };
 
     function renderMessages(login, messages) {
         if (!chatMessagesContainer) return;
         chatMessagesContainer.innerHTML = messages.map(msg => {
-            if (msg.from === 'system') {
+            if (msg.sender === 'system') {
                 return `<div class="chat-system-msg">${escapeHtml(msg.text)}</div>`;
             }
-            const isMe = msg.from === 'me';
-            return `
-                <div class="message ${isMe ? 'sent' : 'received'}">
-                    <div class="msg-avatar"><i class="fas fa-user"></i></div>
-                    <div>
-                        <div class="msg-content">${escapeHtml(msg.text)}</div>
-                        <div class="msg-time">${msg.time}</div>
-                    </div>
+            const isMe = (msg.sender === currentUser.login);
+            return `<div class="message ${isMe ? 'sent' : 'received'}">
+                <div class="msg-avatar"><i class="fas fa-user"></i></div>
+                <div>
+                    <div class="msg-content">${escapeHtml(msg.text)}</div>
+                    <div class="msg-time">${msg.time}</div>
                 </div>
-            `;
+            </div>`;
         }).join('');
         chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
@@ -135,14 +123,15 @@ function renderChats() {
 
         const now = new Date();
         const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
         const messages = getChatMessages(currentChatLogin);
-        messages.push({ from: 'me', text, time });
+        messages.push({ sender: currentUser.login, text, time });
         saveChatMessages(currentChatLogin, messages);
+
+        // Симулируем получение сообщения другом (для демки)
+        addUnreadMessage(currentChatLogin);
 
         renderMessages(currentChatLogin, messages);
         renderChatList(chatSearchInput?.value || '');
-
         chatMessageInput.value = '';
         chatMessageInput.focus();
     }
@@ -167,7 +156,6 @@ function renderChats() {
     };
 
     renderChatList();
-
     const friends = getFriendsList();
     if (friends.length > 0 && !currentChatLogin) {
         window._selectChat(friends[0]);
