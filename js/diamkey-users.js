@@ -1,4 +1,4 @@
-// diamkey-users.js — список пользователей с кнопками дружбы
+// diamkey-users.js — список пользователей с фильтрами друзей и заявок
 
 async function loadUsers() {
     const container = document.getElementById('usersList');
@@ -21,16 +21,18 @@ async function loadUsers() {
     document.getElementById('usersLoaderStatus').textContent = 'Готово!';
     await new Promise(r => setTimeout(r, 400));
 
+    // Фильтры: Все, Друзья, Заявки
     sortContainer.innerHTML = `
         <span class="text-muted">Сортировка:</span>
-        <button class="sort-btn active" data-sort="login">По нику</button>
-        <button class="sort-btn" data-sort="created_at">По дате</button>
+        <button class="sort-btn active" data-filter="all">Все</button>
+        <button class="sort-btn" data-filter="friends"><i class="fas fa-user-friends"></i> Друзья</button>
+        <button class="sort-btn" data-filter="requests"><i class="fas fa-user-clock"></i> Заявки</button>
         <button class="sort-btn" id="badgeFilterBtn" style="margin-left:auto;">
             <i class="fas fa-filter"></i> Фильтр по бейджу
         </button>
     `;
 
-    let currentSort = 'login';
+    let currentFilter = 'all';
     let activeBadgeFilter = null;
     const allBadges = await getAllBadges();
 
@@ -53,12 +55,25 @@ async function loadUsers() {
     }
 
     async function render() {
+        // Применяем фильтр по бейджам
         let filtered = await filterUsersByBadge(activeBadgeFilter?.id);
-        const sorted = [...filtered].sort((a, b) =>
-            currentSort === 'created_at'
-                ? new Date(b.created_at) - new Date(a.created_at)
-                : a.login.localeCompare(b.login)
-        );
+
+        // Применяем фильтр друзей/заявок
+        if (currentFilter === 'friends') {
+            const friendLogins = getFriendsList();
+            filtered = filtered.filter(u => friendLogins.includes(u.login));
+        } else if (currentFilter === 'requests') {
+            const incoming = getIncomingRequests();
+            filtered = filtered.filter(u => incoming.includes(u.login));
+        }
+
+        // Сортировка
+        const sorted = [...filtered].sort((a, b) => a.login.localeCompare(b.login));
+
+        if (sorted.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);"><i class="fas fa-users" style="font-size:32px; margin-bottom:12px;"></i><p>Никого нет</p></div>';
+            return;
+        }
 
         container.innerHTML = sorted.map(u => {
             const status = getFriendStatus(u.login);
@@ -66,20 +81,27 @@ async function loadUsers() {
             if (status === 'accepted') {
                 actionBtn = `
                     <div class="user-card-actions">
-                        <button class="btn-friend-card accepted" onclick="event.stopPropagation(); handleFriendAction('${u.login}')"><i class="fas fa-check"></i> Друзья</button>
-                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); handleFriendAction('${u.login}')"><i class="fas fa-user-times"></i></button>
+                        <button class="btn-friend-card accepted" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-check"></i> Друзья</button>
+                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-user-times"></i></button>
                     </div>
                 `;
-            } else if (status === 'pending') {
+            } else if (status === 'pending_sent') {
                 actionBtn = `
                     <div class="user-card-actions">
-                        <button class="btn-friend-card pending" onclick="event.stopPropagation(); handleFriendAction('${u.login}')"><i class="fas fa-clock"></i> Ожидание</button>
+                        <button class="btn-friend-card pending" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-clock"></i> Ожидание</button>
+                    </div>
+                `;
+            } else if (status === 'pending_received') {
+                actionBtn = `
+                    <div class="user-card-actions">
+                        <button class="btn-friend-card add" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-user-check"></i> Принять</button>
+                        <button class="btn-friend-card remove" onclick="event.stopPropagation(); rejectFriendRequest('${u.login}'); loadUsers();"><i class="fas fa-times"></i></button>
                     </div>
                 `;
             } else {
                 actionBtn = `
                     <div class="user-card-actions">
-                        <button class="btn-friend-card add" onclick="event.stopPropagation(); handleFriendAction('${u.login}')"><i class="fas fa-user-plus"></i> Добавить в друзья</button>
+                        <button class="btn-friend-card add" onclick="event.stopPropagation(); handleFriendActionFromList('${u.login}')"><i class="fas fa-user-plus"></i> Добавить в друзья</button>
                     </div>
                 `;
             }
@@ -101,11 +123,11 @@ async function loadUsers() {
         updateFilterButton();
     }
 
-    sortContainer.querySelectorAll('.sort-btn[data-sort]').forEach(btn => {
+    sortContainer.querySelectorAll('.sort-btn[data-filter]').forEach(btn => {
         btn.addEventListener('click', () => {
-            sortContainer.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.classList.remove('active'));
+            sortContainer.querySelectorAll('.sort-btn[data-filter]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            currentSort = btn.dataset.sort;
+            currentFilter = btn.dataset.filter;
             render();
         });
     });
@@ -178,4 +200,27 @@ function openBadgeFilterModal(badges, onSelect) {
         modal.classList.remove('active');
         setTimeout(() => modal.remove(), 300);
     });
+}
+
+// Обработчик кнопки дружбы из списка пользователей
+function handleFriendActionFromList(login) {
+    const status = getFriendStatus(login);
+    if (status === 'accepted') {
+        removeFriend(login);
+        showToast('Удалён из друзей');
+    } else if (status === 'pending_sent') {
+        removeFriend(login);
+        showToast('Заявка отменена');
+    } else if (status === 'pending_received') {
+        acceptFriendRequest(login);
+        showToast('Заявка принята! Теперь вы друзья.');
+    } else {
+        sendFriendRequest(login);
+        showToast('Заявка отправлена');
+    }
+    loadUsers();
+    updateFriendNotificationDot();
+    if (typeof renderMyProfile === 'function' && document.getElementById('page-profile').classList.contains('active')) {
+        renderMyProfile();
+    }
 }
