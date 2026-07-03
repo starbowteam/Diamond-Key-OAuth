@@ -1,4 +1,4 @@
-// diamkey-chats.js — чаты DiamKey (исправлено)
+// diamkey-chats.js — чаты DiamKey (Supabase, аватарки, мини-профиль)
 function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
@@ -21,32 +21,60 @@ function renderChats() {
 
     let currentChatLogin = null;
 
-    function getChatKey(loginA, loginB) {
-        const sorted = [loginA, loginB].sort();
-        return `diamkey_chat_${sorted[0]}_${sorted[1]}`;
+    // Загрузка сообщений из Supabase
+    async function loadMessages(partner) {
+        const { data, error } = await _supabase
+            .from('chat_messages')
+            .select('*')
+            .or(`sender.eq.${currentUser.login},receiver.eq.${currentUser.login}`)
+            .or(`sender.eq.${partner},receiver.eq.${partner}`)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('Ошибка загрузки сообщений:', error);
+            return [];
+        }
+
+        // Оставляем только сообщения между текущим пользователем и partner
+        return (data || []).filter(msg =>
+            (msg.sender === currentUser.login && msg.receiver === partner) ||
+            (msg.sender === partner && msg.receiver === currentUser.login)
+        );
     }
 
-    function getChatMessages(login) {
-        const key = getChatKey(currentUser.login, login);
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : [];
+    // Отправка сообщения
+    async function sendMessageToSupabase(partner, text) {
+        const { error } = await _supabase
+            .from('chat_messages')
+            .insert([{
+                sender: currentUser.login,
+                receiver: partner,
+                message: text
+            }]);
+
+        if (error) {
+            console.error('Ошибка отправки сообщения:', error);
+            showToast('Ошибка отправки');
+            return false;
+        }
+        return true;
     }
 
-    function saveChatMessages(login, messages) {
-        const key = getChatKey(currentUser.login, login);
-        localStorage.setItem(key, JSON.stringify(messages));
-    }
-
-    function getLastMessage(login) {
-        const messages = getChatMessages(login);
+    // Получение последнего сообщения для превью в списке чатов
+    async function getLastMessage(partner) {
+        const messages = await loadMessages(partner);
         if (messages.length === 0) return { text: 'Нет сообщений', time: '' };
         const last = messages[messages.length - 1];
-        if (last.sender === 'system') return { text: last.text, time: last.time };
-        const senderName = (last.sender === currentUser.login) ? 'Вы' : login;
-        return { text: `${senderName}: ${last.text}`, time: last.time };
+        if (last.sender === 'system') return { text: last.message, time: new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+        const senderName = (last.sender === currentUser.login) ? 'Вы' : partner;
+        return {
+            text: `${senderName}: ${last.message}`,
+            time: new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
     }
 
-    function renderChatList(filterText = '') {
+    // Рендер списка чатов
+    async function renderChatList(filterText = '') {
         if (!chatListContainer) return;
         const friends = getFriendsList();
         const lowerFilter = filterText.toLowerCase();
@@ -57,85 +85,118 @@ function renderChats() {
             return;
         }
 
-        chatListContainer.innerHTML = filtered.map(login => {
-            const lastMsg = getLastMessage(login);
+        // Для каждого друга получаем последнее сообщение и строим элемент списка
+        const items = await Promise.all(filtered.map(async (login) => {
+            const lastMsg = await getLastMessage(login);
             const activeClass = currentChatLogin === login ? 'active' : '';
             return `<div class="chat-item ${activeClass}" onclick="window._selectChat('${login}')">
-                <div class="chat-item-avatar"><i class="fas fa-user"></i></div>
+                <div class="chat-item-avatar">${await getChatAvatarHTML(login)}</div>
                 <div class="chat-item-info">
                     <div class="chat-item-name">${escapeHtml(login)}</div>
                     <div class="chat-item-lastmsg">${escapeHtml(lastMsg.text)}</div>
                 </div>
                 <div class="chat-item-meta"><div class="chat-item-time">${lastMsg.time}</div></div>
             </div>`;
-        }).join('');
+        }));
+        chatListContainer.innerHTML = items.join('');
     }
 
-    window._selectChat = function(login) {
+    // Получение HTML аватарки для чата (собеседника)
+    async function getChatAvatarHTML(login) {
+        const profile = await getProfile(login);
+        if (profile && profile.avatar) {
+            return `<img src="${escapeHtml(profile.avatar)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;">`;
+        }
+        return '<i class="fas fa-user"></i>';
+    }
+
+    // Выбор чата
+    window._selectChat = async function(login) {
         currentChatLogin = login;
         noChatSelected.style.display = 'none';
         activeChatView.style.display = 'flex';
 
+        // Шапка
         chatHeaderName.textContent = login;
-        chatHeaderStatus.textContent = 'В сети';
-        chatHeaderStatus.className = 'chat-header-status online';
-        chatHeaderAvatar.innerHTML = '<i class="fas fa-user"></i>';
-
         isUserOnline(login).then(online => {
             chatHeaderStatus.textContent = online ? 'В сети' : 'Не в сети';
             chatHeaderStatus.className = 'chat-header-status ' + (online ? 'online' : 'offline');
         });
 
-        let messages = getChatMessages(login);
+        // Аватар в шапке
+        const profile = await getProfile(login);
+        if (profile && profile.avatar) {
+            chatHeaderAvatar.innerHTML = `<img src="${escapeHtml(profile.avatar)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        } else {
+            chatHeaderAvatar.innerHTML = '<i class="fas fa-user"></i>';
+        }
+
+        // Загружаем сообщения
+        let messages = await loadMessages(login);
+
+        // Если сообщений нет, создаём системное
         if (messages.length === 0) {
-            const sysMsg = getSystemMessage(login);
-            messages.push(sysMsg);
-            saveChatMessages(login, messages);
+            await sendMessageToSupabase(login, 'system:chat_started'); // специальный флаг, но лучше создать настоящее системное сообщение
+            // Вставляем системное сообщение напрямую в таблицу
+            await _supabase.from('chat_messages').insert([{
+                sender: 'system',
+                receiver: login,
+                message: `Это ваш чат с ${escapeHtml(login)}! Можете начинать свое общение.`
+            }]);
+            messages = await loadMessages(login);
         }
 
         renderMessages(login, messages);
         renderChatList(chatSearchInput?.value || '');
-        markChatAsRead(login); // снимаем точку
+        markChatAsRead(login);
     };
 
+    // Отображение сообщений
     function renderMessages(login, messages) {
         if (!chatMessagesContainer) return;
         chatMessagesContainer.innerHTML = messages.map(msg => {
             if (msg.sender === 'system') {
-                return `<div class="chat-system-msg">${escapeHtml(msg.text)}</div>`;
+                return `<div class="chat-system-msg">${escapeHtml(msg.message)}</div>`;
             }
             const isMe = (msg.sender === currentUser.login);
             return `<div class="message ${isMe ? 'sent' : 'received'}">
-                <div class="msg-avatar"><i class="fas fa-user"></i></div>
+                <div class="msg-avatar">${isMe ? avatarHTML(currentUser.avatar, 32) : `<img src="${escapeHtml(getCachedAvatar(login))}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><i class="fas fa-user" style="display:none;"></i>`}</div>
                 <div>
-                    <div class="msg-content">${escapeHtml(msg.text)}</div>
-                    <div class="msg-time">${msg.time}</div>
+                    <div class="msg-content">${escapeHtml(msg.message)}</div>
+                    <div class="msg-time">${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
             </div>`;
         }).join('');
         chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
 
-    function sendMessage() {
+    // Кэш аватарок, чтобы не грузить каждый раз
+    const avatarCache = {};
+    async function getCachedAvatar(login) {
+        if (avatarCache[login]) return avatarCache[login];
+        const profile = await getProfile(login);
+        avatarCache[login] = profile?.avatar || '';
+        return avatarCache[login];
+    }
+
+    // Отправка сообщения
+    async function sendMessage() {
         if (!currentChatLogin) return;
         const text = chatMessageInput.value.trim();
         if (!text) return;
 
-        const now = new Date();
-        const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const messages = getChatMessages(currentChatLogin);
-        messages.push({ sender: currentUser.login, text, time });
-        saveChatMessages(currentChatLogin, messages);
+        const ok = await sendMessageToSupabase(currentChatLogin, text);
+        if (!ok) return;
 
-        // Симулируем получение сообщения другом (для демки)
-        addUnreadMessage(currentChatLogin);
-
+        chatMessageInput.value = '';
+        // Обновляем сообщения
+        const messages = await loadMessages(currentChatLogin);
         renderMessages(currentChatLogin, messages);
         renderChatList(chatSearchInput?.value || '');
-        chatMessageInput.value = '';
         chatMessageInput.focus();
     }
 
+    // Обработчики
     chatSendBtn?.addEventListener('click', sendMessage);
     chatMessageInput?.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') sendMessage();
@@ -144,6 +205,37 @@ function renderChats() {
         renderChatList(this.value);
     });
 
+    // Мини‑профиль: клик по аватарке/имени в шапке
+    chatHeaderAvatar.addEventListener('click', () => openMiniProfile(currentChatLogin));
+    chatHeaderName.addEventListener('click', () => openMiniProfile(currentChatLogin));
+
+    function openMiniProfile(login) {
+        if (!login) return;
+        // Создаём/показываем панель мини‑профиля
+        let panel = document.getElementById('chatMiniProfile');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'chatMiniProfile';
+            panel.className = 'chat-mini-profile';
+            chatViewPanel.appendChild(panel);
+        }
+        // Заполняем данными
+        getProfile(login).then(profile => {
+            if (!profile) return;
+            panel.innerHTML = `
+                <div class="profile-close" onclick="document.getElementById('chatMiniProfile').classList.remove('active')"><i class="fas fa-times"></i></div>
+                <div class="profile-avatar-large">${profile.avatar ? `<img src="${escapeHtml(profile.avatar)}" alt="${login}">` : '<i class="fas fa-user"></i>'}</div>
+                <div class="profile-name">${escapeHtml(profile.name || login)}</div>
+                <div class="profile-tag">@${login}</div>
+                <div class="profile-status-badge"><i class="fas fa-circle"></i> В сети</div>
+                <div class="profile-description">${escapeHtml(profile.description || '')}</div>
+                <button class="btn-friend" onclick="navigateTo('/users/${login}')"><i class="fas fa-external-link-alt"></i> Открыть профиль</button>
+            `;
+            panel.classList.add('active');
+        });
+    }
+
+    // Звонки (заглушка)
     window.startCall = function(type) {
         if (!currentChatLogin) return;
         callOverlay.style.display = 'flex';
@@ -155,6 +247,7 @@ function renderChats() {
         callOverlay.style.display = 'none';
     };
 
+    // Инициализация
     renderChatList();
     const friends = getFriendsList();
     if (friends.length > 0 && !currentChatLogin) {
