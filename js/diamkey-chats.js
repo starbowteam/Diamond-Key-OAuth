@@ -18,16 +18,15 @@ function renderChats() {
     const callOverlay = document.getElementById('callOverlay');
     const callName = document.getElementById('callName');
     const callStatusText = document.getElementById('callStatusText');
+    const chatViewPanel = document.getElementById('chatViewPanel');
 
     let currentChatLogin = null;
 
-    // Загрузка сообщений из Supabase
     async function loadMessages(partner) {
         const { data, error } = await _supabase
             .from('chat_messages')
             .select('*')
             .or(`sender.eq.${currentUser.login},receiver.eq.${currentUser.login}`)
-            .or(`sender.eq.${partner},receiver.eq.${partner}`)
             .order('created_at', { ascending: true });
 
         if (error) {
@@ -35,14 +34,12 @@ function renderChats() {
             return [];
         }
 
-        // Оставляем только сообщения между текущим пользователем и partner
         return (data || []).filter(msg =>
             (msg.sender === currentUser.login && msg.receiver === partner) ||
             (msg.sender === partner && msg.receiver === currentUser.login)
         );
     }
 
-    // Отправка сообщения
     async function sendMessageToSupabase(partner, text) {
         const { error } = await _supabase
             .from('chat_messages')
@@ -60,7 +57,6 @@ function renderChats() {
         return true;
     }
 
-    // Получение последнего сообщения для превью в списке чатов
     async function getLastMessage(partner) {
         const messages = await loadMessages(partner);
         if (messages.length === 0) return { text: 'Нет сообщений', time: '' };
@@ -73,7 +69,6 @@ function renderChats() {
         };
     }
 
-    // Рендер списка чатов
     async function renderChatList(filterText = '') {
         if (!chatListContainer) return;
         const friends = getFriendsList();
@@ -85,7 +80,6 @@ function renderChats() {
             return;
         }
 
-        // Для каждого друга получаем последнее сообщение и строим элемент списка
         const items = await Promise.all(filtered.map(async (login) => {
             const lastMsg = await getLastMessage(login);
             const activeClass = currentChatLogin === login ? 'active' : '';
@@ -101,7 +95,6 @@ function renderChats() {
         chatListContainer.innerHTML = items.join('');
     }
 
-    // Получение HTML аватарки для чата (собеседника)
     async function getChatAvatarHTML(login) {
         const profile = await getProfile(login);
         if (profile && profile.avatar) {
@@ -110,20 +103,17 @@ function renderChats() {
         return '<i class="fas fa-user"></i>';
     }
 
-    // Выбор чата
     window._selectChat = async function(login) {
         currentChatLogin = login;
         noChatSelected.style.display = 'none';
         activeChatView.style.display = 'flex';
 
-        // Шапка
         chatHeaderName.textContent = login;
         isUserOnline(login).then(online => {
             chatHeaderStatus.textContent = online ? 'В сети' : 'Не в сети';
             chatHeaderStatus.className = 'chat-header-status ' + (online ? 'online' : 'offline');
         });
 
-        // Аватар в шапке
         const profile = await getProfile(login);
         if (profile && profile.avatar) {
             chatHeaderAvatar.innerHTML = `<img src="${escapeHtml(profile.avatar)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
@@ -131,13 +121,9 @@ function renderChats() {
             chatHeaderAvatar.innerHTML = '<i class="fas fa-user"></i>';
         }
 
-        // Загружаем сообщения
         let messages = await loadMessages(login);
 
-        // Если сообщений нет, создаём системное
         if (messages.length === 0) {
-            await sendMessageToSupabase(login, 'system:chat_started'); // специальный флаг, но лучше создать настоящее системное сообщение
-            // Вставляем системное сообщение напрямую в таблицу
             await _supabase.from('chat_messages').insert([{
                 sender: 'system',
                 receiver: login,
@@ -151,7 +137,6 @@ function renderChats() {
         markChatAsRead(login);
     };
 
-    // Отображение сообщений
     function renderMessages(login, messages) {
         if (!chatMessagesContainer) return;
         chatMessagesContainer.innerHTML = messages.map(msg => {
@@ -170,7 +155,6 @@ function renderChats() {
         chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
 
-    // Кэш аватарок, чтобы не грузить каждый раз
     const avatarCache = {};
     async function getCachedAvatar(login) {
         if (avatarCache[login]) return avatarCache[login];
@@ -179,7 +163,6 @@ function renderChats() {
         return avatarCache[login];
     }
 
-    // Отправка сообщения
     async function sendMessage() {
         if (!currentChatLogin) return;
         const text = chatMessageInput.value.trim();
@@ -189,14 +172,12 @@ function renderChats() {
         if (!ok) return;
 
         chatMessageInput.value = '';
-        // Обновляем сообщения
         const messages = await loadMessages(currentChatLogin);
         renderMessages(currentChatLogin, messages);
         renderChatList(chatSearchInput?.value || '');
         chatMessageInput.focus();
     }
 
-    // Обработчики
     chatSendBtn?.addEventListener('click', sendMessage);
     chatMessageInput?.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') sendMessage();
@@ -205,13 +186,11 @@ function renderChats() {
         renderChatList(this.value);
     });
 
-    // Мини‑профиль: клик по аватарке/имени в шапке
     chatHeaderAvatar.addEventListener('click', () => openMiniProfile(currentChatLogin));
     chatHeaderName.addEventListener('click', () => openMiniProfile(currentChatLogin));
 
     function openMiniProfile(login) {
         if (!login) return;
-        // Создаём/показываем панель мини‑профиля
         let panel = document.getElementById('chatMiniProfile');
         if (!panel) {
             panel = document.createElement('div');
@@ -219,7 +198,6 @@ function renderChats() {
             panel.className = 'chat-mini-profile';
             chatViewPanel.appendChild(panel);
         }
-        // Заполняем данными
         getProfile(login).then(profile => {
             if (!profile) return;
             panel.innerHTML = `
@@ -232,10 +210,10 @@ function renderChats() {
                 <button class="btn-friend" onclick="navigateTo('/users/${login}')"><i class="fas fa-external-link-alt"></i> Открыть профиль</button>
             `;
             panel.classList.add('active');
+            chatViewPanel.classList.add('shifted');
         });
     }
 
-    // Звонки (заглушка)
     window.startCall = function(type) {
         if (!currentChatLogin) return;
         callOverlay.style.display = 'flex';
@@ -247,7 +225,6 @@ function renderChats() {
         callOverlay.style.display = 'none';
     };
 
-    // Инициализация
     renderChatList();
     const friends = getFriendsList();
     if (friends.length > 0 && !currentChatLogin) {
