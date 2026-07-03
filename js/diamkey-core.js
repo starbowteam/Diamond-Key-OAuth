@@ -174,7 +174,7 @@ async function getAnnouncement() {
     return data || [];
 }
 
-async function loadHomeStats() { /* без изменений */ return {}; }
+async function loadHomeStats() { return {}; }
 
 async function getAllBadges() {
     const { data } = await _supabase.from('badges').select('*');
@@ -186,8 +186,8 @@ async function getUserBadges(login) {
     return data || [];
 }
 
-async function assignBadge(userLogin, badgeId) { /* ... */ return { error: null }; }
-async function removeBadge(userLogin, badgeId) { /* ... */ return { error: null }; }
+async function assignBadge(userLogin, badgeId) { return { error: null }; }
+async function removeBadge(userLogin, badgeId) { return { error: null }; }
 
 async function updatePresence() {
     if (!currentUser) return;
@@ -202,7 +202,7 @@ async function isUserOnline(login) {
     return Date.now() - new Date(data.last_seen).getTime() < 120000;
 }
 
-// ======== ДРУЗЬЯ (исправленная механика) ========
+// ======== ДРУЗЬЯ ========
 function getFriendsStorage() {
     const raw = localStorage.getItem('diamkey_friends');
     return raw ? JSON.parse(raw) : {};
@@ -213,7 +213,7 @@ function saveFriendsStorage(data) {
 }
 
 function sendFriendRequest(targetLogin) {
-    if (!currentUser) return;
+    if (!currentUser || targetLogin === currentUser.login) return;
     const friends = getFriendsStorage();
     const key = `${currentUser.login}_${targetLogin}`;
     if (friends[key] !== 'accepted') {
@@ -223,7 +223,7 @@ function sendFriendRequest(targetLogin) {
 }
 
 function acceptFriendRequest(fromLogin) {
-    if (!currentUser) return;
+    if (!currentUser || fromLogin === currentUser.login) return;
     const friends = getFriendsStorage();
     const key = `${fromLogin}_${currentUser.login}`;
     if (friends[key] === 'pending') {
@@ -249,7 +249,7 @@ function removeFriend(targetLogin) {
 }
 
 function getFriendStatus(targetLogin) {
-    if (!currentUser) return 'none';
+    if (!currentUser || targetLogin === currentUser.login) return 'self';
     const friends = getFriendsStorage();
     const sentKey = `${currentUser.login}_${targetLogin}`;
     const receivedKey = `${targetLogin}_${currentUser.login}`;
@@ -266,8 +266,8 @@ function getFriendsList() {
     for (const [key, status] of Object.entries(friends)) {
         if (status !== 'accepted') continue;
         const [a, b] = key.split('_');
-        if (a === currentUser.login) list.push(b);
-        else if (b === currentUser.login) list.push(a);
+        if (a === currentUser.login && b !== currentUser.login) list.push(b);
+        else if (b === currentUser.login && a !== currentUser.login) list.push(a);
     }
     return [...new Set(list)];
 }
@@ -279,29 +279,70 @@ function getIncomingRequests() {
     for (const [key, status] of Object.entries(friends)) {
         if (status !== 'pending') continue;
         const [a, b] = key.split('_');
-        if (b === currentUser.login) requests.push(a);
+        if (b === currentUser.login && a !== currentUser.login) requests.push(a);
     }
     return [...new Set(requests)];
 }
 
+// ======== УВЕДОМЛЕНИЯ (ТОЧКИ) ========
 function updateFriendNotificationDot() {
     const usersIcon = document.querySelector('.sidebar-icon[href="/users"]');
     if (!usersIcon) return;
     const incoming = getIncomingRequests();
-    const dot = usersIcon.querySelector('.badge-dot') || (() => {
-        const d = document.createElement('span');
-        d.className = 'badge-dot';
-        usersIcon.appendChild(d);
-        return d;
-    })();
+    let dot = usersIcon.querySelector('.badge-dot');
+    if (!dot) {
+        dot = document.createElement('span');
+        dot.className = 'badge-dot';
+        dot.style.display = 'none';
+        usersIcon.appendChild(dot);
+    }
     dot.style.display = incoming.length > 0 ? 'block' : 'none';
 }
 
-document.addEventListener('DOMContentLoaded', updateFriendNotificationDot);
+function getUnreadChats() {
+    const raw = localStorage.getItem('diamkey_unread_chats');
+    return raw ? JSON.parse(raw) : [];
+}
+
+function markChatAsRead(login) {
+    if (!currentUser) return;
+    const unread = getUnreadChats().filter(l => l !== login);
+    localStorage.setItem('diamkey_unread_chats', JSON.stringify(unread));
+    updateChatNotificationDot();
+}
+
+function addUnreadMessage(login) {
+    if (!currentUser || login === currentUser.login) return;
+    const unread = getUnreadChats();
+    if (!unread.includes(login)) {
+        unread.push(login);
+        localStorage.setItem('diamkey_unread_chats', JSON.stringify(unread));
+        updateChatNotificationDot();
+    }
+}
+
+function updateChatNotificationDot() {
+    const chatsIcon = document.querySelector('.sidebar-icon[href="/chats"]');
+    if (!chatsIcon) return;
+    const unread = getUnreadChats();
+    let dot = chatsIcon.querySelector('.badge-dot');
+    if (!dot) {
+        dot = document.createElement('span');
+        dot.className = 'badge-dot';
+        dot.style.display = 'none';
+        chatsIcon.appendChild(dot);
+    }
+    dot.style.display = unread.length > 0 ? 'block' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateFriendNotificationDot();
+    updateChatNotificationDot();
+});
 
 function getSystemMessage(contactLogin) {
     return {
-        from: 'system',
+        sender: 'system',
         text: `Это ваш чат с ${escapeHtml(contactLogin)}! Можете начинать свое общение.`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
