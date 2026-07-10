@@ -1,10 +1,11 @@
-// diamkey-chats.js — плавные чаты без багов
+// diamkey-chats.js — чаты без путаницы и с плавным переключением
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
         return;
     }
 
+    // DOM-элементы
     const chatListContainer = document.getElementById('chatListContainer');
     const chatSearchInput = document.getElementById('chatSearchInput');
     const noChatSelected = document.getElementById('noChatSelected');
@@ -21,14 +22,16 @@ async function renderChats() {
     const chatViewPanel = document.getElementById('chatViewPanel');
 
     let currentChatLogin = null;
-    let allUsers = [];                // кэш пользователей (без себя)
-    let recentLogins = [];           // логины, с которыми реально общались (есть сообщения не‑system)
-    let lastMessagesCache = {};      // { login: { text, time } }
-    let avatarCache = {};            // { login: url }
-    let messagesCache = {};          // { login: [messages] }
-    let currentMessagesToken = 0;    // токен для предотвращения гонки сообщений
+    let allUsers = [];
+    let recentLogins = [];
+    let lastMessagesCache = {};
+    let avatarCache = {};
+    let messagesCache = {};
 
-    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    // Токен для отслеживания актуальности асинхронных операций
+    let activeRequestToken = 0;
+
+    // ---------- Инициализация ----------
     async function initialLoad() {
         chatListContainer.innerHTML = `<div class="loader-container">
             <div class="loader-icon"><i class="fas fa-comments"></i></div>
@@ -46,16 +49,16 @@ async function renderChats() {
             if (status) status.textContent = `Загрузка ${width}%`;
         }, 150);
 
-        // Загружаем пользователей и «настоящие» последние чаты
+        // Загружаем пользователей и "настоящие" последние чаты (только с реальными сообщениями)
         const [users, recent] = await Promise.all([
             getUsers(),
-            getRealRecentChats()   // новая функция – см. ниже
+            getRealRecentChats()
         ]);
 
         allUsers = users.filter(u => u.login !== currentUser.login);
         recentLogins = recent;
 
-        // Кэшируем аватарки
+        // Кэшируем аватарки всех пользователей
         await Promise.all(allUsers.map(async (u) => {
             if (!avatarCache[u.login]) {
                 const profile = await getProfile(u.login);
@@ -74,26 +77,25 @@ async function renderChats() {
         renderChatListInstant();
     }
 
-    // «Настоящие» последние чаты — те, где есть хотя бы одно не‑системное сообщение
+    // Возвращает логины, с которыми есть хотя бы одно не-системное сообщение
     async function getRealRecentChats() {
         const { data, error } = await _supabase
             .from('chat_messages')
-            .select('sender, receiver, message')
+            .select('sender, receiver')
             .or(`sender.eq.${currentUser.login},receiver.eq.${currentUser.login}`)
-            .neq('sender', 'system');   // исключаем системные
+            .neq('sender', 'system');
 
         if (error || !data) return [];
 
         const partners = new Set();
         data.forEach(msg => {
-            if (msg.sender === currentUser.login) partners.add(msg.receiver);
-            else if (msg.receiver === currentUser.login) partners.add(msg.sender);
+            if (msg.sender === currentUser.login && msg.receiver !== 'system') partners.add(msg.receiver);
+            else if (msg.receiver === currentUser.login && msg.sender !== 'system') partners.add(msg.sender);
         });
         return Array.from(partners);
     }
 
     async function updateLastMessages() {
-        // обновляем превью только для настоящих недавних чатов
         const logins = recentLogins.length > 0 ? recentLogins : [];
         await Promise.all(logins.map(async (login) => {
             const msgs = await loadMessagesFromDB(login);
@@ -110,7 +112,7 @@ async function renderChats() {
         }));
     }
 
-    // ========== РАБОТА С БД ==========
+    // ---------- Работа с БД ----------
     async function loadMessagesFromDB(partner) {
         const { data, error } = await _supabase
             .from('chat_messages')
@@ -128,7 +130,7 @@ async function renderChats() {
         return !error;
     }
 
-    // ========== ОТРИСОВКА СПИСКА ==========
+    // ---------- Отрисовка списка ----------
     function getAvatarHTML(login) {
         const url = avatarCache[login];
         return url ? `<img src="${escapeHtml(url)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>';
@@ -146,14 +148,14 @@ async function renderChats() {
 
         let html = '';
 
-        // Настоящие последние чаты
+        // Последние чаты (только настоящие)
         if (recentLogins.length > 0) {
             const recentUsers = allUsers.filter(u => recentLogins.includes(u.login) && filterFn(u));
             if (recentUsers.length > 0) {
                 const items = recentUsers.map(u => {
                     const preview = lastMessagesCache[u.login] || { text: '', time: '' };
-                    const activeClass = currentChatLogin === u.login ? 'active' : '';
-                    return `<div class="chat-item ${activeClass}" onclick="window._selectChat('${u.login}')">
+                    const active = currentChatLogin === u.login ? 'active' : '';
+                    return `<div class="chat-item ${active}" onclick="window._selectChat('${u.login}')">
                         <div class="chat-item-avatar">${getAvatarHTML(u.login)}</div>
                         <div class="chat-item-info">
                             <div class="chat-item-name">${escapeHtml(u.name || u.login)}</div>
@@ -168,13 +170,13 @@ async function renderChats() {
             html += `<div class="chat-section-empty">Вы ещё можете пообщаться, выберите пользователя ниже!</div>`;
         }
 
-        // Все пользователи (кроме тех, что уже в последних)
+        // Все пользователи (исключая уже показанных в последних)
         const recentSet = new Set(recentLogins);
         const others = allUsers.filter(u => !recentSet.has(u.login) && filterFn(u));
         if (others.length > 0) {
             const items = others.map(u => {
-                const activeClass = currentChatLogin === u.login ? 'active' : '';
-                return `<div class="chat-item ${activeClass}" onclick="window._selectChat('${u.login}')">
+                const active = currentChatLogin === u.login ? 'active' : '';
+                return `<div class="chat-item ${active}" onclick="window._selectChat('${u.login}')">
                     <div class="chat-item-avatar">${getAvatarHTML(u.login)}</div>
                     <div class="chat-item-info">
                         <div class="chat-item-name">${escapeHtml(u.name || u.login)}</div>
@@ -189,10 +191,14 @@ async function renderChats() {
         chatListContainer.innerHTML = html;
     }
 
-    // ========== ВЫБОР ЧАТА (ПЛАВНЫЙ) ==========
+    // ---------- Выбор чата (надёжный) ----------
     window._selectChat = function(login) {
+        // Игнорируем повторный клик по тому же чату
         if (currentChatLogin === login) return;
+
         currentChatLogin = login;
+        activeRequestToken++; // аннулируем все незавершённые запросы
+        const requestToken = activeRequestToken;
 
         // Показываем область чата с анимацией
         noChatSelected.style.display = 'none';
@@ -205,42 +211,41 @@ async function renderChats() {
         chatHeaderName.textContent = profile?.name || login;
         chatHeaderAvatar.innerHTML = getAvatarHTML(login);
 
-        // Защита от гонки: увеличиваем токен
-        const token = ++currentMessagesToken;
+        // Сразу показываем индикатор загрузки
+        messagesContainer.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">
+            <i class="fas fa-circle-notch fa-spin" style="font-size:24px;"></i>
+            <p>Загрузка сообщений...</p>
+        </div>`;
 
-        // Загружаем сообщения (из кэша или БД)
-        if (messagesCache[login]) {
-            if (token === currentMessagesToken) {
-                renderMessages(login, messagesCache[login]);
+        // Загружаем сообщения
+        (async () => {
+            let msgs = messagesCache[login] || await loadMessagesFromDB(login);
+
+            // Если за время загрузки переключились – выходим
+            if (requestToken !== activeRequestToken) return;
+
+            if (msgs.length === 0) {
+                // Создаём системное сообщение
+                const sysMsg = {
+                    sender: 'system',
+                    receiver: login,
+                    message: `Это ваш чат с ${escapeHtml(profile?.name || login)}! Можете начинать свое общение.`,
+                    created_at: new Date().toISOString()
+                };
+                await _supabase.from('chat_messages').insert([sysMsg]);
+                msgs = [sysMsg];
+                messagesCache[login] = msgs;
+            } else {
+                messagesCache[login] = msgs;
             }
-        } else {
-            loadMessagesFromDB(login).then(msgs => {
-                if (token !== currentMessagesToken) return; // устарело
-                if (msgs.length === 0) {
-                    // Вставляем системное сообщение, но НЕ добавляем в recent
-                    const sysMsg = {
-                        sender: 'system',
-                        receiver: login,
-                        message: `Это ваш чат с ${escapeHtml(profile?.name || login)}! Можете начинать свое общение.`,
-                        created_at: new Date().toISOString()
-                    };
-                    _supabase.from('chat_messages').insert([sysMsg]).then(() => {
-                        msgs.push(sysMsg);
-                        messagesCache[login] = msgs;
-                        if (token === currentMessagesToken) {
-                            renderMessages(login, msgs);
-                        }
-                    });
-                } else {
-                    messagesCache[login] = msgs;
-                    if (token === currentMessagesToken) {
-                        renderMessages(login, msgs);
-                    }
-                }
-            });
-        }
 
-        // Мгновенно подсвечиваем активный чат в списке
+            // Повторная проверка токена
+            if (requestToken !== activeRequestToken) return;
+
+            renderMessages(login, msgs);
+        })();
+
+        // Подсвечиваем активный чат в списке
         renderChatListInstant(chatSearchInput?.value || '');
     };
 
@@ -262,47 +267,52 @@ async function renderChats() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // ========== ОТПРАВКА СООБЩЕНИЯ ==========
+    // ---------- Отправка сообщения ----------
     async function sendMessage() {
-        if (!currentChatLogin) return;
+        const targetLogin = currentChatLogin;
+        if (!targetLogin) return;
+
         const text = messageInput.value.trim();
         if (!text) return;
 
         // Оптимистичное отображение
         const now = new Date().toISOString();
-        const newMsg = { sender: currentUser.login, receiver: currentChatLogin, message: text, created_at: now };
-        if (!messagesCache[currentChatLogin]) messagesCache[currentChatLogin] = [];
-        messagesCache[currentChatLogin].push(newMsg);
-        renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
+        const newMsg = { sender: currentUser.login, receiver: targetLogin, message: text, created_at: now };
+        if (!messagesCache[targetLogin]) messagesCache[targetLogin] = [];
+        messagesCache[targetLogin].push(newMsg);
+        renderMessages(targetLogin, messagesCache[targetLogin]);
 
         // Обновляем превью в списке
-        lastMessagesCache[currentChatLogin] = {
+        lastMessagesCache[targetLogin] = {
             text: `Вы: ${text}`,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        // Теперь это настоящий чат – добавляем в recent, если ещё нет
-        if (!recentLogins.includes(currentChatLogin)) {
-            recentLogins.push(currentChatLogin);
+        if (!recentLogins.includes(targetLogin)) {
+            recentLogins.push(targetLogin);
         }
         renderChatListInstant(chatSearchInput?.value || '');
 
         messageInput.value = '';
         messageInput.focus();
 
-        const ok = await sendMessageToDB(currentChatLogin, text);
+        // Отправляем на сервер
+        const ok = await sendMessageToDB(targetLogin, text);
         if (!ok) {
-            // Откат при ошибке
-            messagesCache[currentChatLogin].pop();
-            renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
+            // Откат при ошибке (только если чат не переключили)
+            if (currentChatLogin === targetLogin) {
+                messagesCache[targetLogin].pop();
+                renderMessages(targetLogin, messagesCache[targetLogin]);
+            }
             showToast('Ошибка отправки');
         }
     }
 
+    // ---------- Обработчики ----------
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
     chatSearchInput.addEventListener('input', () => renderChatListInstant(chatSearchInput.value));
 
-    // Мини‑профиль
+    // Мини-профиль
     chatHeaderAvatar.addEventListener('click', () => toggleMiniProfile(currentChatLogin));
     chatHeaderName.addEventListener('click', () => toggleMiniProfile(currentChatLogin));
 
@@ -337,6 +347,6 @@ async function renderChats() {
     };
     window.endCall = () => { callOverlay.style.display = 'none'; };
 
-    // ========== СТАРТ ==========
+    // ---------- Старт ----------
     await initialLoad();
 }
