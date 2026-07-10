@@ -1,4 +1,4 @@
-// diamkey-core.js — ядро DiamKey (без друзей, чаты, Supabase)
+// diamkey-core.js — ядро DiamKey
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -174,7 +174,6 @@ async function getAnnouncement() {
     return data || [];
 }
 
-// Статистика для главной (рабочая)
 async function loadHomeStats() {
     const results = {};
     try {
@@ -218,4 +217,10 @@ async function isUserOnline(login) {
     return Date.now() - new Date(data.last_seen).getTime() < 120000;
 }
 
-// Система друзей полностью удалена. Чаты работают со всеми пользователями.
+function getSystemMessage(contactLogin) {
+    return {
+        sender: 'system',
+        text: `Это ваш чат с ${escapeHtml(contactLogin)}! Можете начинать свое общение.`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+}
