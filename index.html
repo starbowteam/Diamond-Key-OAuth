@@ -147,65 +147,74 @@
             </section>
             <!-- Чаты (макет) -->
             <section class="page" id="page-chats">
-                <div class="chats-container">
-                    <div class="chat-list-panel">
-                        <div class="chat-list-header">
-                            <h2><i class="fas fa-comment-dots"></i> Сообщения</h2>
-                            <div class="chat-search-box">
-                                <i class="fas fa-search"></i>
-                                <input type="text" id="chatSearchInput" placeholder="Поиск по имени или @тегу...">
-                            </div>
-                        </div>
-                        <div class="chat-list" id="chatListContainer"></div>
+    <div class="chats-container">
+        <div class="chat-list-panel">
+            <div class="chat-list-header">
+                <h2><i class="fas fa-comment-dots"></i> Сообщения</h2>
+                <div class="chat-search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="chatSearchInput" placeholder="Поиск по имени или @тегу...">
+                </div>
+            </div>
+            <div class="chat-list" id="chatListContainer"></div>
+        </div>
+        <div class="chat-view-panel" id="chatViewPanel">
+            <div class="chat-empty-state" id="noChatSelected">
+                <i class="fas fa-comments" style="font-size:48px; margin-bottom:12px;"></i>
+                <p>Выберите чат, чтобы начать общение</p>
+            </div>
+            <div id="activeChatView" style="display:none; flex-direction:column; height:100%;">
+                <div class="chat-header">
+                    <div class="chat-header-avatar" id="chatHeaderAvatar" onclick="toggleMiniProfile()">
+                        <i class="fas fa-user"></i>
                     </div>
-                    <div class="chat-view-panel" id="chatViewPanel">
-                        <div class="chat-empty-state" id="noChatSelected">
-                            <i class="fas fa-comments" style="font-size:48px; margin-bottom:12px;"></i>
-                            <p>Выберите чат, чтобы начать общение</p>
-                        </div>
-                        <div id="activeChatView" style="display:none; flex-direction:column; height:100%;">
-                            <div class="chat-header">
-                                <div class="chat-header-avatar" id="chatHeaderAvatar" onclick="toggleMiniProfile()">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <div class="chat-header-info" onclick="toggleMiniProfile()">
-                                    <div class="chat-header-name" id="chatHeaderName">Имя</div>
-                                    <div class="chat-header-status online" id="chatHeaderStatus">В сети</div>
-                                </div>
-                                <div class="chat-actions">
-                                    <button class="chat-action-btn" onclick="startVoiceCall()"><i class="fas fa-phone"></i></button>
-                                    <button class="chat-action-btn" onclick="startVideoCall()"><i class="fas fa-video"></i></button>
-                                </div>
-                            </div>
-                            <div class="mini-profile-popup" id="miniProfilePopup">
-                                <div class="mini-profile-avatar"><i class="fas fa-user" style="font-size:32px; color:var(--text-muted);"></i></div>
-                                <div class="mini-profile-name" id="miniProfileName"></div>
-                                <div class="mini-profile-tag" id="miniProfileTag"></div>
-                                <div class="mini-profile-desc" id="miniProfileDesc"></div>
-                                <button class="mini-profile-btn"><i class="fas fa-external-link-alt"></i> Открыть профиль</button>
-                            </div>
-                            <div class="messages-area" id="messagesContainer"></div>
-                            <div class="message-input-area">
-                                <input type="text" id="messageInput" placeholder="Введите сообщение...">
-                                <button class="send-btn" id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
-                            </div>
-                            <div class="call-overlay" id="callOverlay">
-                                <div class="call-avatar"><i class="fas fa-user" style="font-size:40px;"></i></div>
-                                <div class="call-name" id="callName"></div>
-                                <div class="call-status" id="callStatusText">Звонок...</div>
-                                <div class="call-controls">
-                                    <button class="call-btn"><i class="fas fa-microphone"></i></button>
-                                    <button class="call-btn"><i class="fas fa-volume-up"></i></button>
-                                    <button class="call-btn end-call" onclick="endCall()"><i class="fas fa-phone-slash"></i></button>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="chat-header-info" onclick="toggleMiniProfile()">
+                        <div class="chat-header-name" id="chatHeaderName">Имя</div>
+                        <div class="chat-header-status online" id="chatHeaderStatus">В сети</div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="chat-action-btn" onclick="startVoiceCall()"><i class="fas fa-phone"></i></button>
+                        <button class="chat-action-btn" onclick="startVideoCall()"><i class="fas fa-video"></i></button>
                     </div>
                 </div>
-            </section>
-            <section class="page" id="page-data"></section>
-        </main>
+                <div class="mini-profile-popup" id="miniProfilePopup">
+                    <div class="mini-profile-avatar"><i class="fas fa-user" style="font-size:32px; color:var(--text-muted);"></i></div>
+                    <div class="mini-profile-name" id="miniProfileName"></div>
+                    <div class="mini-profile-tag" id="miniProfileTag"></div>
+                    <div class="mini-profile-desc" id="miniProfileDesc"></div>
+                    <button class="mini-profile-btn"><i class="fas fa-external-link-alt"></i> Открыть профиль</button>
+                </div>
+                <div class="messages-area" id="messagesContainer"></div>
+                <div class="message-input-area">
+                    <input type="text" id="messageInput" placeholder="Введите сообщение...">
+                    <button class="send-btn" id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <div class="call-overlay" id="callOverlay">
+                    <div class="call-avatar"><i class="fas fa-user" style="font-size:40px;"></i></div>
+                    <div class="call-name" id="callName"></div>
+                    <div class="call-status" id="callStatusText">Звонок...</div>
+                    <div class="call-controls">
+                        <button class="call-btn"><i class="fas fa-microphone"></i></button>
+                        <button class="call-btn"><i class="fas fa-volume-up"></i></button>
+                        <button class="call-btn end-call" onclick="endCall()"><i class="fas fa-phone-slash"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Лоадер чатов -->
+        <div id="chatsLoaderOverlay" style="display:none;">
+            <div class="chats-loader-icon-wrapper">
+                <div class="chats-loader-glow"></div>
+                <i class="fas fa-comments chats-loader-icon" id="chatsLoaderIcon"></i>
+            </div>
+            <div id="chatsLoaderText">Загрузка чатов</div>
+            <div id="chatsLoaderProgress">
+                <div id="chatsLoaderBar"></div>
+            </div>
+            <div id="chatsLoaderSub">Подключаем пользователей...</div>
+        </div>
     </div>
+</section>
 
     <!-- Модалка входа/регистрации -->
     <div class="modal" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
