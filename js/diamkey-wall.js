@@ -1,4 +1,4 @@
-// diamkey-wall.js — профиль, стена, GPX-вью, Diamond Plus, Database, реакции, обложка, друзья
+// diamkey-wall.js — профиль, стена, GPX-вью, Diamond Plus, Database, реакции, обложка (без друзей)
 
 async function loadAnnouncement() {
     const body = document.getElementById('announcementBody');
@@ -79,10 +79,7 @@ async function toggleReaction(postId, emoji) {
     }
 
     const { data: post, error } = await _supabase.from(table).select('reactions').eq(idField, idValue).maybeSingle();
-    if (error || !post) {
-        console.warn('Reaction: post not found in', table);
-        return;
-    }
+    if (error || !post) return;
 
     let reactions = post.reactions || {};
     const normalized = {};
@@ -154,10 +151,6 @@ function getBadgeGradientClass(badgeName) {
         'Work': 'badge-work'
     };
     return map[badgeName] || '';
-}
-
-function applyCoverTransform(img, posX, posY, scale) {
-    img.style.transform = `translate(-50%, -50%) translate(${posX}%, ${posY}%) scale(${scale})`;
 }
 
 function renderCoverHTML(profile, isOwnProfile, showBackBtn = false) {
@@ -237,12 +230,6 @@ function defaultDescription(login) {
     return `Я ${login}, пришёл к вам в DiamKey! Надеюсь подружиться!`;
 }
 
-function getFriendsWord(count) {
-    if (count === 1) return 'друг';
-    if (count >= 2 && count <= 4) return 'друга';
-    return 'друзей';
-}
-
 async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const { data: presence } = await _supabase
         .from('user_presence')
@@ -272,30 +259,6 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
     const isOwnProfile = (currentUser && currentUser.login === login);
     const showBackBtn = !isOwnProfile;
 
-    // Кнопка дружбы в нике
-    let friendNickBtn = '';
-    if (!isOwnProfile) {
-        const status = getFriendStatus(login);
-        if (status === 'accepted') {
-            friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Удалить из друзей"><i class="fas fa-check"></i></button>`;
-        } else if (status === 'pending_sent') {
-            friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Заявка отправлена"><i class="fas fa-clock"></i></button>`;
-        } else if (status === 'pending_received') {
-            friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Принять заявку" style="color: #2ecc71;"><i class="fas fa-user-check"></i></button>`;
-        } else {
-            friendNickBtn = `<button class="friend-action-btn" onclick="event.stopPropagation(); handleFriendAction('${login}')" title="Добавить в друзья"><i class="fas fa-user-plus"></i></button>`;
-        }
-    }
-
-    // Счётчик друзей (работает для любого профиля)
-    let friendsCountHTML = '';
-    getFriendCount(login).then(count => {
-        const word = getFriendsWord(count);
-        const el = document.getElementById(`friendCount_${login}`);
-        if (el) el.innerHTML = `<i class="fas fa-user-friends"></i> ${count} ${word}`;
-    });
-    friendsCountHTML = `<span class="regdate" id="friendCount_${login}"><i class="fas fa-user-friends"></i> ...</span>`;
-
     const actionsRow = `
         <div class="actions-row">
             <button class="action-btn" onclick="event.stopPropagation(); navigateTo('/profile/${login}/gpxview')"><i class="fas fa-puzzle-piece"></i> Дополнения</button>
@@ -314,7 +277,6 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
             <div class="profile-nickname-center">
                 <div class="nickname-badge">
                     ${escapeHtml(profile.name || login)}
-                    ${friendNickBtn}
                 </div>
             </div>
             <div class="description-card-new" id="profileDescription">${escapeHtml(desc)}</div>
@@ -322,7 +284,6 @@ async function renderUserProfileHTML(login, profile, wallPosts, badges) {
             ${actionsRow}
             <div class="meta-row-centered">
                 ${statusHTML}
-                ${friendsCountHTML}
                 <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
             </div>
         </div>
@@ -335,10 +296,7 @@ async function openUserProfile(login) {
     const userView = document.getElementById('userProfileView');
     const userWallSection = document.getElementById('userWallSection');
     const pageUsers = document.getElementById('page-users');
-    if (!pageUsers || !usersPanel || !userView) {
-        console.error('[DiamKey] Не найдены контейнеры профиля');
-        return;
-    }
+    if (!pageUsers || !usersPanel || !userView) return;
 
     if (!pageUsers.classList.contains('active')) {
         await new Promise(resolve => {
@@ -355,12 +313,7 @@ async function openUserProfile(login) {
 
     usersPanel.style.display = 'none';
     userView.style.display = 'block';
-    userView.innerHTML = `
-        <div style="text-align:center; padding:40px;">
-            <i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i>
-            <p class="text-muted">Загрузка профиля ${escapeHtml(login)}...</p>
-        </div>
-    `;
+    userView.innerHTML = `<div style="text-align:center; padding:40px;"><i class="fas fa-circle-notch fa-spin" style="font-size:24px; color:var(--text-muted);"></i><p class="text-muted">Загрузка профиля ${escapeHtml(login)}...</p></div>`;
 
     try {
         const [profile, wallPosts, badges] = await Promise.all([
@@ -391,10 +344,6 @@ async function openUserProfile(login) {
                 closeModal('editDescriptionModal');
                 showToast('Описание сохранено');
             };
-        }
-
-        if (currentUser && currentUser.login === login) {
-            startPlusGlitch();
         }
 
         if (userWallSection) {
@@ -505,14 +454,6 @@ async function renderMyProfile() {
         const allPosts = await (typeof getMixedWallPosts === 'function' ? getMixedWallPosts(login, wallPosts) : wallPosts);
         let wallHTML = allPosts.length ? allPosts.map(post => typeof renderPostHTML === 'function' ? renderPostHTML(post) : renderTextPostHTML(post)).join('') : '<div class="empty-wall-message"><h3>Записей пока нет</h3></div>';
 
-        let friendsCountHTML = '';
-        getFriendCount(login).then(count => {
-            const word = getFriendsWord(count);
-            const el = document.getElementById('myFriendCount');
-            if (el) el.innerHTML = `<i class="fas fa-user-friends"></i> ${count} ${word}`;
-        });
-        friendsCountHTML = `<span class="regdate" id="myFriendCount"><i class="fas fa-user-friends"></i> ...</span>`;
-
         pageProfile.innerHTML = `
             <div class="profile-panel">
                 ${coverBlock}
@@ -534,7 +475,6 @@ async function renderMyProfile() {
                 </div>
                 <div class="meta-row-centered">
                     ${statusHTML}
-                    ${friendsCountHTML}
                     <span class="regdate"><i class="fas fa-calendar-alt"></i> ${profile.created_at ? 'В DiamKey с ' + new Date(profile.created_at).toLocaleDateString() : ''}</span>
                 </div>
             </div>
@@ -744,13 +684,6 @@ function renderAddPlusPage() {
     `;
 }
 
-async function renderDiamondPlusPage() {
-    const page = document.getElementById('page-diamond-plus');
-    if (!page) return;
-    page.innerHTML = renderAddPlusPage();
-    setTimeout(() => initParticles(), 100);
-}
-
 async function renderDatabasePage() {
     const page = document.getElementById('page-data');
     if (!page) return;
@@ -863,9 +796,7 @@ async function renderProfileGpxView(login) {
             return;
         }
 
-        const isOwnProfile = (currentUser && currentUser.login === login);
         const coverBlock = renderCoverHTML(profile, false, false);
-
         let totalRides = gpxFiles.length;
         let totalDist = 0, totalAscent = 0;
         gpxFiles.forEach(f => {
@@ -876,7 +807,6 @@ async function renderProfileGpxView(login) {
 
         const distStr = totalDist > 1000 ? (totalDist / 1000).toFixed(1) + ' км' : totalDist.toFixed(0) + ' м';
         const ascentStr = totalAscent > 0 ? '+' + totalAscent.toFixed(0) + ' м' : '—';
-
         const backTarget = (currentUser && currentUser.login === login) ? '/profile' : `/users/${login}`;
 
         page.innerHTML = `
@@ -909,7 +839,7 @@ async function renderProfileGpxView(login) {
                             cardStatsHTML = `<div class="stats" style="font-size:13px; color:var(--text-muted); display:flex; gap:12px;"><span style="color:var(--text-primary);">${dist}</span>${ascent ? `<span>↑ ${ascent}</span>` : ''}</div>`;
                         }
                         return `
-                            <div class="gpx-card" onclick="viewGpxRoute('${f.id}')" style="flex:1 1 200px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:16px; cursor:pointer;" data-file-id="${f.id}">
+                            <div class="gpx-card" onclick="viewGpxRoute('${f.id}')" style="flex:1 1 200px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:16px; cursor:pointer;">
                                 <i class="fas fa-map-marker-alt" style="font-size:24px; color:var(--accent); margin-bottom:8px;"></i>
                                 <h4 style="font-size:15px; font-weight:600; margin-bottom:6px;">${escapeHtml(f.name)}</h4>
                                 <div class="date" style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">${new Date(f.created_at).toLocaleDateString()}</div>
@@ -929,9 +859,7 @@ async function renderProfileGpxView(login) {
 
 async function viewGpxRoute(fileId) {
     const { data, error } = await _supabase.from('gpx_files').select('content').eq('id', fileId).maybeSingle();
-    if (error || !data || !data.content) {
-        return showToast('Не удалось загрузить маршрут');
-    }
+    if (error || !data || !data.content) return showToast('Не удалось загрузить маршрут');
     navigateTo(`/add/gpx?id=${fileId}`);
 }
 
@@ -943,72 +871,29 @@ function initParticles() {
     let particles = [];
     const maxParticles = 50;
 
-    function resize() {
-        canvas.width = panel.offsetWidth;
-        canvas.height = panel.offsetHeight;
-    }
+    function resize() { canvas.width = panel.offsetWidth; canvas.height = panel.offsetHeight; }
     resize();
-    window.addEventListener('resize', () => {
-        resize();
-        particles = [];
-        for (let i = 0; i < maxParticles; i++) createParticle();
-    });
+    window.addEventListener('resize', () => { resize(); particles = []; for (let i = 0; i < maxParticles; i++) createParticle(); });
 
     function createParticle() {
         return {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            radius: Math.random() * 1.5 + 0.5,
-            speedY: Math.random() * 0.2 + 0.1,
-            speedX: (Math.random() - 0.5) * 0.1,
-            opacity: Math.random() * 0.5 + 0.2
+            x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+            radius: Math.random() * 1.5 + 0.5, speedY: Math.random() * 0.2 + 0.1,
+            speedX: (Math.random() - 0.5) * 0.1, opacity: Math.random() * 0.5 + 0.2
         };
     }
-
     for (let i = 0; i < maxParticles; i++) particles.push(createParticle());
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         particles.forEach(p => {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(192,192,208,${p.opacity})`;
-            ctx.fill();
-            p.y -= p.speedY;
-            p.x += p.speedX;
-            if (p.y < -10) {
-                p.y = canvas.height + 10;
-                p.x = Math.random() * canvas.width;
-            }
-            if (p.x < -10 || p.x > canvas.width + 10) {
-                p.x = Math.random() * canvas.width;
-                p.y = canvas.height + 10;
-            }
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(192,192,208,${p.opacity})`; ctx.fill();
+            p.y -= p.speedY; p.x += p.speedX;
+            if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
+            if (p.x < -10 || p.x > canvas.width + 10) { p.x = Math.random() * canvas.width; p.y = canvas.height + 10; }
         });
         requestAnimationFrame(draw);
     }
     draw();
-}
-
-function handleFriendAction(login) {
-    const status = getFriendStatus(login);
-    if (status === 'accepted') {
-        removeFriend(login);
-        showToast('Удалён из друзей');
-    } else if (status === 'pending_sent') {
-        removeFriend(login);
-        showToast('Заявка отменена');
-    } else if (status === 'pending_received') {
-        acceptFriendRequest(login);
-        showToast('Заявка принята! Теперь вы друзья.');
-    } else {
-        sendFriendRequest(login);
-        showToast('Заявка отправлена');
-    }
-    if (typeof openUserProfile === 'function') {
-        openUserProfile(login);
-    }
-    if (typeof loadUsers === 'function') {
-        loadUsers();
-    }
 }
