@@ -1,4 +1,4 @@
-// diamkey-chats.js — чаты DiamKey (без друзей, все пользователи)
+// diamkey-chats.js — чаты DiamKey (макетный стиль, все пользователи, мини-профиль)
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
@@ -9,9 +9,9 @@ async function renderChats() {
     const chatSearchInput = document.getElementById('chatSearchInput');
     const noChatSelected = document.getElementById('noChatSelected');
     const activeChatView = document.getElementById('activeChatView');
-    const chatMessagesContainer = document.getElementById('chatMessagesContainer');
-    const chatMessageInput = document.getElementById('chatMessageInput');
-    const chatSendBtn = document.getElementById('chatSendBtn');
+    const messagesContainer = document.getElementById('chatMessagesContainer');
+    const messageInput = document.getElementById('chatMessageInput');
+    const sendBtn = document.getElementById('chatSendBtn');
     const chatHeaderName = document.getElementById('chatHeaderName');
     const chatHeaderStatus = document.getElementById('chatHeaderStatus');
     const chatHeaderAvatar = document.getElementById('chatHeaderAvatar');
@@ -22,6 +22,7 @@ async function renderChats() {
 
     let currentChatLogin = null;
 
+    // Загрузка сообщений
     async function loadMessages(partner) {
         const { data, error } = await _supabase
             .from('chat_messages')
@@ -71,11 +72,17 @@ async function renderChats() {
 
     async function renderChatList(filterText = '') {
         if (!chatListContainer) return;
-        // Загружаем всех пользователей, кроме себя
         const allUsers = await getUsers();
         const otherUsers = allUsers.filter(u => u.login !== currentUser.login);
         const lowerFilter = filterText.toLowerCase();
-        const filtered = otherUsers.filter(u => !filterText || u.login.toLowerCase().includes(lowerFilter));
+        const isTagSearch = lowerFilter.startsWith('@');
+        const searchTerm = isTagSearch ? lowerFilter.slice(1) : lowerFilter;
+
+        const filtered = otherUsers.filter(u => {
+            if (!filterText) return true;
+            if (isTagSearch) return u.login.toLowerCase().includes(searchTerm);
+            return (u.name || u.login).toLowerCase().includes(searchTerm);
+        });
 
         if (filtered.length === 0) {
             chatListContainer.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-muted);"><i class="fas fa-users" style="font-size:32px; margin-bottom:12px;"></i><p>Пользователи не найдены</p></div>`;
@@ -89,7 +96,7 @@ async function renderChats() {
                 <div class="chat-item-avatar">${u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="${u.login}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>'}</div>
                 <div class="chat-item-info">
                     <div class="chat-item-name">${escapeHtml(u.name || u.login)}</div>
-                    <div class="chat-item-lastmsg">${escapeHtml(lastMsg.text)}</div>
+                    <div class="chat-item-last-msg">${escapeHtml(lastMsg.text)}</div>
                 </div>
                 <div class="chat-item-meta"><div class="chat-item-time">${lastMsg.time}</div></div>
             </div>`;
@@ -132,8 +139,8 @@ async function renderChats() {
     };
 
     function renderMessages(login, messages) {
-        if (!chatMessagesContainer) return;
-        chatMessagesContainer.innerHTML = messages.map(msg => {
+        if (!messagesContainer) return;
+        messagesContainer.innerHTML = messages.map(msg => {
             if (msg.sender === 'system') {
                 return `<div class="chat-system-msg">${escapeHtml(msg.message)}</div>`;
             }
@@ -146,7 +153,7 @@ async function renderChats() {
                 </div>
             </div>`;
         }).join('');
-        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
     const avatarCache = {};
@@ -159,65 +166,70 @@ async function renderChats() {
 
     async function sendMessage() {
         if (!currentChatLogin) return;
-        const text = chatMessageInput.value.trim();
+        const text = messageInput.value.trim();
         if (!text) return;
 
         const ok = await sendMessageToSupabase(currentChatLogin, text);
         if (!ok) return;
 
-        chatMessageInput.value = '';
+        messageInput.value = '';
         const messages = await loadMessages(currentChatLogin);
         renderMessages(currentChatLogin, messages);
         renderChatList(chatSearchInput?.value || '');
-        chatMessageInput.focus();
+        messageInput.focus();
     }
 
-    chatSendBtn?.addEventListener('click', sendMessage);
-    chatMessageInput?.addEventListener('keydown', function(e) {
+    sendBtn?.addEventListener('click', sendMessage);
+    messageInput?.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') sendMessage();
     });
     chatSearchInput?.addEventListener('input', function() {
         renderChatList(this.value);
     });
 
-    chatHeaderAvatar.addEventListener('click', () => openMiniProfile(currentChatLogin));
-    chatHeaderName.addEventListener('click', () => openMiniProfile(currentChatLogin));
+    // Мини-профиль (как в макете)
+    chatHeaderAvatar.addEventListener('click', () => toggleMiniProfile(currentChatLogin));
+    chatHeaderName.addEventListener('click', () => toggleMiniProfile(currentChatLogin));
 
-    function openMiniProfile(login) {
+    function toggleMiniProfile(login) {
         if (!login) return;
-        let panel = document.getElementById('chatMiniProfile');
-        if (!panel) {
-            panel = document.createElement('div');
-            panel.id = 'chatMiniProfile';
-            panel.className = 'chat-mini-profile';
-            chatViewPanel.appendChild(panel);
+        let popup = document.getElementById('miniProfilePopup');
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.id = 'miniProfilePopup';
+            popup.className = 'mini-profile-popup';
+            chatViewPanel.appendChild(popup);
         }
+
+        if (popup.classList.contains('active')) {
+            popup.classList.remove('active');
+            return;
+        }
+
         getProfile(login).then(profile => {
             if (!profile) return;
-            panel.innerHTML = `
-                <div class="profile-close" onclick="document.getElementById('chatMiniProfile').classList.remove('active'); document.getElementById('chatViewPanel').classList.remove('shifted');"><i class="fas fa-times"></i></div>
-                <div class="profile-avatar-large">${profile.avatar ? `<img src="${escapeHtml(profile.avatar)}" alt="${login}">` : '<i class="fas fa-user"></i>'}</div>
-                <div class="profile-name">${escapeHtml(profile.name || login)}</div>
-                <div class="profile-tag">@${login}</div>
-                <div class="profile-status-badge"><i class="fas fa-circle"></i> В сети</div>
-                <div class="profile-description">${escapeHtml(profile.description || '')}</div>
-                <button class="btn-friend" onclick="navigateTo('/users/${login}')"><i class="fas fa-external-link-alt"></i> Открыть профиль</button>
+            popup.innerHTML = `
+                <div class="mini-profile-avatar">${profile.avatar ? `<img src="${escapeHtml(profile.avatar)}" alt="${login}">` : '<i class="fas fa-user" style="font-size:32px; color:var(--text-muted);"></i>'}</div>
+                <div class="mini-profile-name">${escapeHtml(profile.name || login)}</div>
+                <div class="mini-profile-tag">@${login}</div>
+                <div class="mini-profile-desc">${escapeHtml(profile.description || '')}</div>
+                <button class="mini-profile-btn" onclick="navigateTo('/users/${login}')"><i class="fas fa-external-link-alt"></i> Открыть профиль</button>
             `;
-            panel.classList.add('active');
-            chatViewPanel.classList.add('shifted');
+            popup.classList.add('active');
         });
     }
 
+    // Закрытие мини-профиля при клике вне его
     document.addEventListener('click', function(e) {
-        const panel = document.getElementById('chatMiniProfile');
-        if (panel && panel.classList.contains('active')) {
-            if (!panel.contains(e.target) && e.target !== chatHeaderAvatar && e.target !== chatHeaderName && !chatHeaderAvatar.contains(e.target) && !chatHeaderName.contains(e.target)) {
-                panel.classList.remove('active');
-                chatViewPanel.classList.remove('shifted');
+        const popup = document.getElementById('miniProfilePopup');
+        if (popup && popup.classList.contains('active')) {
+            if (!popup.contains(e.target) && e.target !== chatHeaderAvatar && e.target !== chatHeaderName && !chatHeaderAvatar.contains(e.target) && !chatHeaderName.contains(e.target)) {
+                popup.classList.remove('active');
             }
         }
     });
 
+    // Звонки
     window.startCall = function(type) {
         if (!currentChatLogin) return;
         callOverlay.style.display = 'flex';
