@@ -8,6 +8,8 @@
     --radius-lg: 28px;
     --radius-md: 18px;
     --transition: 0.3s cubic-bezier(0.2, 0.9, 0.4, 1);
+    --online: #2ecc71;
+    --offline: #95a5a6;
 }
 
 * {
@@ -848,34 +850,6 @@ body {
 .cover-controls { display: flex; align-items: center; gap: 16px; justify-content: center; }
 .cover-controls input[type="range"] { flex: 1; max-width: 200px; }
 
-/* ====== КНОПКИ ДОПОЛНЕНИЙ И AI АНАЛИЗА ====== */
-.actions-row {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin: 16px 0;
-}
-.action-btn {
-    background: linear-gradient(135deg, #4a4d58, #2a2c34);
-    border: 1px solid var(--accent);
-    color: white;
-    padding: 10px 24px;
-    border-radius: 30px;
-    font-weight: 600;
-    font-size: 15px;
-    cursor: pointer;
-    transition: all var(--transition);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-.action-btn:hover {
-    background: linear-gradient(135deg, #5a5e6a, #3a3c44);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-    transform: translateY(-2px);
-}
-
 /* ====== СТРАНИЦА DIAMOND PLUS ====== */
 .plus-panel { position: relative; background: var(--bg-glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 32px; }
 .plus-header { background: linear-gradient(135deg, #2a2a35, #1a1a22, #2a2a35); background-size: 200% 200%; animation: plusGradient 6s ease infinite; padding: 50px 32px; text-align: center; position: relative; z-index: 2; }
@@ -954,7 +928,35 @@ body {
 .badge-filter-item:hover { background: rgba(255,255,255,0.08); }
 .reset-filter-btn { margin-top: 20px; }
 
-/* ====== СТРАНИЦА ЧАТОВ (ПОЛНОСТЬЮ КАК В МАКЕТЕ) ====== */
+/* ====== КНОПКИ ДОПОЛНЕНИЙ И AI АНАЛИЗА ====== */
+.actions-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 16px 0;
+}
+.action-btn {
+    background: linear-gradient(135deg, #4a4d58, #2a2c34);
+    border: 1px solid var(--accent);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.action-btn:hover {
+    background: linear-gradient(135deg, #5a5e6a, #3a3c44);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    transform: translateY(-2px);
+}
+
+/* ====== СТРАНИЦА ЧАТОВ (МАКЕТ) ====== */
 .page#page-chats.active {
     position: absolute;
     top: 0;
@@ -1324,7 +1326,7 @@ body {
     justify-content: center;
 }
 
-/* Мини-профиль (как в макете) */
+/* Мини-профиль (всплывашка) */
 .mini-profile-popup {
     position: absolute;
     top: 70px;
@@ -1505,23 +1507,4 @@ body {
     .chats-container { flex-direction: column; }
     .chat-list-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border-glass); }
     .chat-view-panel { height: 60%; }
-}
-
-/* Разделители в списке чатов */
-.chat-section-title {
-    padding: 16px 12px 8px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-.chat-section-empty {
-    padding: 24px 12px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 14px;
 }
