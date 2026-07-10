@@ -1,4 +1,4 @@
-// diamkey-core.js — ядро DiamKey (друзья, чаты, Supabase)
+// diamkey-core.js — ядро DiamKey (без друзей, чаты, Supabase)
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -174,7 +174,23 @@ async function getAnnouncement() {
     return data || [];
 }
 
-async function loadHomeStats() { return {}; }
+// Статистика для главной (рабочая)
+async function loadHomeStats() {
+    const results = {};
+    try {
+        if (currentUser) {
+            const gpxRes = await _supabase.from('gpx_files').select('id', { count: 'exact' }).eq('user_login', currentUser.login);
+            results.gpxCount = gpxRes.count || 0;
+            const wallRes = await _supabase.from('profile_wall').select('id', { count: 'exact' }).eq('profile_login', currentUser.login);
+            results.wallCount = wallRes.count || 0;
+        }
+        const usersCountRes = await _supabase.from('users').select('id', { count: 'exact', head: true });
+        results.totalUsers = usersCountRes.count || 0;
+    } catch (e) {
+        console.error('[DiamKey] Ошибка загрузки статистики:', e);
+    }
+    return results;
+}
 
 async function getAllBadges() {
     const { data } = await _supabase.from('badges').select('*');
@@ -202,142 +218,4 @@ async function isUserOnline(login) {
     return Date.now() - new Date(data.last_seen).getTime() < 120000;
 }
 
-// ======== ДРУЗЬЯ ========
-function getFriendsStorage() { return {}; } // Заглушка, не используется, всё через Supabase
-
-async function getFriendStatus(targetLogin) {
-    if (!currentUser || targetLogin === currentUser.login) return 'self';
-    const { data, error } = await _supabase.from('friends')
-        .select('status')
-        .or(`user_login.eq.${currentUser.login},friend_login.eq.${currentUser.login}`)
-        .or(`user_login.eq.${targetLogin},friend_login.eq.${targetLogin}`);
-    if (error || !data) return 'none';
-    const accepted = data.some(r => r.status === 'accepted' &&
-        ((r.user_login === currentUser.login && r.friend_login === targetLogin) ||
-         (r.user_login === targetLogin && r.friend_login === currentUser.login)));
-    if (accepted) return 'accepted';
-    const pendingSent = data.some(r => r.status === 'pending' && r.user_login === currentUser.login && r.friend_login === targetLogin);
-    if (pendingSent) return 'pending_sent';
-    const pendingReceived = data.some(r => r.status === 'pending' && r.user_login === targetLogin && r.friend_login === currentUser.login);
-    if (pendingReceived) return 'pending_received';
-    return 'none';
-}
-
-async function sendFriendRequest(targetLogin) {
-    if (!currentUser || targetLogin === currentUser.login) return;
-    await _supabase.from('friends').upsert({ user_login: currentUser.login, friend_login: targetLogin, status: 'pending' }, { onConflict: 'user_login, friend_login' });
-}
-
-async function acceptFriendRequest(fromLogin) {
-    if (!currentUser) return;
-    await _supabase.from('friends').update({ status: 'accepted' }).eq('user_login', fromLogin).eq('friend_login', currentUser.login);
-    // Обе стороны
-    await _supabase.from('friends').upsert({ user_login: currentUser.login, friend_login: fromLogin, status: 'accepted' }, { onConflict: 'user_login, friend_login' });
-}
-
-async function rejectFriendRequest(fromLogin) {
-    if (!currentUser) return;
-    await _supabase.from('friends').delete().eq('user_login', fromLogin).eq('friend_login', currentUser.login);
-}
-
-async function removeFriend(targetLogin) {
-    if (!currentUser) return;
-    await _supabase.from('friends').delete().or(`user_login.eq.${currentUser.login},friend_login.eq.${currentUser.login}`).or(`user_login.eq.${targetLogin},friend_login.eq.${targetLogin}`);
-}
-
-async function getFriendsList() {
-    if (!currentUser) return [];
-    const { data, error } = await _supabase.from('friends')
-        .select('user_login, friend_login')
-        .or(`user_login.eq.${currentUser.login},friend_login.eq.${currentUser.login}`)
-        .eq('status', 'accepted');
-    if (error || !data) return [];
-    const list = [];
-    data.forEach(r => {
-        if (r.user_login === currentUser.login) list.push(r.friend_login);
-        else list.push(r.user_login);
-    });
-    return [...new Set(list)];
-}
-
-async function getIncomingRequests() {
-    if (!currentUser) return [];
-    const { data, error } = await _supabase.from('friends')
-        .select('user_login')
-        .eq('friend_login', currentUser.login)
-        .eq('status', 'pending');
-    if (error || !data) return [];
-    return data.map(r => r.user_login);
-}
-
-// Количество друзей для любого пользователя
-async function getFriendCount(login) {
-    const { count, error } = await _supabase.from('friends')
-        .select('*', { count: 'exact', head: true })
-        .or(`user_login.eq.${login},friend_login.eq.${login}`)
-        .eq('status', 'accepted');
-    if (error) return 0;
-    return count || 0;
-}
-
-// Уведомления
-function updateFriendNotificationDot() {
-    const usersIcon = document.querySelector('.sidebar-icon[href="/users"]');
-    if (!usersIcon) return;
-    getIncomingRequests().then(requests => {
-        let dot = usersIcon.querySelector('.badge-dot');
-        if (!dot) {
-            dot = document.createElement('span');
-            dot.className = 'badge-dot';
-            dot.style.display = 'none';
-            usersIcon.appendChild(dot);
-        }
-        dot.style.display = requests.length > 0 ? 'block' : 'none';
-    });
-}
-
-function getUnreadChats() {
-    const raw = localStorage.getItem('diamkey_unread_chats');
-    return raw ? JSON.parse(raw) : [];
-}
-function markChatAsRead(login) {
-    if (!currentUser) return;
-    const unread = getUnreadChats().filter(l => l !== login);
-    localStorage.setItem('diamkey_unread_chats', JSON.stringify(unread));
-    updateChatNotificationDot();
-}
-function addUnreadMessage(login) {
-    if (!currentUser || login === currentUser.login) return;
-    const unread = getUnreadChats();
-    if (!unread.includes(login)) {
-        unread.push(login);
-        localStorage.setItem('diamkey_unread_chats', JSON.stringify(unread));
-        updateChatNotificationDot();
-    }
-}
-function updateChatNotificationDot() {
-    const chatsIcon = document.querySelector('.sidebar-icon[href="/chats"]');
-    if (!chatsIcon) return;
-    const unread = getUnreadChats();
-    let dot = chatsIcon.querySelector('.badge-dot');
-    if (!dot) {
-        dot = document.createElement('span');
-        dot.className = 'badge-dot';
-        dot.style.display = 'none';
-        chatsIcon.appendChild(dot);
-    }
-    dot.style.display = unread.length > 0 ? 'block' : 'none';
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    updateFriendNotificationDot();
-    updateChatNotificationDot();
-});
-
-function getSystemMessage(contactLogin) {
-    return {
-        sender: 'system',
-        text: `Это ваш чат с ${escapeHtml(contactLogin)}! Можете начинать свое общение.`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-}
+// Система друзей полностью удалена. Чаты работают со всеми пользователями.
