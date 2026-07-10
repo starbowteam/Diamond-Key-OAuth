@@ -1,11 +1,17 @@
-// diamkey-chats.js — чаты DiamKey с плавной загрузкой
+// diamkey-chats.js — чаты DiamKey с плавной загрузкой и появлением
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
         return;
     }
 
-    // DOM-элементы (будут доступны после скрытия лоадера)
+    // Сразу делаем страницу невидимой, чтобы не было рывка
+    const pageChats = document.getElementById('page-chats');
+    if (pageChats) {
+        pageChats.classList.add('loading');
+    }
+
+    // DOM-элементы (заполнятся после загрузки)
     let chatListContainer, chatSearchInput, noChatSelected, activeChatView;
     let messagesContainer, messageInput, sendBtn;
     let chatHeaderName, chatHeaderStatus, chatHeaderAvatar;
@@ -19,7 +25,7 @@ async function renderChats() {
     let messagesCache = {};
     let activeRequestToken = 0;
 
-    // ====== Экран загрузки ======
+    // ====== Экран загрузки (лоадер) ======
     function showLoader() {
         const overlay = document.createElement('div');
         overlay.className = 'chats-loader-overlay';
@@ -72,7 +78,8 @@ async function renderChats() {
             iconItems.forEach(i => i.classList.remove('active'));
             iconIdx = (iconIdx + 1) % iconItems.length;
             iconItems[iconIdx].classList.add('active');
-            document.getElementById('loaderStatusText').textContent = statusMessages[iconIdx] || 'Загрузка...';
+            const statusEl = document.getElementById('loaderStatusText');
+            if (statusEl) statusEl.textContent = statusMessages[iconIdx] || 'Загрузка...';
         }, 800);
 
         // Прогресс-бар
@@ -80,25 +87,31 @@ async function renderChats() {
         window._loaderProgressInterval = setInterval(() => {
             progress += Math.random() * 10 + 3;
             if (progress > 90) progress = 90;
-            document.getElementById('loaderProgressFill').style.width = progress + '%';
+            const fill = document.getElementById('loaderProgressFill');
+            if (fill) fill.style.width = progress + '%';
         }, 250);
     }
 
     function hideLoader() {
-        clearInterval(window._loaderIconInterval);
-        clearInterval(window._loaderProgressInterval);
-        const progressFill = document.getElementById('loaderProgressFill');
-        const statusText = document.getElementById('loaderStatusText');
-        if (progressFill) progressFill.style.width = '100%';
-        if (statusText) statusText.textContent = 'Готово!';
+        return new Promise(resolve => {
+            clearInterval(window._loaderIconInterval);
+            clearInterval(window._loaderProgressInterval);
+            const progressFill = document.getElementById('loaderProgressFill');
+            const statusText = document.getElementById('loaderStatusText');
+            if (progressFill) progressFill.style.width = '100%';
+            if (statusText) statusText.textContent = 'Готово!';
 
-        const overlay = document.getElementById('chatsLoaderOverlay');
-        if (overlay) {
-            setTimeout(() => {
+            const overlay = document.getElementById('chatsLoaderOverlay');
+            if (overlay) {
                 overlay.classList.add('fade-out');
-                overlay.addEventListener('transitionend', () => overlay.remove());
-            }, 600);
-        }
+                overlay.addEventListener('transitionend', () => {
+                    overlay.remove();
+                    resolve();
+                }, { once: true });
+            } else {
+                resolve();
+            }
+        });
     }
 
     // ====== Загрузка данных ======
@@ -122,7 +135,7 @@ async function renderChats() {
         // Кэшируем последние сообщения
         await updateLastMessages();
 
-        // Получаем ссылки на элементы интерфейса чатов (теперь они существуют)
+        // Получаем ссылки на элементы интерфейса чатов
         chatListContainer = document.getElementById('chatListContainer');
         chatSearchInput = document.getElementById('chatSearchInput');
         noChatSelected = document.getElementById('noChatSelected');
@@ -138,7 +151,7 @@ async function renderChats() {
         callStatusText = document.getElementById('callStatusText');
         chatViewPanel = document.getElementById('chatViewPanel');
 
-        // Навешиваем обработчики
+        // Обработчики
         sendBtn.addEventListener('click', sendMessage);
         messageInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
         chatSearchInput.addEventListener('input', () => renderChatListInstant(chatSearchInput.value));
@@ -382,6 +395,12 @@ async function renderChats() {
     // ====== Запуск ======
     showLoader();
     await initialLoad();
-    hideLoader();
+    await hideLoader(); // ждём завершения анимации скрытия
+
+    // Плавно показываем страницу чатов
+    if (pageChats) {
+        pageChats.classList.remove('loading');
+    }
+
     renderChatListInstant();
 }
