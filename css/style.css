@@ -1492,6 +1492,16 @@ body {
     font-size: 14px;
 }
 
+
+/* Плавное появление активного чата */
+#activeChatView.fade-in {
+    animation: chatFadeIn 0.25s ease-out;
+}
+@keyframes chatFadeIn {
+    from { opacity: 0; transform: translateX(15px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
 /* Мобильная версия */
 @media (max-width: 768px) {
     .main-content { margin-left: 0; padding: 20px 20px 140px; max-height: none; overflow-y: visible; }
