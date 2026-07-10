@@ -1,5 +1,5 @@
-// diamkey-chats.js — чаты DiamKey (Supabase, аватарки, мини-профиль)
-function renderChats() {
+// diamkey-chats.js — чаты DiamKey (без друзей, все пользователи)
+async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
         return;
@@ -71,22 +71,24 @@ function renderChats() {
 
     async function renderChatList(filterText = '') {
         if (!chatListContainer) return;
-        const friends = getFriendsList();
+        // Загружаем всех пользователей, кроме себя
+        const allUsers = await getUsers();
+        const otherUsers = allUsers.filter(u => u.login !== currentUser.login);
         const lowerFilter = filterText.toLowerCase();
-        const filtered = friends.filter(login => !filterText || login.toLowerCase().includes(lowerFilter));
+        const filtered = otherUsers.filter(u => !filterText || u.login.toLowerCase().includes(lowerFilter));
 
         if (filtered.length === 0) {
-            chatListContainer.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-muted);"><i class="fas fa-user-friends" style="font-size:32px; margin-bottom:12px;"></i><p>${friends.length === 0 ? 'У вас пока нет друзей. Добавьте друзей, чтобы начать общение.' : 'Чаты не найдены'}</p></div>`;
+            chatListContainer.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-muted);"><i class="fas fa-users" style="font-size:32px; margin-bottom:12px;"></i><p>Пользователи не найдены</p></div>`;
             return;
         }
 
-        const items = await Promise.all(filtered.map(async (login) => {
-            const lastMsg = await getLastMessage(login);
-            const activeClass = currentChatLogin === login ? 'active' : '';
-            return `<div class="chat-item ${activeClass}" onclick="window._selectChat('${login}')">
-                <div class="chat-item-avatar">${await getChatAvatarHTML(login)}</div>
+        const items = await Promise.all(filtered.map(async (u) => {
+            const lastMsg = await getLastMessage(u.login);
+            const activeClass = currentChatLogin === u.login ? 'active' : '';
+            return `<div class="chat-item ${activeClass}" onclick="window._selectChat('${u.login}')">
+                <div class="chat-item-avatar">${u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="${u.login}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>'}</div>
                 <div class="chat-item-info">
-                    <div class="chat-item-name">${escapeHtml(login)}</div>
+                    <div class="chat-item-name">${escapeHtml(u.name || u.login)}</div>
                     <div class="chat-item-lastmsg">${escapeHtml(lastMsg.text)}</div>
                 </div>
                 <div class="chat-item-meta"><div class="chat-item-time">${lastMsg.time}</div></div>
@@ -95,26 +97,18 @@ function renderChats() {
         chatListContainer.innerHTML = items.join('');
     }
 
-    async function getChatAvatarHTML(login) {
-        const profile = await getProfile(login);
-        if (profile && profile.avatar) {
-            return `<img src="${escapeHtml(profile.avatar)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;">`;
-        }
-        return '<i class="fas fa-user"></i>';
-    }
-
     window._selectChat = async function(login) {
         currentChatLogin = login;
         noChatSelected.style.display = 'none';
         activeChatView.style.display = 'flex';
 
-        chatHeaderName.textContent = login;
+        const profile = await getProfile(login);
+        chatHeaderName.textContent = profile?.name || login;
         isUserOnline(login).then(online => {
             chatHeaderStatus.textContent = online ? 'В сети' : 'Не в сети';
             chatHeaderStatus.className = 'chat-header-status ' + (online ? 'online' : 'offline');
         });
 
-        const profile = await getProfile(login);
         if (profile && profile.avatar) {
             chatHeaderAvatar.innerHTML = `<img src="${escapeHtml(profile.avatar)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
         } else {
@@ -127,7 +121,7 @@ function renderChats() {
             await _supabase.from('chat_messages').insert([{
                 sender: 'system',
                 receiver: login,
-                message: `Это ваш чат с ${escapeHtml(login)}! Можете начинать свое общение.`
+                message: `Это ваш чат с ${escapeHtml(profile?.name || login)}! Можете начинать свое общение.`
             }]);
             messages = await loadMessages(login);
         }
@@ -201,7 +195,7 @@ function renderChats() {
         getProfile(login).then(profile => {
             if (!profile) return;
             panel.innerHTML = `
-                <div class="profile-close" onclick="document.getElementById('chatMiniProfile').classList.remove('active')"><i class="fas fa-times"></i></div>
+                <div class="profile-close" onclick="document.getElementById('chatMiniProfile').classList.remove('active'); document.getElementById('chatViewPanel').classList.remove('shifted');"><i class="fas fa-times"></i></div>
                 <div class="profile-avatar-large">${profile.avatar ? `<img src="${escapeHtml(profile.avatar)}" alt="${login}">` : '<i class="fas fa-user"></i>'}</div>
                 <div class="profile-name">${escapeHtml(profile.name || login)}</div>
                 <div class="profile-tag">@${login}</div>
@@ -214,6 +208,16 @@ function renderChats() {
         });
     }
 
+    document.addEventListener('click', function(e) {
+        const panel = document.getElementById('chatMiniProfile');
+        if (panel && panel.classList.contains('active')) {
+            if (!panel.contains(e.target) && e.target !== chatHeaderAvatar && e.target !== chatHeaderName && !chatHeaderAvatar.contains(e.target) && !chatHeaderName.contains(e.target)) {
+                panel.classList.remove('active');
+                chatViewPanel.classList.remove('shifted');
+            }
+        }
+    });
+
     window.startCall = function(type) {
         if (!currentChatLogin) return;
         callOverlay.style.display = 'flex';
@@ -225,9 +229,5 @@ function renderChats() {
         callOverlay.style.display = 'none';
     };
 
-    renderChatList();
-    const friends = getFriendsList();
-    if (friends.length > 0 && !currentChatLogin) {
-        window._selectChat(friends[0]);
-    }
+    await renderChatList();
 }
