@@ -1,4 +1,4 @@
-// diamkey-chats.js — плавные чаты без задержек
+// diamkey-chats.js — плавные чаты без багов
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
@@ -21,11 +21,12 @@ async function renderChats() {
     const chatViewPanel = document.getElementById('chatViewPanel');
 
     let currentChatLogin = null;
-    let allUsers = [];                // кэш пользователей
-    let recentLogins = [];           // последние чаты
+    let allUsers = [];                // кэш пользователей (без себя)
+    let recentLogins = [];           // логины, с которыми реально общались (есть сообщения не‑system)
     let lastMessagesCache = {};      // { login: { text, time } }
     let avatarCache = {};            // { login: url }
     let messagesCache = {};          // { login: [messages] }
+    let currentMessagesToken = 0;    // токен для предотвращения гонки сообщений
 
     // ========== ИНИЦИАЛИЗАЦИЯ ==========
     async function initialLoad() {
@@ -45,10 +46,10 @@ async function renderChats() {
             if (status) status.textContent = `Загрузка ${width}%`;
         }, 150);
 
-        // Загружаем пользователей и последние чаты параллельно
+        // Загружаем пользователей и «настоящие» последние чаты
         const [users, recent] = await Promise.all([
             getUsers(),
-            getRecentChats()
+            getRealRecentChats()   // новая функция – см. ниже
         ]);
 
         allUsers = users.filter(u => u.login !== currentUser.login);
@@ -62,7 +63,7 @@ async function renderChats() {
             }
         }));
 
-        // Предзагружаем последние сообщения для превью
+        // Заполняем кэш последних сообщений для превью
         await updateLastMessages();
 
         clearInterval(interval);
@@ -73,14 +74,34 @@ async function renderChats() {
         renderChatListInstant();
     }
 
+    // «Настоящие» последние чаты — те, где есть хотя бы одно не‑системное сообщение
+    async function getRealRecentChats() {
+        const { data, error } = await _supabase
+            .from('chat_messages')
+            .select('sender, receiver, message')
+            .or(`sender.eq.${currentUser.login},receiver.eq.${currentUser.login}`)
+            .neq('sender', 'system');   // исключаем системные
+
+        if (error || !data) return [];
+
+        const partners = new Set();
+        data.forEach(msg => {
+            if (msg.sender === currentUser.login) partners.add(msg.receiver);
+            else if (msg.receiver === currentUser.login) partners.add(msg.sender);
+        });
+        return Array.from(partners);
+    }
+
     async function updateLastMessages() {
-        const logins = recentLogins.length > 0 ? recentLogins : allUsers.map(u => u.login);
+        // обновляем превью только для настоящих недавних чатов
+        const logins = recentLogins.length > 0 ? recentLogins : [];
         await Promise.all(logins.map(async (login) => {
             const msgs = await loadMessagesFromDB(login);
-            if (msgs.length > 0) {
-                const last = msgs[msgs.length - 1];
+            const realMsgs = msgs.filter(m => m.sender !== 'system');
+            if (realMsgs.length > 0) {
+                const last = realMsgs[realMsgs.length - 1];
                 lastMessagesCache[login] = {
-                    text: last.sender === 'system' ? last.message : `${last.sender === currentUser.login ? 'Вы' : login}: ${last.message}`,
+                    text: `${last.sender === currentUser.login ? 'Вы' : login}: ${last.message}`,
                     time: new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 };
             } else {
@@ -89,7 +110,7 @@ async function renderChats() {
         }));
     }
 
-    // ========== РАБОТА С SUPABASE ==========
+    // ========== РАБОТА С БД ==========
     async function loadMessagesFromDB(partner) {
         const { data, error } = await _supabase
             .from('chat_messages')
@@ -100,20 +121,6 @@ async function renderChats() {
         return data || [];
     }
 
-    async function getRecentChats() {
-        const { data, error } = await _supabase
-            .from('chat_messages')
-            .select('sender, receiver')
-            .or(`sender.eq.${currentUser.login},receiver.eq.${currentUser.login}`);
-        if (error || !data) return [];
-        const partners = new Set();
-        data.forEach(msg => {
-            if (msg.sender === currentUser.login && msg.receiver !== 'system') partners.add(msg.receiver);
-            else if (msg.receiver === currentUser.login && msg.sender !== 'system') partners.add(msg.sender);
-        });
-        return Array.from(partners);
-    }
-
     async function sendMessageToDB(partner, text) {
         const { error } = await _supabase
             .from('chat_messages')
@@ -121,7 +128,7 @@ async function renderChats() {
         return !error;
     }
 
-    // ========== ИНТЕРФЕЙС ==========
+    // ========== ОТРИСОВКА СПИСКА ==========
     function getAvatarHTML(login) {
         const url = avatarCache[login];
         return url ? `<img src="${escapeHtml(url)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>';
@@ -139,7 +146,7 @@ async function renderChats() {
 
         let html = '';
 
-        // Последние чаты
+        // Настоящие последние чаты
         if (recentLogins.length > 0) {
             const recentUsers = allUsers.filter(u => recentLogins.includes(u.login) && filterFn(u));
             if (recentUsers.length > 0) {
@@ -161,7 +168,7 @@ async function renderChats() {
             html += `<div class="chat-section-empty">Вы ещё можете пообщаться, выберите пользователя ниже!</div>`;
         }
 
-        // Все пользователи
+        // Все пользователи (кроме тех, что уже в последних)
         const recentSet = new Set(recentLogins);
         const others = allUsers.filter(u => !recentSet.has(u.login) && filterFn(u));
         if (others.length > 0) {
@@ -182,29 +189,35 @@ async function renderChats() {
         chatListContainer.innerHTML = html;
     }
 
-    // ========== ВЫБОР ЧАТА (ПЛАВНО) ==========
+    // ========== ВЫБОР ЧАТА (ПЛАВНЫЙ) ==========
     window._selectChat = function(login) {
         if (currentChatLogin === login) return;
         currentChatLogin = login;
 
-        // Плавно показываем чат
+        // Показываем область чата с анимацией
         noChatSelected.style.display = 'none';
         activeChatView.style.display = 'flex';
-        // Удаляем старый класс анимации, чтобы сработала повторно
         activeChatView.classList.remove('fade-in');
-        void activeChatView.offsetWidth; // reflow
+        void activeChatView.offsetWidth;
         activeChatView.classList.add('fade-in');
 
         const profile = allUsers.find(u => u.login === login);
         chatHeaderName.textContent = profile?.name || login;
         chatHeaderAvatar.innerHTML = getAvatarHTML(login);
 
+        // Защита от гонки: увеличиваем токен
+        const token = ++currentMessagesToken;
+
         // Загружаем сообщения (из кэша или БД)
         if (messagesCache[login]) {
-            renderMessages(login, messagesCache[login]);
+            if (token === currentMessagesToken) {
+                renderMessages(login, messagesCache[login]);
+            }
         } else {
             loadMessagesFromDB(login).then(msgs => {
+                if (token !== currentMessagesToken) return; // устарело
                 if (msgs.length === 0) {
+                    // Вставляем системное сообщение, но НЕ добавляем в recent
                     const sysMsg = {
                         sender: 'system',
                         receiver: login,
@@ -214,16 +227,15 @@ async function renderChats() {
                     _supabase.from('chat_messages').insert([sysMsg]).then(() => {
                         msgs.push(sysMsg);
                         messagesCache[login] = msgs;
-                        renderMessages(login, msgs);
-                        if (!recentLogins.includes(login)) {
-                            recentLogins.push(login);
-                            lastMessagesCache[login] = { text: sysMsg.message, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-                            renderChatListInstant(chatSearchInput?.value || '');
+                        if (token === currentMessagesToken) {
+                            renderMessages(login, msgs);
                         }
                     });
                 } else {
                     messagesCache[login] = msgs;
-                    renderMessages(login, msgs);
+                    if (token === currentMessagesToken) {
+                        renderMessages(login, msgs);
+                    }
                 }
             });
         }
@@ -256,7 +268,7 @@ async function renderChats() {
         const text = messageInput.value.trim();
         if (!text) return;
 
-        // Оптимистично добавляем в кэш
+        // Оптимистичное отображение
         const now = new Date().toISOString();
         const newMsg = { sender: currentUser.login, receiver: currentChatLogin, message: text, created_at: now };
         if (!messagesCache[currentChatLogin]) messagesCache[currentChatLogin] = [];
@@ -268,6 +280,7 @@ async function renderChats() {
             text: `Вы: ${text}`,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
+        // Теперь это настоящий чат – добавляем в recent, если ещё нет
         if (!recentLogins.includes(currentChatLogin)) {
             recentLogins.push(currentChatLogin);
         }
@@ -276,34 +289,20 @@ async function renderChats() {
         messageInput.value = '';
         messageInput.focus();
 
-        // Отправляем на сервер
         const ok = await sendMessageToDB(currentChatLogin, text);
         if (!ok) {
-            // Откат: удаляем последнее сообщение из кэша и перерисовываем
+            // Откат при ошибке
             messagesCache[currentChatLogin].pop();
             renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
-            lastMessagesCache[currentChatLogin] = await getLastMessageFromDB(currentChatLogin);
-            renderChatListInstant();
             showToast('Ошибка отправки');
         }
     }
 
-    async function getLastMessageFromDB(partner) {
-        const msgs = await loadMessagesFromDB(partner);
-        if (msgs.length === 0) return { text: '', time: '' };
-        const last = msgs[msgs.length - 1];
-        return {
-            text: last.sender === 'system' ? last.message : `${last.sender === currentUser.login ? 'Вы' : partner}: ${last.message}`,
-            time: new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-    }
-
-    // ========== ОБРАБОТЧИКИ ==========
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
     chatSearchInput.addEventListener('input', () => renderChatListInstant(chatSearchInput.value));
 
-    // Мини-профиль
+    // Мини‑профиль
     chatHeaderAvatar.addEventListener('click', () => toggleMiniProfile(currentChatLogin));
     chatHeaderName.addEventListener('click', () => toggleMiniProfile(currentChatLogin));
 
