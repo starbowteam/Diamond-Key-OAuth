@@ -1,4 +1,4 @@
-// diamkey-chats.js — чаты DiamKey (оптимизированные, без задержек)
+// diamkey-chats.js — чаты DiamKey (без задержек, с аватарками)
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
@@ -21,12 +21,81 @@ async function renderChats() {
     const chatViewPanel = document.getElementById('chatViewPanel');
 
     let currentChatLogin = null;
-    let allUsersCache = null;
-    let recentLoginsCache = [];
+    let allUsers = [];                // кэш всех пользователей
+    let recentLogins = [];           // кэш логинов, с которыми уже есть чат
+    let lastMessagesCache = {};      // { login: { text, time } } – для быстрого превью
+    let avatarCache = {};           // { login: avatarUrl }
+    let messagesCache = {};          // { login: [messages] } – кэш сообщений открытого чата
     let initialLoad = true;
 
-    // Загрузка сообщений (оптимизированная)
-    async function loadMessages(partner) {
+    // Однократная загрузка всех данных при старте
+    async function loadInitialData() {
+        chatListContainer.innerHTML = `<div class="loader-container">
+            <div class="loader-icon"><i class="fas fa-comments"></i></div>
+            <div class="loader-progress"><div class="loader-bar" id="chatsLoaderBar" style="width:0%"></div></div>
+            <div class="loader-status" id="chatsLoaderStatus">Загрузка чатов...</div>
+        </div>`;
+
+        let width = 0;
+        const interval = setInterval(() => {
+            width += 15;
+            if (width > 90) width = 90;
+            const bar = document.getElementById('chatsLoaderBar');
+            const status = document.getElementById('chatsLoaderStatus');
+            if (bar) bar.style.width = width + '%';
+            if (status) status.textContent = `Загрузка ${width}%`;
+        }, 150);
+
+        // Загружаем пользователей и последние чаты параллельно
+        const [users, recent] = await Promise.all([
+            getUsers(),
+            getRecentChats()
+        ]);
+
+        allUsers = users.filter(u => u.login !== currentUser.login);
+        recentLogins = recent;
+
+        // Загружаем аватарки для всех пользователей (один раз)
+        await Promise.all(allUsers.map(async (u) => {
+            if (!avatarCache[u.login]) {
+                const profile = await getProfile(u.login);
+                avatarCache[u.login] = profile?.avatar || '';
+            }
+        }));
+
+        // Предзагружаем последние сообщения для превью
+        await updateLastMessages();
+
+        clearInterval(interval);
+        const bar = document.getElementById('chatsLoaderBar');
+        const status = document.getElementById('chatsLoaderStatus');
+        if (bar) bar.style.width = '100%';
+        if (status) status.textContent = 'Готово!';
+        await new Promise(r => setTimeout(r, 200));
+
+        initialLoad = false;
+        renderChatListInstant();
+    }
+
+    // Обновить кэш последних сообщений (только для отображения в списке)
+    async function updateLastMessages() {
+        const loginsToUpdate = recentLogins.length > 0 ? recentLogins : allUsers.map(u => u.login);
+        await Promise.all(loginsToUpdate.map(async (login) => {
+            const msgs = await loadMessagesFromDB(login);
+            if (msgs.length > 0) {
+                const last = msgs[msgs.length - 1];
+                lastMessagesCache[login] = {
+                    text: last.sender === 'system' ? last.message : `${last.sender === currentUser.login ? 'Вы' : login}: ${last.message}`,
+                    time: new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+            } else {
+                lastMessagesCache[login] = { text: '', time: '' };
+            }
+        }));
+    }
+
+    // Загрузка сообщений из БД
+    async function loadMessagesFromDB(partner) {
         const { data, error } = await _supabase
             .from('chat_messages')
             .select('*')
@@ -38,35 +107,6 @@ async function renderChats() {
             return [];
         }
         return data || [];
-    }
-
-    async function sendMessageToSupabase(partner, text) {
-        const { error } = await _supabase
-            .from('chat_messages')
-            .insert([{
-                sender: currentUser.login,
-                receiver: partner,
-                message: text
-            }]);
-
-        if (error) {
-            console.error('Ошибка отправки сообщения:', error);
-            showToast('Ошибка отправки');
-            return false;
-        }
-        return true;
-    }
-
-    async function getLastMessage(partner) {
-        const messages = await loadMessages(partner);
-        if (messages.length === 0) return { text: 'Нет сообщений', time: '' };
-        const last = messages[messages.length - 1];
-        if (last.sender === 'system') return { text: last.message, time: new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-        const senderName = (last.sender === currentUser.login) ? 'Вы' : partner;
-        return {
-            text: `${senderName}: ${last.message}`,
-            time: new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
     }
 
     async function getRecentChats() {
@@ -85,11 +125,10 @@ async function renderChats() {
         return Array.from(partners);
     }
 
-    // Быстрая отрисовка списка (без задержек)
+    // Мгновенная отрисовка списка чатов (без запросов)
     function renderChatListInstant(filterText = '') {
-        if (!chatListContainer || !allUsersCache) return;
+        if (!chatListContainer || !allUsers.length) return;
 
-        const otherUsers = allUsersCache.filter(u => u.login !== currentUser.login);
         const lowerFilter = filterText.toLowerCase();
         const isTagSearch = lowerFilter.startsWith('@');
         const searchTerm = isTagSearch ? lowerFilter.slice(1) : lowerFilter;
@@ -103,18 +142,19 @@ async function renderChats() {
         let html = '';
 
         // Последние чаты
-        if (recentLoginsCache.length > 0) {
-            const recentUsers = otherUsers.filter(u => recentLoginsCache.includes(u.login) && filterFn(u));
+        if (recentLogins.length > 0) {
+            const recentUsers = allUsers.filter(u => recentLogins.includes(u.login) && filterFn(u));
             if (recentUsers.length > 0) {
                 const items = recentUsers.map(u => {
+                    const preview = lastMessagesCache[u.login] || { text: '', time: '' };
                     const activeClass = currentChatLogin === u.login ? 'active' : '';
                     return `<div class="chat-item ${activeClass}" onclick="window._selectChat('${u.login}')">
-                        <div class="chat-item-avatar">${u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="${u.login}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>'}</div>
+                        <div class="chat-item-avatar">${getAvatarHTML(u.login)}</div>
                         <div class="chat-item-info">
                             <div class="chat-item-name">${escapeHtml(u.name || u.login)}</div>
-                            <div class="chat-item-last-msg">${escapeHtml(u._lastMsg || '')}</div>
+                            <div class="chat-item-last-msg">${escapeHtml(preview.text || 'Нет сообщений')}</div>
                         </div>
-                        <div class="chat-item-meta"><div class="chat-item-time">${u._lastTime || ''}</div></div>
+                        <div class="chat-item-meta"><div class="chat-item-time">${preview.time}</div></div>
                     </div>`;
                 });
                 html += `<div class="chat-section">
@@ -127,13 +167,13 @@ async function renderChats() {
         }
 
         // Все пользователи
-        const recentSet = new Set(recentLoginsCache);
-        const allFiltered = otherUsers.filter(u => !recentSet.has(u.login) && filterFn(u));
+        const recentSet = new Set(recentLogins);
+        const allFiltered = allUsers.filter(u => !recentSet.has(u.login) && filterFn(u));
         if (allFiltered.length > 0) {
             const items = allFiltered.map(u => {
                 const activeClass = currentChatLogin === u.login ? 'active' : '';
                 return `<div class="chat-item ${activeClass}" onclick="window._selectChat('${u.login}')">
-                    <div class="chat-item-avatar">${u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="${u.login}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>'}</div>
+                    <div class="chat-item-avatar">${getAvatarHTML(u.login)}</div>
                     <div class="chat-item-info">
                         <div class="chat-item-name">${escapeHtml(u.name || u.login)}</div>
                         <div class="chat-item-last-msg">Начать чат</div>
@@ -150,95 +190,53 @@ async function renderChats() {
         chatListContainer.innerHTML = html;
     }
 
-    // Первый запуск — с лоадером
-    async function initialLoadData() {
-        chatListContainer.innerHTML = `<div class="loader-container">
-            <div class="loader-icon"><i class="fas fa-comments"></i></div>
-            <div class="loader-progress"><div class="loader-bar" id="chatsLoaderBar" style="width:0%"></div></div>
-            <div class="loader-status" id="chatsLoaderStatus">Загрузка чатов...</div>
-        </div>`;
-
-        let width = 0;
-        const interval = setInterval(() => {
-            width += 15;
-            if (width > 90) width = 90;
-            const bar = document.getElementById('chatsLoaderBar');
-            const status = document.getElementById('chatsLoaderStatus');
-            if (bar) bar.style.width = width + '%';
-            if (status) status.textContent = `Загрузка ${width}%`;
-        }, 200);
-
-        [allUsersCache, recentLoginsCache] = await Promise.all([
-            getUsers(),
-            getRecentChats()
-        ]);
-
-        clearInterval(interval);
-        const bar = document.getElementById('chatsLoaderBar');
-        const status = document.getElementById('chatsLoaderStatus');
-        if (bar) bar.style.width = '100%';
-        if (status) status.textContent = 'Готово!';
-        await new Promise(r => setTimeout(r, 300));
-
-        // Загружаем последние сообщения для кэша
-        await updateLastMessagesCache();
-        initialLoad = false;
-        renderChatListInstant();
+    // Быстрый HTML для аватарки
+    function getAvatarHTML(login) {
+        const avatar = avatarCache[login];
+        if (avatar) {
+            return `<img src="${escapeHtml(avatar)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;">`;
+        }
+        return '<i class="fas fa-user"></i>';
     }
 
-    async function updateLastMessagesCache() {
-        if (!allUsersCache) return;
-        const recentUsers = allUsersCache.filter(u => recentLoginsCache.includes(u.login));
-        await Promise.all(recentUsers.map(async (u) => {
-            const lastMsg = await getLastMessage(u.login);
-            u._lastMsg = lastMsg.text;
-            u._lastTime = lastMsg.time;
-        }));
-    }
-
-    async function refreshChatList() {
-        recentLoginsCache = await getRecentChats();
-        await updateLastMessagesCache();
-        renderChatListInstant(chatSearchInput?.value || '');
-    }
-
-    window._selectChat = async function(login) {
+    // Выбор чата – мгновенно
+    window._selectChat = function(login) {
         currentChatLogin = login;
         noChatSelected.style.display = 'none';
         activeChatView.style.display = 'flex';
 
-        // Загружаем профиль и сообщения параллельно
-        const [profile, messages] = await Promise.all([
-            getProfile(login),
-            loadMessages(login)
-        ]);
-
+        const profile = allUsers.find(u => u.login === login);
         chatHeaderName.textContent = profile?.name || login;
-        isUserOnline(login).then(online => {
-            chatHeaderStatus.textContent = online ? 'В сети' : 'Не в сети';
-            chatHeaderStatus.className = 'chat-header-status ' + (online ? 'online' : 'offline');
-        });
+        chatHeaderStatus.textContent = 'В сети'; // можно заменить на реальный онлайн
+        chatHeaderAvatar.innerHTML = getAvatarHTML(login);
 
-        if (profile && profile.avatar) {
-            chatHeaderAvatar.innerHTML = `<img src="${escapeHtml(profile.avatar)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        // Загружаем сообщения, если их нет в кэше
+        if (messagesCache[login]) {
+            renderMessages(login, messagesCache[login]);
         } else {
-            chatHeaderAvatar.innerHTML = '<i class="fas fa-user"></i>';
+            loadMessagesFromDB(login).then(msgs => {
+                if (msgs.length === 0) {
+                    // Создаём системное сообщение
+                    const sysMsg = {
+                        sender: 'system',
+                        receiver: login,
+                        message: `Это ваш чат с ${escapeHtml(profile?.name || login)}! Можете начинать свое общение.`,
+                        created_at: new Date().toISOString()
+                    };
+                    _supabase.from('chat_messages').insert([sysMsg]).then(() => {
+                        msgs.push(sysMsg);
+                        messagesCache[login] = msgs;
+                        renderMessages(login, msgs);
+                    });
+                } else {
+                    messagesCache[login] = msgs;
+                    renderMessages(login, msgs);
+                }
+            });
         }
 
-        // Если сообщений нет, создаём системное
-        if (messages.length === 0) {
-            await _supabase.from('chat_messages').insert([{
-                sender: 'system',
-                receiver: login,
-                message: `Это ваш чат с ${escapeHtml(profile?.name || login)}! Можете начинать свое общение.`
-            }]);
-            const updated = await loadMessages(login);
-            renderMessages(login, updated);
-        } else {
-            renderMessages(login, messages);
-        }
-
-        refreshChatList();
+        // Быстро обновляем список (подсветка)
+        renderChatListInstant(chatSearchInput?.value || '');
     };
 
     function renderMessages(login, messages) {
@@ -248,8 +246,12 @@ async function renderChats() {
                 return `<div class="chat-system-msg">${escapeHtml(msg.message)}</div>`;
             }
             const isMe = (msg.sender === currentUser.login);
+            const avatar = isMe ? (currentUser.avatar || '') : (avatarCache[login] || '');
+            const avatarHTML = avatar
+                ? `<img src="${escapeHtml(avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                : '<i class="fas fa-user"></i>';
             return `<div class="message ${isMe ? 'sent' : 'received'}">
-                <div class="msg-avatar">${isMe ? avatarHTML(currentUser.avatar, 32) : `<i class="fas fa-user"></i>`}</div>
+                <div class="msg-avatar">${avatarHTML}</div>
                 <div>
                     <div class="msg-content">${escapeHtml(msg.message)}</div>
                     <div class="msg-time">${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
@@ -269,11 +271,45 @@ async function renderChats() {
 
         messageInput.value = '';
 
-        // Мгновенно обновляем сообщения
-        const messages = await loadMessages(currentChatLogin);
-        renderMessages(currentChatLogin, messages);
-        refreshChatList();
+        // Мгновенно обновляем сообщения (оптимистично добавляем в кэш)
+        const now = new Date().toISOString();
+        const newMsg = {
+            sender: currentUser.login,
+            receiver: currentChatLogin,
+            message: text,
+            created_at: now
+        };
+        if (!messagesCache[currentChatLogin]) messagesCache[currentChatLogin] = [];
+        messagesCache[currentChatLogin].push(newMsg);
+        renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
+
+        // Обновляем кэш последних сообщений
+        lastMessagesCache[currentChatLogin] = {
+            text: `Вы: ${text}`,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        // Добавляем в recent, если нет
+        if (!recentLogins.includes(currentChatLogin)) {
+            recentLogins.push(currentChatLogin);
+        }
+        renderChatListInstant(chatSearchInput?.value || '');
         messageInput.focus();
+    }
+
+    async function sendMessageToSupabase(partner, text) {
+        const { error } = await _supabase
+            .from('chat_messages')
+            .insert([{
+                sender: currentUser.login,
+                receiver: partner,
+                message: text
+            }]);
+        if (error) {
+            console.error('Ошибка отправки:', error);
+            showToast('Ошибка отправки');
+            return false;
+        }
+        return true;
     }
 
     sendBtn?.addEventListener('click', sendMessage);
@@ -285,23 +321,24 @@ async function renderChats() {
         renderChatListInstant(this.value);
     });
 
+    // Мини-профиль
     chatHeaderAvatar.addEventListener('click', () => toggleMiniProfile(currentChatLogin));
     chatHeaderName.addEventListener('click', () => toggleMiniProfile(currentChatLogin));
 
     function toggleMiniProfile(login) {
         if (!login) return;
-        let popup = document.getElementById('miniProfilePopup');
+        const popup = document.getElementById('miniProfilePopup');
         if (popup.classList.contains('active')) {
             popup.classList.remove('active');
             return;
         }
-        getProfile(login).then(profile => {
-            if (!profile) return;
+        const profile = allUsers.find(u => u.login === login);
+        if (profile) {
             document.getElementById('miniProfileName').textContent = profile.name || login;
             document.getElementById('miniProfileTag').textContent = '@' + login;
             document.getElementById('miniProfileDesc').textContent = profile.description || '';
             popup.classList.add('active');
-        });
+        }
     }
 
     document.addEventListener('click', function(e) {
@@ -324,6 +361,6 @@ async function renderChats() {
         callOverlay.style.display = 'none';
     };
 
-    // Старт
-    await initialLoadData();
+    // Запуск
+    await loadInitialData();
 }
