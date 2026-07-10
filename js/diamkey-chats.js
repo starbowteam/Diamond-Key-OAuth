@@ -1,4 +1,4 @@
-// diamkey-chats.js — чаты DiamKey (без задержек, с аватарками)
+// diamkey-chats.js — плавные чаты без задержек
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
@@ -21,15 +21,14 @@ async function renderChats() {
     const chatViewPanel = document.getElementById('chatViewPanel');
 
     let currentChatLogin = null;
-    let allUsers = [];                // кэш всех пользователей
-    let recentLogins = [];           // кэш логинов, с которыми уже есть чат
-    let lastMessagesCache = {};      // { login: { text, time } } – для быстрого превью
-    let avatarCache = {};           // { login: avatarUrl }
-    let messagesCache = {};          // { login: [messages] } – кэш сообщений открытого чата
-    let initialLoad = true;
+    let allUsers = [];                // кэш пользователей
+    let recentLogins = [];           // последние чаты
+    let lastMessagesCache = {};      // { login: { text, time } }
+    let avatarCache = {};            // { login: url }
+    let messagesCache = {};          // { login: [messages] }
 
-    // Однократная загрузка всех данных при старте
-    async function loadInitialData() {
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    async function initialLoad() {
         chatListContainer.innerHTML = `<div class="loader-container">
             <div class="loader-icon"><i class="fas fa-comments"></i></div>
             <div class="loader-progress"><div class="loader-bar" id="chatsLoaderBar" style="width:0%"></div></div>
@@ -55,7 +54,7 @@ async function renderChats() {
         allUsers = users.filter(u => u.login !== currentUser.login);
         recentLogins = recent;
 
-        // Загружаем аватарки для всех пользователей (один раз)
+        // Кэшируем аватарки
         await Promise.all(allUsers.map(async (u) => {
             if (!avatarCache[u.login]) {
                 const profile = await getProfile(u.login);
@@ -67,20 +66,16 @@ async function renderChats() {
         await updateLastMessages();
 
         clearInterval(interval);
-        const bar = document.getElementById('chatsLoaderBar');
-        const status = document.getElementById('chatsLoaderStatus');
-        if (bar) bar.style.width = '100%';
-        if (status) status.textContent = 'Готово!';
+        document.getElementById('chatsLoaderBar').style.width = '100%';
+        document.getElementById('chatsLoaderStatus').textContent = 'Готово!';
         await new Promise(r => setTimeout(r, 200));
 
-        initialLoad = false;
         renderChatListInstant();
     }
 
-    // Обновить кэш последних сообщений (только для отображения в списке)
     async function updateLastMessages() {
-        const loginsToUpdate = recentLogins.length > 0 ? recentLogins : allUsers.map(u => u.login);
-        await Promise.all(loginsToUpdate.map(async (login) => {
+        const logins = recentLogins.length > 0 ? recentLogins : allUsers.map(u => u.login);
+        await Promise.all(logins.map(async (login) => {
             const msgs = await loadMessagesFromDB(login);
             if (msgs.length > 0) {
                 const last = msgs[msgs.length - 1];
@@ -94,18 +89,14 @@ async function renderChats() {
         }));
     }
 
-    // Загрузка сообщений из БД
+    // ========== РАБОТА С SUPABASE ==========
     async function loadMessagesFromDB(partner) {
         const { data, error } = await _supabase
             .from('chat_messages')
             .select('*')
             .or(`and(sender.eq.${currentUser.login},receiver.eq.${partner}),and(sender.eq.${partner},receiver.eq.${currentUser.login})`)
             .order('created_at', { ascending: true });
-
-        if (error) {
-            console.error('Ошибка загрузки сообщений:', error);
-            return [];
-        }
+        if (error) return [];
         return data || [];
     }
 
@@ -114,9 +105,7 @@ async function renderChats() {
             .from('chat_messages')
             .select('sender, receiver')
             .or(`sender.eq.${currentUser.login},receiver.eq.${currentUser.login}`);
-
         if (error || !data) return [];
-
         const partners = new Set();
         data.forEach(msg => {
             if (msg.sender === currentUser.login && msg.receiver !== 'system') partners.add(msg.receiver);
@@ -125,18 +114,27 @@ async function renderChats() {
         return Array.from(partners);
     }
 
-    // Мгновенная отрисовка списка чатов (без запросов)
+    async function sendMessageToDB(partner, text) {
+        const { error } = await _supabase
+            .from('chat_messages')
+            .insert([{ sender: currentUser.login, receiver: partner, message: text }]);
+        return !error;
+    }
+
+    // ========== ИНТЕРФЕЙС ==========
+    function getAvatarHTML(login) {
+        const url = avatarCache[login];
+        return url ? `<img src="${escapeHtml(url)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>';
+    }
+
     function renderChatListInstant(filterText = '') {
         if (!chatListContainer || !allUsers.length) return;
 
         const lowerFilter = filterText.toLowerCase();
-        const isTagSearch = lowerFilter.startsWith('@');
-        const searchTerm = isTagSearch ? lowerFilter.slice(1) : lowerFilter;
-
         const filterFn = (u) => {
             if (!filterText) return true;
-            if (isTagSearch) return u.login.toLowerCase().includes(searchTerm);
-            return (u.name || u.login).toLowerCase().includes(searchTerm);
+            if (lowerFilter.startsWith('@')) return u.login.toLowerCase().includes(lowerFilter.slice(1));
+            return (u.name || u.login).toLowerCase().includes(lowerFilter);
         };
 
         let html = '';
@@ -157,10 +155,7 @@ async function renderChats() {
                         <div class="chat-item-meta"><div class="chat-item-time">${preview.time}</div></div>
                     </div>`;
                 });
-                html += `<div class="chat-section">
-                    <div class="chat-section-title"><i class="fas fa-history"></i> Последние чаты</div>
-                    ${items.join('')}
-                </div>`;
+                html += `<div class="chat-section"><div class="chat-section-title"><i class="fas fa-history"></i> Последние чаты</div>${items.join('')}</div>`;
             }
         } else {
             html += `<div class="chat-section-empty">Вы ещё можете пообщаться, выберите пользователя ниже!</div>`;
@@ -168,9 +163,9 @@ async function renderChats() {
 
         // Все пользователи
         const recentSet = new Set(recentLogins);
-        const allFiltered = allUsers.filter(u => !recentSet.has(u.login) && filterFn(u));
-        if (allFiltered.length > 0) {
-            const items = allFiltered.map(u => {
+        const others = allUsers.filter(u => !recentSet.has(u.login) && filterFn(u));
+        if (others.length > 0) {
+            const items = others.map(u => {
                 const activeClass = currentChatLogin === u.login ? 'active' : '';
                 return `<div class="chat-item ${activeClass}" onclick="window._selectChat('${u.login}')">
                     <div class="chat-item-avatar">${getAvatarHTML(u.login)}</div>
@@ -181,42 +176,35 @@ async function renderChats() {
                     <div class="chat-item-meta"></div>
                 </div>`;
             });
-            html += `<div class="chat-section" style="margin-top: 16px;">
-                <div class="chat-section-title"><i class="fas fa-users"></i> Все пользователи</div>
-                ${items.join('')}
-            </div>`;
+            html += `<div class="chat-section" style="margin-top:16px;"><div class="chat-section-title"><i class="fas fa-users"></i> Все пользователи</div>${items.join('')}</div>`;
         }
 
         chatListContainer.innerHTML = html;
     }
 
-    // Быстрый HTML для аватарки
-    function getAvatarHTML(login) {
-        const avatar = avatarCache[login];
-        if (avatar) {
-            return `<img src="${escapeHtml(avatar)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;">`;
-        }
-        return '<i class="fas fa-user"></i>';
-    }
-
-    // Выбор чата – мгновенно
+    // ========== ВЫБОР ЧАТА (ПЛАВНО) ==========
     window._selectChat = function(login) {
+        if (currentChatLogin === login) return;
         currentChatLogin = login;
+
+        // Плавно показываем чат
         noChatSelected.style.display = 'none';
         activeChatView.style.display = 'flex';
+        // Удаляем старый класс анимации, чтобы сработала повторно
+        activeChatView.classList.remove('fade-in');
+        void activeChatView.offsetWidth; // reflow
+        activeChatView.classList.add('fade-in');
 
         const profile = allUsers.find(u => u.login === login);
         chatHeaderName.textContent = profile?.name || login;
-        chatHeaderStatus.textContent = 'В сети'; // можно заменить на реальный онлайн
         chatHeaderAvatar.innerHTML = getAvatarHTML(login);
 
-        // Загружаем сообщения, если их нет в кэше
+        // Загружаем сообщения (из кэша или БД)
         if (messagesCache[login]) {
             renderMessages(login, messagesCache[login]);
         } else {
             loadMessagesFromDB(login).then(msgs => {
                 if (msgs.length === 0) {
-                    // Создаём системное сообщение
                     const sysMsg = {
                         sender: 'system',
                         receiver: login,
@@ -227,6 +215,11 @@ async function renderChats() {
                         msgs.push(sysMsg);
                         messagesCache[login] = msgs;
                         renderMessages(login, msgs);
+                        if (!recentLogins.includes(login)) {
+                            recentLogins.push(login);
+                            lastMessagesCache[login] = { text: sysMsg.message, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+                            renderChatListInstant(chatSearchInput?.value || '');
+                        }
                     });
                 } else {
                     messagesCache[login] = msgs;
@@ -235,21 +228,17 @@ async function renderChats() {
             });
         }
 
-        // Быстро обновляем список (подсветка)
+        // Мгновенно подсвечиваем активный чат в списке
         renderChatListInstant(chatSearchInput?.value || '');
     };
 
     function renderMessages(login, messages) {
         if (!messagesContainer) return;
         messagesContainer.innerHTML = messages.map(msg => {
-            if (msg.sender === 'system') {
-                return `<div class="chat-system-msg">${escapeHtml(msg.message)}</div>`;
-            }
+            if (msg.sender === 'system') return `<div class="chat-system-msg">${escapeHtml(msg.message)}</div>`;
             const isMe = (msg.sender === currentUser.login);
             const avatar = isMe ? (currentUser.avatar || '') : (avatarCache[login] || '');
-            const avatarHTML = avatar
-                ? `<img src="${escapeHtml(avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
-                : '<i class="fas fa-user"></i>';
+            const avatarHTML = avatar ? `<img src="${escapeHtml(avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : '<i class="fas fa-user"></i>';
             return `<div class="message ${isMe ? 'sent' : 'received'}">
                 <div class="msg-avatar">${avatarHTML}</div>
                 <div>
@@ -261,65 +250,58 @@ async function renderChats() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
+    // ========== ОТПРАВКА СООБЩЕНИЯ ==========
     async function sendMessage() {
         if (!currentChatLogin) return;
         const text = messageInput.value.trim();
         if (!text) return;
 
-        const ok = await sendMessageToSupabase(currentChatLogin, text);
-        if (!ok) return;
-
-        messageInput.value = '';
-
-        // Мгновенно обновляем сообщения (оптимистично добавляем в кэш)
+        // Оптимистично добавляем в кэш
         const now = new Date().toISOString();
-        const newMsg = {
-            sender: currentUser.login,
-            receiver: currentChatLogin,
-            message: text,
-            created_at: now
-        };
+        const newMsg = { sender: currentUser.login, receiver: currentChatLogin, message: text, created_at: now };
         if (!messagesCache[currentChatLogin]) messagesCache[currentChatLogin] = [];
         messagesCache[currentChatLogin].push(newMsg);
         renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
 
-        // Обновляем кэш последних сообщений
+        // Обновляем превью в списке
         lastMessagesCache[currentChatLogin] = {
             text: `Вы: ${text}`,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        // Добавляем в recent, если нет
         if (!recentLogins.includes(currentChatLogin)) {
             recentLogins.push(currentChatLogin);
         }
         renderChatListInstant(chatSearchInput?.value || '');
+
+        messageInput.value = '';
         messageInput.focus();
-    }
 
-    async function sendMessageToSupabase(partner, text) {
-        const { error } = await _supabase
-            .from('chat_messages')
-            .insert([{
-                sender: currentUser.login,
-                receiver: partner,
-                message: text
-            }]);
-        if (error) {
-            console.error('Ошибка отправки:', error);
+        // Отправляем на сервер
+        const ok = await sendMessageToDB(currentChatLogin, text);
+        if (!ok) {
+            // Откат: удаляем последнее сообщение из кэша и перерисовываем
+            messagesCache[currentChatLogin].pop();
+            renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
+            lastMessagesCache[currentChatLogin] = await getLastMessageFromDB(currentChatLogin);
+            renderChatListInstant();
             showToast('Ошибка отправки');
-            return false;
         }
-        return true;
     }
 
-    sendBtn?.addEventListener('click', sendMessage);
-    messageInput?.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') sendMessage();
-    });
+    async function getLastMessageFromDB(partner) {
+        const msgs = await loadMessagesFromDB(partner);
+        if (msgs.length === 0) return { text: '', time: '' };
+        const last = msgs[msgs.length - 1];
+        return {
+            text: last.sender === 'system' ? last.message : `${last.sender === currentUser.login ? 'Вы' : partner}: ${last.message}`,
+            time: new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+    }
 
-    chatSearchInput?.addEventListener('input', function() {
-        renderChatListInstant(this.value);
-    });
+    // ========== ОБРАБОТЧИКИ ==========
+    sendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+    chatSearchInput.addEventListener('input', () => renderChatListInstant(chatSearchInput.value));
 
     // Мини-профиль
     chatHeaderAvatar.addEventListener('click', () => toggleMiniProfile(currentChatLogin));
@@ -341,26 +323,21 @@ async function renderChats() {
         }
     }
 
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', e => {
         const popup = document.getElementById('miniProfilePopup');
-        if (popup && popup.classList.contains('active')) {
-            if (!popup.contains(e.target) && e.target !== chatHeaderAvatar && e.target !== chatHeaderName) {
-                popup.classList.remove('active');
-            }
+        if (popup && popup.classList.contains('active') && !popup.contains(e.target) && e.target !== chatHeaderAvatar && e.target !== chatHeaderName) {
+            popup.classList.remove('active');
         }
     });
 
-    window.startCall = function(type) {
+    window.startCall = type => {
         if (!currentChatLogin) return;
         callOverlay.style.display = 'flex';
         callName.textContent = currentChatLogin;
         callStatusText.textContent = type === 'voice' ? 'Голосовой вызов...' : 'Видеозвонок...';
     };
+    window.endCall = () => { callOverlay.style.display = 'none'; };
 
-    window.endCall = function() {
-        callOverlay.style.display = 'none';
-    };
-
-    // Запуск
-    await loadInitialData();
+    // ========== СТАРТ ==========
+    await initialLoad();
 }
