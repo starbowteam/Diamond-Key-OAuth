@@ -1,5 +1,4 @@
-// diamkey-users.js — список пользователей с фильтрами друзей и заявок
-
+// diamkey-users.js — список пользователей (без друзей)
 async function loadUsers() {
     const container = document.getElementById('usersList');
     const sortContainer = document.getElementById('sortContainer');
@@ -27,15 +26,14 @@ async function loadUsers() {
 
     sortContainer.innerHTML = `
         <span class="text-muted">Сортировка:</span>
-        <button class="sort-btn active" data-filter="all">Все</button>
-        <button class="sort-btn" data-filter="friends"><i class="fas fa-user-friends"></i> Друзья</button>
-        <button class="sort-btn" data-filter="requests"><i class="fas fa-user-clock"></i> Заявки</button>
+        <button class="sort-btn active" data-sort="login">По нику</button>
+        <button class="sort-btn" data-sort="created_at">По дате</button>
         <button class="sort-btn" id="badgeFilterBtn" style="margin-left:auto;">
             <i class="fas fa-filter"></i> Фильтр по бейджу
         </button>
     `;
 
-    let currentFilter = 'all';
+    let currentSort = 'login';
     let activeBadgeFilter = null;
     const allBadges = await getAllBadges();
 
@@ -59,62 +57,41 @@ async function loadUsers() {
 
     async function render() {
         let filtered = await filterUsersByBadge(activeBadgeFilter?.id);
-        if (currentFilter === 'friends') {
-            const fList = getFriendsList();
-            filtered = filtered.filter(u => fList.includes(u.login));
-        } else if (currentFilter === 'requests') {
-            const incoming = getIncomingRequests();
-            filtered = filtered.filter(u => incoming.includes(u.login));
-        }
-        const sorted = [...filtered].sort((a,b) => a.login.localeCompare(b.login));
-        if (sorted.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">Никого нет</div>';
-            return;
-        }
+        const sorted = [...filtered].sort((a, b) =>
+            currentSort === 'created_at'
+                ? new Date(b.created_at) - new Date(a.created_at)
+                : a.login.localeCompare(b.login)
+        );
+
         container.innerHTML = sorted.map(u => {
-            const status = getFriendStatus(u.login);
-            let actionHTML = '';
-            if (status === 'accepted') {
-                actionHTML = `<div class="user-card-actions">
-                    <button class="btn-friend-card accepted" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-check"></i> Друзья</button>
-                    <button class="btn-friend-card remove" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-user-times"></i></button>
-                </div>`;
-            } else if (status === 'pending_sent') {
-                actionHTML = `<div class="user-card-actions">
-                    <button class="btn-friend-card pending" onclick="event.stopPropagation(); removeFriend('${u.login}'); loadUsers();"><i class="fas fa-clock"></i> Ожидание</button>
-                </div>`;
-            } else if (status === 'pending_received') {
-                actionHTML = `<div class="user-card-actions">
-                    <button class="btn-friend-card add" onclick="event.stopPropagation(); acceptFriendRequest('${u.login}'); loadUsers(); updateFriendNotificationDot();"><i class="fas fa-user-check"></i> Принять</button>
-                    <button class="btn-friend-card remove" onclick="event.stopPropagation(); rejectFriendRequest('${u.login}'); loadUsers(); updateFriendNotificationDot();"><i class="fas fa-times"></i> Отклонить</button>
-                </div>`;
-            } else {
-                actionHTML = `<div class="user-card-actions">
-                    <button class="btn-friend-card add" onclick="event.stopPropagation(); sendFriendRequest('${u.login}'); loadUsers();"><i class="fas fa-user-plus"></i> Добавить в друзья</button>
-                </div>`;
-            }
-            return `<div class="user-card glass-panel" data-login="${u.login}" style="display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:18px;" onclick="navigateTo('/users/${u.login}')">
+            return `
+                <div class="user-card glass-panel" data-login="${u.login}" style="cursor:pointer;" onclick="navigateTo('/users/${u.login}')">
                     ${avatarHTML(u.avatar, 44)}
-                    <div><h4>${escapeHtml(u.name || u.login)}</h4><span>@${u.login}</span></div>
+                    <div>
+                        <h4>${escapeHtml(u.name || u.login)}</h4>
+                        <span>@${u.login}</span>
+                    </div>
                 </div>
-                ${actionHTML}
-            </div>`;
+            `;
         }).join('');
+
         updateFilterButton();
     }
 
-    sortContainer.querySelectorAll('.sort-btn[data-filter]').forEach(btn => {
+    sortContainer.querySelectorAll('.sort-btn[data-sort]').forEach(btn => {
         btn.addEventListener('click', () => {
-            sortContainer.querySelectorAll('.sort-btn[data-filter]').forEach(b => b.classList.remove('active'));
+            sortContainer.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            currentFilter = btn.dataset.filter;
+            currentSort = btn.dataset.sort;
             render();
         });
     });
 
     document.getElementById('badgeFilterBtn').addEventListener('click', () => {
-        openBadgeFilterModal(allBadges, (badge) => { activeBadgeFilter = badge; render(); });
+        openBadgeFilterModal(allBadges, (badge) => {
+            activeBadgeFilter = badge;
+            render();
+        });
     });
 
     document.getElementById('userSearch').addEventListener('input', (e) => {
