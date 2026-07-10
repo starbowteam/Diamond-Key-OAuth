@@ -58,6 +58,15 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Плавное появление страницы чатов после лоадера */
+#page-chats {
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+#page-chats.loading {
+    opacity: 0;
+}
+
 /* ===== САЙДБАР ===== */
 .sidebar {
     width: 72px;
