@@ -51,6 +51,10 @@ async function renderChats() {
         `;
         document.body.appendChild(overlay);
 
+        // Принудительный reflow, затем плавное появление
+        void overlay.offsetWidth;
+        overlay.classList.add('show');
+
         // Частицы
         const particlesContainer = document.getElementById('loaderParticles');
         for (let i = 0; i < 20; i++) {
