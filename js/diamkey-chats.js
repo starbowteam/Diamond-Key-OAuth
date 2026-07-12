@@ -39,42 +39,40 @@ async function renderChats() {
         .call-accept-btn:hover { transform: scale(1.1); background: rgba(46,204,113,0.4); }
         .call-decline-btn:hover { transform: scale(1.1); background: rgba(224,93,93,0.4); }
 
-        /* Активный звонок – два прямоугольника по центру */
+        /* Модалка звонка – два горизонтальных прямоугольника */
         .call-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); backdrop-filter: blur(25px);
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(30px);
             z-index: 1001; display: none; flex-direction: column;
             align-items: center; justify-content: center;
-            transition: opacity 0.3s ease;
         }
         .call-modal.active { display: flex; }
         .call-modal-content {
             display: flex; flex-direction: column; align-items: center; gap: 24px;
+            width: 90%; max-width: 800px;
+        }
+        .call-boxes {
+            display: flex; gap: 20px; width: 100%; justify-content: center;
         }
         .call-box {
-            border-radius: 24px; overflow: hidden; background: #1a1a24;
-            border: 2px solid var(--accent); box-shadow: 0 0 30px rgba(0,0,0,0.7);
+            flex: 1; max-width: 360px; aspect-ratio: 4 / 3;
+            border-radius: 24px; overflow: hidden;
+            background: #1a1a24; border: 2px solid var(--accent);
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
             display: flex; align-items: center; justify-content: center;
         }
-        .call-box-remote {
-            width: 280px; height: 210px;
-        }
-        .call-box-local {
-            width: 140px; height: 105px;
-        }
-        .call-box video, .call-box-avatar {
-            width: 100%; height: 100%; object-fit: cover;
-        }
+        .call-box video { width: 100%; height: 100%; object-fit: cover; }
         .call-box-avatar {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; gap: 8px; color: var(--text-muted);
-            font-size: 14px; background: rgba(255,255,255,0.03);
+            width: 100%; height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 12px;
+            color: var(--text-muted); font-size: 16px;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.05), transparent);
         }
-        .call-box-avatar i { font-size: 40px; }
-        .call-modal-name { font-size: 20px; font-weight: 700; color: white; }
-        .call-modal-timer { font-family: monospace; font-size: 18px; color: var(--text-muted); }
+        .call-box-avatar i { font-size: 56px; }
+        .call-modal-name { font-size: 22px; font-weight: 700; color: white; }
+        .call-modal-timer { font-family: monospace; font-size: 20px; color: var(--text-muted); }
         .call-modal-controls {
-            display: flex; gap: 20px; margin-top: 8px;
+            display: flex; gap: 20px;
         }
         .call-modal-btn {
             width: 56px; height: 56px; border-radius: 50%;
@@ -152,13 +150,15 @@ async function renderChats() {
             <div class="call-modal-content">
                 <div class="call-modal-name" id="callModalName"></div>
                 <div class="call-modal-timer" id="callModalTimer">00:00</div>
-                <div class="call-box call-box-remote" id="remoteBox">
-                    <video id="callRemoteVideo" autoplay playsinline style="display:none;"></video>
-                    <div class="call-box-avatar" id="remoteAvatar" style="display:none;"><i class="fas fa-user"></i> <span id="remoteName"></span></div>
-                </div>
-                <div class="call-box call-box-local" id="localBox">
-                    <video id="callLocalVideo" autoplay muted playsinline style="display:none;"></video>
-                    <div class="call-box-avatar" id="localAvatar" style="display:none;"><i class="fas fa-user"></i> <span>Вы</span></div>
+                <div class="call-boxes">
+                    <div class="call-box" id="remoteBox">
+                        <video id="callRemoteVideo" autoplay playsinline style="display:none;"></video>
+                        <div class="call-box-avatar" id="remoteAvatar"><i class="fas fa-user"></i> <span id="remoteName"></span></div>
+                    </div>
+                    <div class="call-box" id="localBox">
+                        <video id="callLocalVideo" autoplay muted playsinline style="display:none;"></video>
+                        <div class="call-box-avatar" id="localAvatar"><i class="fas fa-user"></i> <span>Вы</span></div>
+                    </div>
                 </div>
                 <div class="call-modal-controls">
                     <button class="call-modal-btn" id="callToggleMicBtn"><i class="fas fa-microphone"></i></button>
@@ -514,7 +514,11 @@ async function renderChats() {
         stream.getTracks().forEach(track => pc.addTrack(track, stream));
         pc.ontrack = (event) => {
             const remoteVideo = document.getElementById('callRemoteVideo');
-            if (remoteVideo) remoteVideo.srcObject = event.streams[0];
+            if (remoteVideo) {
+                remoteVideo.srcObject = event.streams[0];
+                remoteVideo.style.display = 'block';
+                document.getElementById('remoteAvatar').style.display = 'none';
+            }
         };
         pc.onicecandidate = (event) => {
             if (event.candidate && callChannel) {
@@ -548,6 +552,17 @@ async function renderChats() {
             await peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate));
         } else if (msg.type === 'hangup') {
             endCallInternal();
+        } else if (msg.type === 'video-state-change') {
+            // удалённое переключение видео
+            const remoteVideo = document.getElementById('callRemoteVideo');
+            const remoteAvatar = document.getElementById('remoteAvatar');
+            if (msg.enabled) {
+                remoteVideo.style.display = 'block';
+                remoteAvatar.style.display = 'none';
+            } else {
+                remoteVideo.style.display = 'none';
+                remoteAvatar.style.display = 'flex';
+            }
         }
     }
 
@@ -679,20 +694,20 @@ async function renderChats() {
         const localVideo = document.getElementById('callLocalVideo');
         const localAvatar = document.getElementById('localAvatar');
 
-        // Показываем удалённое видео, если звонок видео, иначе аватар
+        document.getElementById('remoteName').textContent = currentCallPartner;
+
         if (currentCallType === 'video') {
-            remoteVideo.style.display = 'block';
-            remoteAvatar.style.display = 'none';
+            localVideo.srcObject = localStream;
             localVideo.style.display = 'block';
             localAvatar.style.display = 'none';
-            document.getElementById('remoteName').textContent = currentCallPartner;
-            localVideo.srcObject = localStream;
-        } else {
+            // удалённое видео появится, когда придёт трек
             remoteVideo.style.display = 'none';
             remoteAvatar.style.display = 'flex';
-            document.getElementById('remoteName').textContent = currentCallPartner;
+        } else {
             localVideo.style.display = 'none';
             localAvatar.style.display = 'flex';
+            remoteVideo.style.display = 'none';
+            remoteAvatar.style.display = 'flex';
         }
     }
 
@@ -724,6 +739,19 @@ async function renderChats() {
             if (videoTrack) {
                 videoTrack.enabled = !videoTrack.enabled;
                 document.getElementById('callToggleVideoBtn').querySelector('i').className = videoTrack.enabled ? 'fas fa-video' : 'fas fa-video-slash';
+                const localVideo = document.getElementById('callLocalVideo');
+                const localAvatar = document.getElementById('localAvatar');
+                if (videoTrack.enabled) {
+                    localVideo.style.display = 'block';
+                    localAvatar.style.display = 'none';
+                } else {
+                    localVideo.style.display = 'none';
+                    localAvatar.style.display = 'flex';
+                }
+                // Отправляем состояние партнёру
+                if (callChannel) {
+                    callChannel.send({ type: 'video-state-change', enabled: videoTrack.enabled, sender: currentUser.login });
+                }
             }
         }
     }
