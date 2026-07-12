@@ -1,11 +1,11 @@
-// diamkey-chats.js — чаты DiamKey (полный, без сокращений, с реальными аудио/видео звонками)
+// diamkey-chats.js — чаты DiamKey (полный, с реальным временем, звонками с прямоугольниками)
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
         return;
     }
 
-    // ==================== ВНЕДРЯЕМ СТИЛИ ЗВОНКОВ ====================
+    // ==================== СТИЛИ ЗВОНКОВ ====================
     const callStyles = document.createElement('style');
     callStyles.textContent = `
         .incoming-call-overlay {
@@ -39,41 +39,48 @@ async function renderChats() {
         .call-accept-btn:hover { transform: scale(1.1); background: rgba(46,204,113,0.4); }
         .call-decline-btn:hover { transform: scale(1.1); background: rgba(224,93,93,0.4); }
 
-        /* Активный звонок – почти весь экран */
+        /* Модалка активного звонка – два прямоугольника */
         .call-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); backdrop-filter: blur(25px);
             z-index: 1001; display: none; flex-direction: column;
             align-items: center; justify-content: center;
+            transition: opacity 0.3s ease;
         }
         .call-modal.active { display: flex; }
         .call-modal-content {
-            width: 100%; height: 100%; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 32px;
-            position: relative;
+            width: 100%; height: 100%; position: relative;
         }
-        .call-remote-video {
-            width: 100%; height: 100%; object-fit: cover;
-            position: absolute; top: 0; left: 0; z-index: 0;
-        }
-        .call-local-video {
-            position: absolute; bottom: 120px; right: 32px;
-            width: 160px; height: 120px; border-radius: 20px;
-            object-fit: cover; border: 2px solid var(--accent);
-            z-index: 2; background: #000;
-        }
-        .call-avatar-large {
-            width: 140px; height: 140px; border-radius: 50%;
-            background: rgba(255,255,255,0.1); border: 2px solid var(--accent);
+        .call-remote-container {
+            position: absolute; top: 60px; left: 20px; right: 20px; bottom: 140px;
+            border-radius: 24px; overflow: hidden; background: #1a1a1a;
             display: flex; align-items: center; justify-content: center;
-            font-size: 64px; color: var(--text-muted);
-            animation: callPulse 1.5s ease-in-out infinite;
         }
-        .call-modal-name { font-size: 24px; font-weight: 700; color: white; z-index: 1; }
-        .call-modal-timer { font-family: monospace; font-size: 20px; color: var(--text-muted); z-index: 1; }
+        .call-remote-video, .call-remote-avatar {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .call-remote-avatar {
+            display: flex; align-items: center; justify-content: center;
+            font-size: 80px; color: var(--text-muted); background: rgba(255,255,255,0.05);
+        }
+        .call-local-container {
+            position: absolute; bottom: 140px; right: 32px;
+            width: 160px; height: 120px; border-radius: 16px;
+            overflow: hidden; border: 2px solid var(--accent);
+            background: #000;
+        }
+        .call-local-video, .call-local-avatar {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .call-local-avatar {
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; color: var(--text-muted); background: rgba(255,255,255,0.05);
+        }
+        .call-modal-name { font-size: 24px; font-weight: 700; color: white; z-index: 1; text-align: center; margin-top: 16px; }
+        .call-modal-timer { font-family: monospace; font-size: 20px; color: var(--text-muted); z-index: 1; text-align: center; }
         .call-modal-controls {
             display: flex; gap: 20px; z-index: 3;
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
         }
         .call-modal-btn {
             width: 56px; height: 56px; border-radius: 50%;
@@ -115,24 +122,24 @@ async function renderChats() {
     let onlineCache = {};
     let messagesCache = {};
     let activeMessageToken = 0;
+    let messageSubscription = null;
 
     // ==================== Состояние звонков ====================
     let localStream = null;
     let peerConnection = null;
     let currentCallPartner = null;
-    let currentCallType = null;        // 'voice' / 'video'
-    let callChannel = null;           // Supabase Realtime канал
+    let currentCallType = null;
+    let callChannel = null;
     let isInCall = false;
     let callStartTime = null;
     let callTimerInterval = null;
-    let callRole = null;              // 'caller' или 'callee'
-    let incomingCallData = null;      // { from, type }
+    let callRole = null;
+    let incomingCallData = null;
 
     // ==================== UI ЗВОНКОВ ====================
     function ensureCallUI() {
         if (document.getElementById('incomingCallOverlay')) return;
 
-        // Оверлей входящего / исходящего вызова
         const incOverlay = document.createElement('div');
         incOverlay.id = 'incomingCallOverlay';
         incOverlay.className = 'incoming-call-overlay';
@@ -144,17 +151,21 @@ async function renderChats() {
         `;
         document.body.appendChild(incOverlay);
 
-        // Модалка активного звонка (почти весь экран)
         const callModal = document.createElement('div');
         callModal.id = 'callModal';
         callModal.className = 'call-modal';
         callModal.innerHTML = `
             <div class="call-modal-content">
-                <video class="call-remote-video" id="callRemoteVideo" autoplay playsinline style="display:none;"></video>
-                <video class="call-local-video" id="callLocalVideo" autoplay muted playsinline style="display:none;"></video>
-                <div class="call-avatar-large" id="callAvatarLarge"><i class="fas fa-user"></i></div>
                 <div class="call-modal-name" id="callModalName"></div>
                 <div class="call-modal-timer" id="callModalTimer">00:00</div>
+                <div class="call-remote-container">
+                    <video class="call-remote-video" id="callRemoteVideo" autoplay playsinline style="display:none;"></video>
+                    <div class="call-remote-avatar" id="callRemoteAvatar" style="display:flex;"><i class="fas fa-user"></i></div>
+                </div>
+                <div class="call-local-container">
+                    <video class="call-local-video" id="callLocalVideo" autoplay muted playsinline style="display:none;"></video>
+                    <div class="call-local-avatar" id="callLocalAvatar" style="display:flex;"><i class="fas fa-user"></i></div>
+                </div>
                 <div class="call-modal-controls">
                     <button class="call-modal-btn" id="callToggleMicBtn"><i class="fas fa-microphone"></i></button>
                     <button class="call-modal-btn" id="callToggleVideoBtn"><i class="fas fa-video"></i></button>
@@ -164,7 +175,6 @@ async function renderChats() {
         `;
         document.body.appendChild(callModal);
 
-        // Обработчики кнопок активного звонка
         document.getElementById('callToggleMicBtn').addEventListener('click', toggleCallMic);
         document.getElementById('callToggleVideoBtn').addEventListener('click', toggleCallVideo);
         document.getElementById('callEndBtn').addEventListener('click', endCall);
@@ -216,6 +226,7 @@ async function renderChats() {
         await updateLastMessagesCache();
         renderChatListInstant();
         subscribeToIncomingCalls();
+        subscribeToMessages();
         ensureCallUI();
     }
 
@@ -471,6 +482,35 @@ async function renderChats() {
         if (panel && panel.classList.contains('active') && !panel.contains(e.target) && e.target!==chatHeaderAvatar && e.target!==chatHeaderName) panel.classList.remove('active');
     });
 
+    // ==================== ПОДПИСКА НА СООБЩЕНИЯ В РЕАЛЬНОМ ВРЕМЕНИ ====================
+    function subscribeToMessages() {
+        messageSubscription = _supabase
+            .channel('chat_messages_channel')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `receiver=eq.${currentUser.login}` }, payload => {
+                const newMsg = payload.new;
+                if (newMsg.sender === currentUser.login) return; // своё уже отобразили
+                // Добавляем в кэш
+                if (!messagesCache[newMsg.sender]) messagesCache[newMsg.sender] = [];
+                messagesCache[newMsg.sender].push(newMsg);
+                // Обновляем последние сообщения
+                if (newMsg.message && newMsg.sender !== 'system') {
+                    lastMessagesCache[newMsg.sender] = {
+                        text: `${newMsg.sender}: ${newMsg.message}`,
+                        time: new Date(newMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    };
+                    if (!recentLogins.includes(newMsg.sender)) {
+                        recentLogins.push(newMsg.sender);
+                    }
+                }
+                // Если открыт чат с отправителем, перерисовываем
+                if (currentChatLogin === newMsg.sender) {
+                    renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
+                }
+                renderChatListInstant(chatSearchInput?.value || '');
+            })
+            .subscribe();
+    }
+
     // ==================== ЗВОНКИ ====================
     async function getLocalMedia(type) {
         const constraints = { audio: true, video: type === 'video' };
@@ -520,7 +560,6 @@ async function renderChats() {
         }
     }
 
-    // ==================== ИНИЦИАЦИЯ ЗВОНКА (caller) ====================
     window.startCall = async function(type) {
         if (!currentChatLogin) return;
         if (isInCall) { showToast('Уже в звонке'); return; }
@@ -528,19 +567,16 @@ async function renderChats() {
         currentCallType = type;
         callRole = 'caller';
 
-        // Показываем оверлей "Вызываем..."
         const overlay = document.getElementById('incomingCallOverlay');
         overlay.classList.add('active');
         document.getElementById('incCallName').textContent = currentChatLogin;
         document.getElementById('incCallType').textContent = type === 'voice' ? 'Голосовой вызов' : 'Видеозвонок';
         document.getElementById('incCallActions').innerHTML = '<button class="call-decline-btn" onclick="cancelOutgoingCall()"><i class="fas fa-phone-slash"></i></button>';
 
-        // Отправляем приглашение получателю
         const targetChannel = _supabase.channel(`user_${currentChatLogin}`);
         await targetChannel.subscribe();
         await targetChannel.send({ type: 'broadcast', event: 'incoming_call', payload: { from: currentUser.login, type } });
 
-        // Ждём принятия или таймаут 30 сек
         incomingCallData = { from: currentUser.login, type };
         setTimeout(() => {
             if (!isInCall && incomingCallData) {
@@ -556,7 +592,6 @@ async function renderChats() {
         cleanupCallState();
     };
 
-    // ==================== ОБРАБОТКА ВХОДЯЩЕГО ВЫЗОВА ====================
     function subscribeToIncomingCalls() {
         const incomingChannel = _supabase.channel(`user_${currentUser.login}`);
         incomingChannel.on('broadcast', { event: 'incoming_call' }, (payload) => {
@@ -593,15 +628,12 @@ async function renderChats() {
         currentCallPartner = from;
         currentCallType = type;
         callRole = 'callee';
-        // Отправляем подтверждение инициатору
         const acceptChannel = _supabase.channel(`user_${from}_accepted`);
         await acceptChannel.subscribe();
         await acceptChannel.send({ type: 'broadcast', event: 'call_accepted', payload: { from: currentUser.login } });
-        // Запускаем WebRTC как отвечающая сторона
         await startCallee();
     };
 
-    // Подписка на принятие вызова (для инициатора)
     const acceptedChannel = _supabase.channel(`user_${currentUser.login}_accepted`);
     acceptedChannel.on('broadcast', { event: 'call_accepted' }, async (payload) => {
         if (callRole === 'caller' && !isInCall) {
@@ -612,7 +644,6 @@ async function renderChats() {
     });
     acceptedChannel.subscribe();
 
-    // Подписка на отклонение
     const declineChannel = _supabase.channel(`user_${currentUser.login}_decline`);
     declineChannel.on('broadcast', { event: 'call_declined' }, () => {
         if (callRole === 'caller' && !isInCall) {
@@ -622,7 +653,6 @@ async function renderChats() {
     });
     declineChannel.subscribe();
 
-    // ==================== ЗАПУСК CALLER (инициатор) ====================
     async function startCaller() {
         const stream = await getLocalMedia(currentCallType);
         if (!stream) { cleanupCallState(); return; }
@@ -637,7 +667,6 @@ async function renderChats() {
         isInCall = true;
     }
 
-    // ==================== ЗАПУСК CALLEE (отвечающая сторона) ====================
     async function startCallee() {
         const stream = await getLocalMedia(currentCallType);
         if (!stream) { cleanupCallState(); return; }
@@ -649,21 +678,22 @@ async function renderChats() {
         isInCall = true;
     }
 
-    // ==================== ИНТЕРФЕЙС АКТИВНОГО ЗВОНКА ====================
     function showCallModal() {
         const modal = document.getElementById('callModal');
         modal.classList.add('active');
         document.getElementById('callModalName').textContent = currentCallPartner;
 
         if (currentCallType === 'video') {
-            document.getElementById('callAvatarLarge').style.display = 'none';
+            document.getElementById('callRemoteAvatar').style.display = 'none';
             document.getElementById('callRemoteVideo').style.display = 'block';
+            document.getElementById('callLocalAvatar').style.display = 'none';
             document.getElementById('callLocalVideo').style.display = 'block';
             document.getElementById('callLocalVideo').srcObject = localStream;
         } else {
-            document.getElementById('callAvatarLarge').style.display = 'flex';
             document.getElementById('callRemoteVideo').style.display = 'none';
+            document.getElementById('callRemoteAvatar').style.display = 'flex';
             document.getElementById('callLocalVideo').style.display = 'none';
+            document.getElementById('callLocalAvatar').style.display = 'flex';
         }
     }
 
@@ -713,7 +743,6 @@ async function renderChats() {
         isInCall = false; clearInterval(callTimerInterval);
         document.getElementById('callModal').classList.remove('active');
         document.getElementById('incomingCallOverlay').classList.remove('active');
-        // Сообщение в чат
         if (currentCallPartner && duration > 0) {
             const m = Math.floor(duration / 60), s = duration % 60;
             const callMsg = {
