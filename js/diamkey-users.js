@@ -15,10 +15,7 @@ async function loadUsers() {
     }, 250);
 
     let users = await getUsers();
-    // Исключаем самого себя
-    if (currentUser) {
-        users = users.filter(u => u.login !== currentUser.login);
-    }
+    if (currentUser) users = users.filter(u => u.login !== currentUser.login);
     clearInterval(interval);
     document.getElementById('usersLoaderBar').style.width = '100%';
     document.getElementById('usersLoaderStatus').textContent = 'Готово!';
