@@ -602,23 +602,27 @@ body { background:var(--bg-primary); color:var(--text-primary); min-height:100vh
 .voice-time { font-family:monospace; font-size:12px; color:var(--text-muted); min-width:38px; text-align:right; }
 .voice-message.sent .voice-time { text-align:left; }
 
-/* мини-профиль (всплывашка) */
-.mini-profile-popup {
-    position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
-    background: var(--bg-glass); backdrop-filter: blur(30px);
-    border: 1px solid var(--border-glass); border-radius: 20px;
-    padding: 24px; width: 280px; z-index: 50;
-    display: none; flex-direction: column; align-items: center; text-align: center;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+/* мини-профиль (выезжает справа) */
+.mini-profile-panel {
+    position: absolute;
+    top: 0; right: -360px;
+    width: 340px; height: 100%;
+    background: rgba(20,20,25,0.95);
+    backdrop-filter: blur(30px);
+    border-left: 1px solid var(--border-glass);
+    transition: right 0.35s ease;
+    z-index: 50;
+    padding: 32px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 20px; overflow-y: auto;
 }
-.mini-profile-popup.active { display: flex; }
+.mini-profile-panel.active { right: 0; }
 .mini-profile-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); }
 .mini-profile-avatar-large { width: 96px; height: 96px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 24px; }
 .mini-profile-avatar-large img { width: 100%; height: 100%; object-fit: cover; }
-.mini-profile-name { font-size: 22px; font-weight: 700; }
-.mini-profile-tag { color: var(--accent); font-size: 14px; margin: 4px 0 8px; }
+.mini-profile-name { font-size: 22px; font-weight: 700; text-align: center; }
+.mini-profile-tag { color: var(--accent); font-size: 14px; text-align: center; }
 .mini-profile-status { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: 20px; padding: 6px 16px; font-size: 13px; }
-.mini-profile-desc { background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 12px; font-size: 14px; color: var(--text-muted); width: 100%; }
+.mini-profile-desc { background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 12px; font-size: 14px; color: var(--text-muted); text-align: center; width: 100%; }
 .mini-profile-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .mini-profile-badge { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
 .mini-profile-date { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: 20px; padding: 6px 16px; font-size: 13px; color: var(--text-muted); }
@@ -692,4 +696,6 @@ body { background:var(--bg-primary); color:var(--text-primary); min-height:100vh
     .chats-container { flex-direction:column; }
     .chat-list-panel { width:100%; border-right:none; border-bottom:1px solid var(--border-glass); }
     .chat-view-panel { height:60%; }
+    .mini-profile-panel { right: -100%; width: 100%; }
+    .mini-profile-panel.active { right: 0; }
 }
