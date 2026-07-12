@@ -1,4 +1,4 @@
-// diamkey-core.js — ядро DiamKey
+// diamkey-core.js — ядро DiamKey (чаты, онлайн, уведомления)
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -217,6 +217,50 @@ async function isUserOnline(login) {
     return Date.now() - new Date(data.last_seen).getTime() < 120000;
 }
 
+// ======== УВЕДОМЛЕНИЯ О НОВЫХ СООБЩЕНИЯХ (красная точка) ========
+function getUnreadChats() {
+    const raw = localStorage.getItem('diamkey_unread_chats');
+    return raw ? JSON.parse(raw) : {};
+}
+
+function saveUnreadChats(data) {
+    localStorage.setItem('diamkey_unread_chats', JSON.stringify(data));
+}
+
+// Добавить непрочитанное сообщение от пользователя fromLogin
+function addUnreadMessage(fromLogin) {
+    if (!currentUser || fromLogin === currentUser.login) return;
+    const unread = getUnreadChats();
+    unread[fromLogin] = (unread[fromLogin] || 0) + 1;
+    saveUnreadChats(unread);
+    updateChatNotificationDot();
+}
+
+// Пометить чат как прочитанный (удалить все непрочитанные от этого пользователя)
+function markChatAsRead(login) {
+    const unread = getUnreadChats();
+    delete unread[login];
+    saveUnreadChats(unread);
+    updateChatNotificationDot();
+}
+
+// Обновить красную точку на иконке чатов
+function updateChatNotificationDot() {
+    const chatsIcon = document.querySelector('.sidebar-icon[href="/chats"]');
+    if (!chatsIcon) return;
+    const unread = getUnreadChats();
+    const total = Object.values(unread).reduce((sum, count) => sum + count, 0);
+    let dot = chatsIcon.querySelector('.badge-dot');
+    if (!dot) {
+        dot = document.createElement('span');
+        dot.className = 'badge-dot';
+        dot.style.cssText = 'position:absolute;top:6px;right:6px;width:8px;height:8px;background:#e05d5d;border-radius:50%;display:none;';
+        chatsIcon.appendChild(dot);
+    }
+    dot.style.display = total > 0 ? 'block' : 'none';
+}
+
+// Функция для получения системного сообщения (используется в чатах)
 function getSystemMessage(contactLogin) {
     return {
         sender: 'system',
@@ -224,3 +268,7 @@ function getSystemMessage(contactLogin) {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateChatNotificationDot();
+});
