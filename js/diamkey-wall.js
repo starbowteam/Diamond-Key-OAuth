@@ -723,6 +723,7 @@ async function renderDatabasePage() {
                     <p class="db-card-desc">Diamond AI, DiamKey, Dirmess — все используют одно хранилище для ваших данных.</p>
                 </div>
             </div>
+
             <h2 style="text-align:center; margin-bottom:20px;">Тарифы</h2>
             <div class="db-plans">
                 <div class="plan-card">
@@ -751,6 +752,7 @@ async function renderDatabasePage() {
                     </ul>
                 </div>
             </div>
+
             <div class="db-faq-section">
                 <h2 class="db-faq-title">Часто спрашивают</h2>
                 <div class="db-faq-item" onclick="this.classList.toggle('open')">
@@ -774,6 +776,7 @@ async function renderDatabasePage() {
                     <div class="db-faq-a">У меня дома, в России. Я сам настраиваю безопасность и мониторинг.</div>
                 </div>
             </div>
+
             <div class="db-cta">
                 <button class="btn" onclick="showToast('Скоро будет!')"><i class="fas fa-database"></i> Скоро будет!</button>
             </div>
