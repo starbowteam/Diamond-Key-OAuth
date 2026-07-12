@@ -1,11 +1,11 @@
-// diamkey-chats.js — чаты DiamKey (полный редизайн с точками, плавностью и фичами)
+// diamkey-chats.js — чаты DiamKey (плавные, с реакциями, ГС, мини‑профилем)
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
         return;
     }
 
-    // ------------------- DOM-элементы -------------------
+    // ==================== DOM‑элементы ====================
     const chatListContainer = document.getElementById('chatListContainer');
     const chatSearchInput = document.getElementById('chatSearchInput');
     const noChatSelected = document.getElementById('noChatSelected');
@@ -13,6 +13,7 @@ async function renderChats() {
     const messagesContainer = document.getElementById('messagesContainer');
     const messageInput = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendMessageBtn');
+    const voiceBtn = document.getElementById('voiceRecordBtn');
     const chatHeaderName = document.getElementById('chatHeaderName');
     const chatHeaderStatus = document.getElementById('chatHeaderStatus');
     const chatHeaderAvatar = document.getElementById('chatHeaderAvatar');
@@ -21,28 +22,21 @@ async function renderChats() {
     const callStatusText = document.getElementById('callStatusText');
     const chatViewPanel = document.getElementById('chatViewPanel');
 
-    // Ищем мини-профиль (может быть создан ранее)
-    let miniProfilePanel = document.getElementById('miniProfilePopup') || document.getElementById('miniProfilePanel');
-    if (!miniProfilePanel) {
-        miniProfilePanel = document.createElement('div');
-        miniProfilePanel.id = 'miniProfilePopup';
-        miniProfilePanel.className = 'mini-profile-popup';
-        chatViewPanel.appendChild(miniProfilePanel);
-    }
-
-    // ------------------- Состояние -------------------
+    // ==================== Состояние ====================
     let currentChatLogin = null;
-    let allUsers = [];                // все пользователи, кроме себя
-    let recentLogins = [];           // логины, с которыми есть реальный чат
-    let lastMessagesCache = {};      // { login: { text, time } }
-    let avatarCache = {};            // { login: avatarUrl }
-    let onlineCache = {};            // { login: bool }
-    let messagesCache = {};          // { login: [ ... ] }
-    let activeMessageToken = 0;      // для предотвращения гонки
+    let allUsers = [];
+    let recentLogins = [];
+    let lastMessagesCache = {};
+    let avatarCache = {};
+    let onlineCache = {};
+    let messagesCache = {};
+    let activeMessageToken = 0;
 
-    // ------------------- Инициализация с прогресс-баром -------------------
+    // Реакции (ключ – message_id, значение – emoji)
+    let myReactions = {};
+
+    // ==================== Инициализация (прогресс‑бар) ====================
     async function initialLoad() {
-        // Прогресс-бар внутри левой панели
         chatListContainer.innerHTML = `
             <div class="list-loader">
                 <i class="fas fa-comments"></i>
@@ -58,7 +52,6 @@ async function renderChats() {
             if (loaderBar) loaderBar.style.width = progress + '%';
         }, 200);
 
-        // Загружаем все необходимые данные
         const [users, presenceData, recent] = await Promise.all([
             getUsers(),
             _supabase.from('user_presence').select('login, last_seen'),
@@ -69,20 +62,16 @@ async function renderChats() {
         if (loaderBar) loaderBar.style.width = '100%';
         await new Promise(r => setTimeout(r, 300));
 
-        // Кэшируем пользователей (исключая себя)
         allUsers = users.filter(u => u.login !== currentUser.login);
 
-        // Кэш онлайна
         const now = Date.now();
         (presenceData.data || []).forEach(p => {
             onlineCache[p.login] = (now - new Date(p.last_seen).getTime()) < 120000;
         });
-        // Пользователи без записи считаются оффлайн
         allUsers.forEach(u => {
             if (!(u.login in onlineCache)) onlineCache[u.login] = false;
         });
 
-        // Кэш аватарок
         await Promise.all(allUsers.map(async (u) => {
             if (!avatarCache[u.login]) {
                 const profile = await getProfile(u.login);
@@ -93,11 +82,9 @@ async function renderChats() {
         recentLogins = recent;
         await updateLastMessagesCache();
 
-        // Рендерим список
         renderChatListInstant();
     }
 
-    // Получить логины, с которыми есть реальные (не‑system) сообщения
     async function getRealRecentChats() {
         const { data, error } = await _supabase
             .from('chat_messages')
@@ -115,7 +102,6 @@ async function renderChats() {
         return Array.from(partners);
     }
 
-    // Обновить кэш последних сообщений для превью
     async function updateLastMessagesCache() {
         const logins = recentLogins.length > 0 ? recentLogins : allUsers.map(u => u.login);
         await Promise.all(logins.map(async (login) => {
@@ -133,7 +119,6 @@ async function renderChats() {
         }));
     }
 
-    // Загрузка сообщений из Supabase
     async function loadMessagesFromDB(partner) {
         const { data, error } = await _supabase
             .from('chat_messages')
@@ -144,7 +129,7 @@ async function renderChats() {
         return data || [];
     }
 
-    // ------------------- Рендер списка чатов -------------------
+    // ==================== Рендер списка чатов ====================
     function renderChatListInstant(filterText = '') {
         if (!chatListContainer || !allUsers.length) return;
 
@@ -157,7 +142,7 @@ async function renderChats() {
 
         let html = '';
 
-        // Последние чаты (реальные)
+        // Последние чаты
         if (recentLogins.length > 0) {
             const recentUsers = allUsers.filter(u => recentLogins.includes(u.login) && filterFn(u));
             if (recentUsers.length > 0) {
@@ -180,7 +165,7 @@ async function renderChats() {
             html += `<div class="chat-section-empty">Вы ещё можете пообщаться, выберите пользователя ниже!</div>`;
         }
 
-        // Все пользователи (кроме уже показанных)
+        // Все пользователи
         const recentSet = new Set(recentLogins);
         const others = allUsers.filter(u => !recentSet.has(u.login) && filterFn(u));
         if (others.length > 0) {
@@ -207,14 +192,15 @@ async function renderChats() {
         return url ? `<img src="${escapeHtml(url)}" alt="${login}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>';
     }
 
-    // ------------------- Выбор чата -------------------
-    window._selectChat = function(login) {
+    // ==================== Выбор чата (плавный) ====================
+    window._selectChat = async function(login) {
         if (currentChatLogin === login) return;
+
         currentChatLogin = login;
-        activeMessageToken++; // сбрасываем предыдущие незавершённые загрузки
+        activeMessageToken++;
         const token = activeMessageToken;
 
-        // Показываем панель переписки с анимацией
+        // Плавно показываем панель
         noChatSelected.style.display = 'none';
         activeChatView.style.display = 'flex';
         activeChatView.classList.remove('fade-in');
@@ -225,6 +211,11 @@ async function renderChats() {
         chatHeaderName.textContent = profile?.name || login;
         chatHeaderAvatar.innerHTML = getAvatarHTML(login);
 
+        // Статус онлайн
+        const online = onlineCache[login] ?? false;
+        chatHeaderStatus.textContent = online ? 'В сети' : 'Не в сети';
+        chatHeaderStatus.className = 'chat-header-status ' + (online ? 'online' : '');
+
         // Загружаем сообщения
         (async () => {
             if (messagesCache[login]) {
@@ -234,7 +225,6 @@ async function renderChats() {
                 if (token !== activeMessageToken) return;
 
                 if (msgs.length === 0) {
-                    // Создаём системное сообщение
                     const sysMsg = {
                         sender: 'system',
                         receiver: login,
@@ -249,9 +239,7 @@ async function renderChats() {
             }
         })();
 
-        // Снимаем точку уведомлений
         markChatAsRead(login);
-        // Обновляем список (подсветка)
         renderChatListInstant(chatSearchInput?.value || '');
     };
 
@@ -260,13 +248,13 @@ async function renderChats() {
         messagesContainer.innerHTML = messages.map(msg => {
             if (msg.sender === 'system') return `<div class="system-msg">${escapeHtml(msg.message)}</div>`;
 
+            // Голосовое
             if (msg.type === 'voice') {
-                // Голосовое сообщение с полосками
-                const bars = [8,14,6,18,10,12,9,17,5,15,11,7,13,16,8,10,14,6,12,9]; // статичные высоты
+                const bars = [8,14,6,18,10,12,9,17,5,15,11,7,13,16,8,10,14,6,12,9];
                 const waveHTML = bars.map(h => `<div class="voice-wave-bar" style="height:${h}px;"></div>`).join('');
                 const isMe = msg.sender === currentUser.login;
                 return `<div class="voice-message ${isMe ? 'sent' : 'received'}">
-                    <button class="voice-play-btn"><i class="fas fa-play"></i></button>
+                    <button class="voice-play-btn" onclick="toggleVoicePlayback(this, '${msg.id}')"><i class="fas fa-play"></i></button>
                     <div class="voice-wave">${waveHTML}</div>
                     <span class="voice-time">0:${String(msg.duration || 0).padStart(2,'0')}</span>
                     <div class="msg-footer">
@@ -276,12 +264,13 @@ async function renderChats() {
                 </div>`;
             }
 
+            // Текстовое сообщение
             const isMe = msg.sender === currentUser.login;
             const avatar = isMe ? (currentUser.avatar || '') : (avatarCache[login] || '');
             const avatarHTML = avatar ? `<img src="${escapeHtml(avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : '<i class="fas fa-user"></i>';
-            // Реакции (показываем, если есть в localStorage myReactions)
-            const userReaction = getReactionForMessage(msg.id);
-            const hasReaction = !!userReaction;
+
+            const reaction = myReactions[msg.id] || null;
+            const hasReaction = !!reaction;
 
             return `<div class="message ${isMe ? 'sent' : 'received'}">
                 <div class="msg-avatar">${avatarHTML}</div>
@@ -290,22 +279,31 @@ async function renderChats() {
                     <div class="msg-footer">
                         <span class="msg-time">${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         <button class="msg-reaction-btn ${hasReaction ? 'active' : ''}" onclick="openReactionPicker(${msg.id})">
-                            ${hasReaction ? userReaction : '<i class="fas fa-smile"></i>'}
+                            ${hasReaction ? `<span style="font-size:16px;">${reaction}</span>` : '<i class="fas fa-plus"></i>'}
                         </button>
+                        ${hasReaction ? `<div class="msg-reactions-display"><span class="msg-reaction-badge">${reaction}</span></div>` : ''}
                     </div>
-                    ${hasReaction ? `<div class="msg-reactions-display"><span class="msg-reaction-badge">${userReaction}</span></div>` : ''}
                 </div>
             </div>`;
         }).join('');
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Простейшее хранилище реакций в памяти (можно localStorage)
-    const myReactions = {};
+    // Заглушка воспроизведения голосового
+    window.toggleVoicePlayback = function(btn, msgId) {
+        const icon = btn.querySelector('i');
+        if (icon.classList.contains('fa-play')) {
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+            // здесь должна быть реальная логика Audio
+        } else {
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
+        }
+    };
 
-    function getReactionForMessage(msgId) {
-        return myReactions[msgId] || null;
-    }
+    // ==================== Реакции (модалка) ====================
+    let currentReactionMsgId = null;
 
     window.openReactionPicker = function(msgId) {
         currentReactionMsgId = msgId;
@@ -314,29 +312,6 @@ async function renderChats() {
         renderEmojiCategories('people');
     };
 
-    let currentReactionMsgId = null;
-
-    // ------------------- Модалка эмодзи -------------------
-    function ensureEmojiModal() {
-        if (document.getElementById('emojiModalOverlay')) return;
-        const overlay = document.createElement('div');
-        overlay.id = 'emojiModalOverlay';
-        overlay.className = 'emoji-modal-overlay';
-        overlay.innerHTML = `
-            <div class="emoji-modal">
-                <div class="emoji-modal-header">
-                    <span class="emoji-modal-title">Выбрать реакцию</span>
-                    <button class="mini-profile-close" onclick="closeEmojiModal()"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="emoji-categories" id="emojiCats"></div>
-                <div class="emoji-grid" id="emojiGrid"></div>
-            </div>`;
-        document.body.appendChild(overlay);
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) closeEmojiModal();
-        });
-    }
-
     function closeEmojiModal() {
         const modal = document.getElementById('emojiModalOverlay');
         if (modal) modal.classList.remove('active');
@@ -344,11 +319,11 @@ async function renderChats() {
     }
 
     const emojiData = {
-        people: ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳'],
-        gestures: ['👍','👎','👏','🙌','🤝','🤜','🤛','✊','👊','🤚','👋','🖐','✋','🖖','👌','🤏','✌️','🤞','🤟','🤘','🤙','🖕','☝️','👆','👇','👉','👈'],
-        hearts: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️'],
-        emotions: ['🔥','⭐','🌟','✨','💥','💯','💢','💫','💦','💨','💣','💬','💭','🗯️','💤'],
-        celebrations: ['🎉','🎊','🎈','🎂','🎀','🎁','🏆','🥇','🥈','🥉','🏅','🎖️']
+        people: ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘'],
+        gestures: ['👍','👎','👏','🙌','🤝','✌️','🤞','🤟','🤘','🤙'],
+        hearts: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍'],
+        emotions: ['🔥','⭐','🌟','✨','💥','💯'],
+        celebrations: ['🎉','🎊','🎈','🎂','🎀','🎁','🏆']
     };
 
     function renderEmojiCategories(activeCat) {
@@ -374,27 +349,29 @@ async function renderChats() {
 
     window.selectReaction = function(emoji) {
         if (currentReactionMsgId) {
-            myReactions[currentReactionMsgId] = emoji;
+            if (myReactions[currentReactionMsgId] === emoji) {
+                delete myReactions[currentReactionMsgId];
+            } else {
+                myReactions[currentReactionMsgId] = emoji;
+            }
             if (currentChatLogin) renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
             closeEmojiModal();
         }
     };
 
-    // ------------------- Отправка сообщений -------------------
+    // ==================== Отправка сообщений ====================
     async function sendTextMessage() {
         const partner = currentChatLogin;
         if (!partner) return;
         const text = messageInput.value.trim();
         if (!text) return;
 
-        // Оптимистично показываем
         const now = new Date().toISOString();
         const newMsg = { sender: currentUser.login, receiver: partner, message: text, created_at: now, id: Date.now() };
         if (!messagesCache[partner]) messagesCache[partner] = [];
         messagesCache[partner].push(newMsg);
         renderMessages(partner, messagesCache[partner]);
 
-        // Обновляем превью
         lastMessagesCache[partner] = {
             text: `Вы: ${text}`,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -407,11 +384,9 @@ async function renderChats() {
         messageInput.value = '';
         messageInput.focus();
 
-        // Отправляем в БД
         const { error } = await _supabase.from('chat_messages').insert([{ sender: currentUser.login, receiver: partner, message: text }]);
         if (error) {
             showToast('Ошибка отправки');
-            // Откат
             messagesCache[partner].pop();
             renderMessages(partner, messagesCache[partner]);
         }
@@ -460,20 +435,16 @@ async function renderChats() {
             const originalHTML = messageInputArea.getAttribute('data-original-html');
             if (originalHTML) messageInputArea.innerHTML = originalHTML;
         }
-        // Перепривязываем обработчики
         bindInputHandlers();
-        // Если была запись, отправляем голосовое
         if (voiceSeconds > 0 && currentChatLogin) {
             const now = new Date().toISOString();
             const voiceMsg = { sender: currentUser.login, receiver: currentChatLogin, type:'voice', duration: voiceSeconds, created_at: now, id: Date.now() };
             if (!messagesCache[currentChatLogin]) messagesCache[currentChatLogin] = [];
             messagesCache[currentChatLogin].push(voiceMsg);
             renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
-            // Обновляем превью и список
             lastMessagesCache[currentChatLogin] = { text: '🎤 Голосовое сообщение', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
             if (!recentLogins.includes(currentChatLogin)) recentLogins.push(currentChatLogin);
             renderChatListInstant(chatSearchInput?.value || '');
-            // В реальности нужно сохранить аудио, пока просто заглушка
         }
         voiceSeconds = 0;
     }
@@ -487,23 +458,28 @@ async function renderChats() {
         if (voiceBtn) voiceBtn.onclick = startVoiceRecording;
     }
 
-    // ------------------- Мини-профиль -------------------
+    // ==================== Мини‑профиль (выезжает справа) ====================
     window.openMiniProfile = function() {
         if (!currentChatLogin) return;
-        const panel = document.getElementById('miniProfilePopup') || document.getElementById('miniProfilePanel');
-        if (!panel) return;
+        let panel = document.getElementById('miniProfilePanel');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'miniProfilePanel';
+            panel.className = 'mini-profile-panel';
+            chatViewPanel.appendChild(panel);
+        }
+        // закрыть при повторном клике
         if (panel.classList.contains('active')) {
             panel.classList.remove('active');
             return;
         }
         const user = allUsers.find(u => u.login === currentChatLogin);
         if (!user) return;
-        // Загружаем полные данные
         getProfile(currentChatLogin).then(profile => {
             getUserBadges(currentChatLogin).then(badgesData => {
                 const badges = (badgesData || []).map(b => b.badges?.name).filter(Boolean);
                 panel.innerHTML = `
-                    <div class="mini-profile-close" onclick="document.getElementById('miniProfilePopup').classList.remove('active')"><i class="fas fa-times"></i></div>
+                    <div class="mini-profile-close" onclick="document.getElementById('miniProfilePanel').classList.remove('active')"><i class="fas fa-times"></i></div>
                     <div class="mini-profile-avatar-large">${profile?.avatar ? `<img src="${escapeHtml(profile.avatar)}" alt="${currentChatLogin}">` : '<i class="fas fa-user"></i>'}</div>
                     <div class="mini-profile-name">${escapeHtml(profile?.name || currentChatLogin)}</div>
                     <div class="mini-profile-tag">@${currentChatLogin}</div>
@@ -518,7 +494,15 @@ async function renderChats() {
         });
     };
 
-    // ------------------- Звонки -------------------
+    // Закрытие мини‑профиля при клике вне
+    document.addEventListener('click', function(e) {
+        const panel = document.getElementById('miniProfilePanel');
+        if (panel && panel.classList.contains('active') && !panel.contains(e.target) && e.target !== chatHeaderAvatar && e.target !== chatHeaderName) {
+            panel.classList.remove('active');
+        }
+    });
+
+    // ==================== Звонки ====================
     window.startCall = function(type) {
         if (!currentChatLogin) return;
         callOverlay.style.display = 'flex';
@@ -529,21 +513,32 @@ async function renderChats() {
         callOverlay.style.display = 'none';
     };
 
-    // ------------------- Обработчики событий -------------------
+    // ==================== Обработчики событий ====================
     bindInputHandlers();
     chatSearchInput.addEventListener('input', () => renderChatListInstant(chatSearchInput.value));
     chatHeaderAvatar.addEventListener('click', openMiniProfile);
     chatHeaderName.addEventListener('click', openMiniProfile);
 
-    // Закрытие мини-профиля по клику вне
-    document.addEventListener('click', function(e) {
-        const panel = document.getElementById('miniProfilePopup') || document.getElementById('miniProfilePanel');
-        if (panel && panel.classList.contains('active') && !panel.contains(e.target) && e.target !== chatHeaderAvatar && e.target !== chatHeaderName) {
-            panel.classList.remove('active');
-        }
-    });
+    // Модалка эмодзи (создаётся, если её нет)
+    if (!document.getElementById('emojiModalOverlay')) {
+        const overlay = document.createElement('div');
+        overlay.id = 'emojiModalOverlay';
+        overlay.className = 'emoji-modal-overlay';
+        overlay.innerHTML = `
+            <div class="emoji-modal">
+                <div class="emoji-modal-header">
+                    <span class="emoji-modal-title">Выбрать реакцию</span>
+                    <button class="mini-profile-close" onclick="closeEmojiModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="emoji-categories" id="emojiCats"></div>
+                <div class="emoji-grid" id="emojiGrid"></div>
+            </div>`;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) closeEmojiModal();
+        });
+    }
 
-    // ------------------- Старт -------------------
-    ensureEmojiModal();
+    // ==================== Старт ====================
     await initialLoad();
 }
