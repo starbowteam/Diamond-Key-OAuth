@@ -1,11 +1,11 @@
-// diamkey-chats.js — чаты DiamKey (полный, с реальным временем, звонками с прямоугольниками)
+// diamkey-chats.js — чаты DiamKey (полный, без сокращений, с реальными аудио/видео звонками)
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
         return;
     }
 
-    // ==================== СТИЛИ ЗВОНКОВ ====================
+    // ==================== ВНЕДРЯЕМ СТИЛИ ЗВОНКОВ ====================
     const callStyles = document.createElement('style');
     callStyles.textContent = `
         .incoming-call-overlay {
@@ -39,7 +39,7 @@ async function renderChats() {
         .call-accept-btn:hover { transform: scale(1.1); background: rgba(46,204,113,0.4); }
         .call-decline-btn:hover { transform: scale(1.1); background: rgba(224,93,93,0.4); }
 
-        /* Модалка активного звонка – два прямоугольника */
+        /* Активный звонок – два прямоугольника по центру */
         .call-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); backdrop-filter: blur(25px);
@@ -49,38 +49,32 @@ async function renderChats() {
         }
         .call-modal.active { display: flex; }
         .call-modal-content {
-            width: 100%; height: 100%; position: relative;
+            display: flex; flex-direction: column; align-items: center; gap: 24px;
         }
-        .call-remote-container {
-            position: absolute; top: 60px; left: 20px; right: 20px; bottom: 140px;
-            border-radius: 24px; overflow: hidden; background: #1a1a1a;
+        .call-box {
+            border-radius: 24px; overflow: hidden; background: #1a1a24;
+            border: 2px solid var(--accent); box-shadow: 0 0 30px rgba(0,0,0,0.7);
             display: flex; align-items: center; justify-content: center;
         }
-        .call-remote-video, .call-remote-avatar {
+        .call-box-remote {
+            width: 280px; height: 210px;
+        }
+        .call-box-local {
+            width: 140px; height: 105px;
+        }
+        .call-box video, .call-box-avatar {
             width: 100%; height: 100%; object-fit: cover;
         }
-        .call-remote-avatar {
-            display: flex; align-items: center; justify-content: center;
-            font-size: 80px; color: var(--text-muted); background: rgba(255,255,255,0.05);
+        .call-box-avatar {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 8px; color: var(--text-muted);
+            font-size: 14px; background: rgba(255,255,255,0.03);
         }
-        .call-local-container {
-            position: absolute; bottom: 140px; right: 32px;
-            width: 160px; height: 120px; border-radius: 16px;
-            overflow: hidden; border: 2px solid var(--accent);
-            background: #000;
-        }
-        .call-local-video, .call-local-avatar {
-            width: 100%; height: 100%; object-fit: cover;
-        }
-        .call-local-avatar {
-            display: flex; align-items: center; justify-content: center;
-            font-size: 40px; color: var(--text-muted); background: rgba(255,255,255,0.05);
-        }
-        .call-modal-name { font-size: 24px; font-weight: 700; color: white; z-index: 1; text-align: center; margin-top: 16px; }
-        .call-modal-timer { font-family: monospace; font-size: 20px; color: var(--text-muted); z-index: 1; text-align: center; }
+        .call-box-avatar i { font-size: 40px; }
+        .call-modal-name { font-size: 20px; font-weight: 700; color: white; }
+        .call-modal-timer { font-family: monospace; font-size: 18px; color: var(--text-muted); }
         .call-modal-controls {
-            display: flex; gap: 20px; z-index: 3;
-            position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px; margin-top: 8px;
         }
         .call-modal-btn {
             width: 56px; height: 56px; border-radius: 50%;
@@ -136,7 +130,7 @@ async function renderChats() {
     let callRole = null;
     let incomingCallData = null;
 
-    // ==================== UI ЗВОНКОВ ====================
+    // ==================== UI ЗВОНКОВ (НОВЫЙ ДИЗАЙН) ====================
     function ensureCallUI() {
         if (document.getElementById('incomingCallOverlay')) return;
 
@@ -158,13 +152,13 @@ async function renderChats() {
             <div class="call-modal-content">
                 <div class="call-modal-name" id="callModalName"></div>
                 <div class="call-modal-timer" id="callModalTimer">00:00</div>
-                <div class="call-remote-container">
-                    <video class="call-remote-video" id="callRemoteVideo" autoplay playsinline style="display:none;"></video>
-                    <div class="call-remote-avatar" id="callRemoteAvatar" style="display:flex;"><i class="fas fa-user"></i></div>
+                <div class="call-box call-box-remote" id="remoteBox">
+                    <video id="callRemoteVideo" autoplay playsinline style="display:none;"></video>
+                    <div class="call-box-avatar" id="remoteAvatar" style="display:none;"><i class="fas fa-user"></i> <span id="remoteName"></span></div>
                 </div>
-                <div class="call-local-container">
-                    <video class="call-local-video" id="callLocalVideo" autoplay muted playsinline style="display:none;"></video>
-                    <div class="call-local-avatar" id="callLocalAvatar" style="display:flex;"><i class="fas fa-user"></i></div>
+                <div class="call-box call-box-local" id="localBox">
+                    <video id="callLocalVideo" autoplay muted playsinline style="display:none;"></video>
+                    <div class="call-box-avatar" id="localAvatar" style="display:none;"><i class="fas fa-user"></i> <span>Вы</span></div>
                 </div>
                 <div class="call-modal-controls">
                     <button class="call-modal-btn" id="callToggleMicBtn"><i class="fas fa-microphone"></i></button>
@@ -488,11 +482,9 @@ async function renderChats() {
             .channel('chat_messages_channel')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `receiver=eq.${currentUser.login}` }, payload => {
                 const newMsg = payload.new;
-                if (newMsg.sender === currentUser.login) return; // своё уже отобразили
-                // Добавляем в кэш
+                if (newMsg.sender === currentUser.login) return;
                 if (!messagesCache[newMsg.sender]) messagesCache[newMsg.sender] = [];
                 messagesCache[newMsg.sender].push(newMsg);
-                // Обновляем последние сообщения
                 if (newMsg.message && newMsg.sender !== 'system') {
                     lastMessagesCache[newMsg.sender] = {
                         text: `${newMsg.sender}: ${newMsg.message}`,
@@ -502,7 +494,6 @@ async function renderChats() {
                         recentLogins.push(newMsg.sender);
                     }
                 }
-                // Если открыт чат с отправителем, перерисовываем
                 if (currentChatLogin === newMsg.sender) {
                     renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
                 }
@@ -683,17 +674,25 @@ async function renderChats() {
         modal.classList.add('active');
         document.getElementById('callModalName').textContent = currentCallPartner;
 
+        const remoteVideo = document.getElementById('callRemoteVideo');
+        const remoteAvatar = document.getElementById('remoteAvatar');
+        const localVideo = document.getElementById('callLocalVideo');
+        const localAvatar = document.getElementById('localAvatar');
+
+        // Показываем удалённое видео, если звонок видео, иначе аватар
         if (currentCallType === 'video') {
-            document.getElementById('callRemoteAvatar').style.display = 'none';
-            document.getElementById('callRemoteVideo').style.display = 'block';
-            document.getElementById('callLocalAvatar').style.display = 'none';
-            document.getElementById('callLocalVideo').style.display = 'block';
-            document.getElementById('callLocalVideo').srcObject = localStream;
+            remoteVideo.style.display = 'block';
+            remoteAvatar.style.display = 'none';
+            localVideo.style.display = 'block';
+            localAvatar.style.display = 'none';
+            document.getElementById('remoteName').textContent = currentCallPartner;
+            localVideo.srcObject = localStream;
         } else {
-            document.getElementById('callRemoteVideo').style.display = 'none';
-            document.getElementById('callRemoteAvatar').style.display = 'flex';
-            document.getElementById('callLocalVideo').style.display = 'none';
-            document.getElementById('callLocalAvatar').style.display = 'flex';
+            remoteVideo.style.display = 'none';
+            remoteAvatar.style.display = 'flex';
+            document.getElementById('remoteName').textContent = currentCallPartner;
+            localVideo.style.display = 'none';
+            localAvatar.style.display = 'flex';
         }
     }
 
