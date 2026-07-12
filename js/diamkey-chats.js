@@ -574,13 +574,12 @@ async function renderChats() {
         incomingChannel.subscribe();
     }
 
-    window.declineIncomingCall = function() {
+    window.declineIncomingCall = async function() {
         document.getElementById('incomingCallOverlay').classList.remove('active');
         if (incomingCallData) {
-            const targetChannel = _supabase.channel(`user_${incomingCallData.from}`);
-            targetChannel.subscribe().then(() => {
-                targetChannel.send({ type: 'broadcast', event: 'call_declined', payload: { from: currentUser.login } });
-            });
+            const declineChannel = _supabase.channel(`user_${incomingCallData.from}_decline`);
+            await declineChannel.subscribe();
+            await declineChannel.send({ type: 'broadcast', event: 'call_declined', payload: { from: currentUser.login } });
         }
         incomingCallData = null;
         cleanupCallState();
@@ -595,9 +594,9 @@ async function renderChats() {
         currentCallType = type;
         callRole = 'callee';
         // Отправляем подтверждение инициатору
-        const targetChannel = _supabase.channel(`user_${from}`);
-        await targetChannel.subscribe();
-        await targetChannel.send({ type: 'broadcast', event: 'call_accepted', payload: { from: currentUser.login } });
+        const acceptChannel = _supabase.channel(`user_${from}_accepted`);
+        await acceptChannel.subscribe();
+        await acceptChannel.send({ type: 'broadcast', event: 'call_accepted', payload: { from: currentUser.login } });
         // Запускаем WebRTC как отвечающая сторона
         await startCallee();
     };
@@ -605,7 +604,6 @@ async function renderChats() {
     // Подписка на принятие вызова (для инициатора)
     const acceptedChannel = _supabase.channel(`user_${currentUser.login}_accepted`);
     acceptedChannel.on('broadcast', { event: 'call_accepted' }, async (payload) => {
-        // Инициатор получил подтверждение
         if (callRole === 'caller' && !isInCall) {
             document.getElementById('incomingCallOverlay').classList.remove('active');
             incomingCallData = null;
@@ -646,7 +644,6 @@ async function renderChats() {
         localStream = stream;
         setupCallChannel(currentCallPartner);
         peerConnection = await createPeerConnection(stream);
-        // offer будет получен в handleSignalMessage
         showCallModal();
         startCallTimer();
         isInCall = true;
