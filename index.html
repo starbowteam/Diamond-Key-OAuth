@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="/css/style.css?v=19">
+    <link rel="stylesheet" href="/css/style.css?v=20">
 </head>
 <body>
     <div class="smooth-loader-overlay" id="smoothLoader">
@@ -145,7 +145,7 @@
                 <div class="glass-panel profile-section" id="profileGpxProfile"></div>
                 <div class="glass-panel gpx-section" id="profileGpxSection" style="display:none;"></div>
             </section>
-            <!-- Чаты -->
+            <!-- Чаты (ФИНАЛЬНАЯ ВЕРСИЯ) -->
             <section class="page" id="page-chats">
                 <div class="chats-container">
                     <div class="chat-list-panel" id="chatListPanel">
@@ -180,16 +180,6 @@
                                 <input type="text" id="messageInput" placeholder="Введите сообщение...">
                                 <button class="voice-record-btn" id="voiceRecordBtn"><i class="fas fa-microphone"></i></button>
                                 <button class="send-btn" id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
-                            </div>
-                            <div class="call-overlay" id="callOverlay" style="display:none;">
-                                <div class="call-avatar"><i class="fas fa-user"></i></div>
-                                <div class="call-name" id="callName"></div>
-                                <div class="call-status" id="callStatusText"></div>
-                                <div class="call-controls">
-                                    <button class="call-btn"><i class="fas fa-microphone"></i></button>
-                                    <button class="call-btn"><i class="fas fa-volume-up"></i></button>
-                                    <button class="call-btn end-call" onclick="endCall()"><i class="fas fa-phone-slash"></i></button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -268,15 +258,15 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
-    <script src="/js/diamkey-core.js?v=19"></script>
-    <script src="/js/diamkey-router.js?v=19"></script>
-    <script src="/js/diamkey-ui.js?v=19"></script>
-    <script src="/js/diamkey-wall.js?v=19"></script>
-    <script src="/js/diamkey-gpx.js?v=19"></script>
-    <script src="/js/diamkey-users.js?v=19"></script>
-    <script src="/js/diamkey-voice.js?v=19"></script>
-    <script src="/js/diamkey-ai-profile.js?v=19"></script>
-    <script src="/js/diamkey-reactions.js?v=19"></script>
-    <script src="/js/diamkey-chats.js?v=19"></script>
+    <script src="/js/diamkey-core.js?v=20"></script>
+    <script src="/js/diamkey-router.js?v=20"></script>
+    <script src="/js/diamkey-ui.js?v=20"></script>
+    <script src="/js/diamkey-wall.js?v=20"></script>
+    <script src="/js/diamkey-gpx.js?v=20"></script>
+    <script src="/js/diamkey-users.js?v=20"></script>
+    <script src="/js/diamkey-voice.js?v=20"></script>
+    <script src="/js/diamkey-ai-profile.js?v=20"></script>
+    <script src="/js/diamkey-reactions.js?v=20"></script>
+    <script src="/js/diamkey-chats.js?v=20"></script>
 </body>
 </html>
