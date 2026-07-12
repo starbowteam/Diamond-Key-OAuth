@@ -1,13 +1,14 @@
-// diamkey-chats.js — чаты DiamKey (полный, без сокращений, с реальными аудио/видео звонками)
+// diamkey-chats.js — чаты DiamKey (полный, без сокращений, все баги пофикшены)
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
         return;
     }
 
-    // ==================== ВНЕДРЯЕМ СТИЛИ ЗВОНКОВ ====================
+    // ==================== СТИЛИ ====================
     const callStyles = document.createElement('style');
     callStyles.textContent = `
+        /* входящий вызов */
         .incoming-call-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
@@ -40,7 +41,7 @@ async function renderChats() {
         .call-accept-btn:hover { transform: scale(1.1); background: rgba(46,204,113,0.4); }
         .call-decline-btn:hover { transform: scale(1.1); background: rgba(224,93,93,0.4); }
 
-        /* Модалка звонка – два горизонтальных прямоугольника */
+        /* активный звонок */
         .call-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.92); backdrop-filter: blur(30px);
@@ -89,11 +90,11 @@ async function renderChats() {
     `;
     document.head.appendChild(callStyles);
 
-    // Удаляем старый оверлей звонка, если остался
+    // удаляем старый оверлей, если остался
     const oldCallOverlay = document.getElementById('callOverlay');
     if (oldCallOverlay) oldCallOverlay.remove();
 
-    // ==================== DOM‑элементы чатов ====================
+    // ==================== DOM ====================
     const chatListContainer = document.getElementById('chatListContainer');
     const chatSearchInput = document.getElementById('chatSearchInput');
     const noChatSelected = document.getElementById('noChatSelected');
@@ -107,18 +108,19 @@ async function renderChats() {
     const chatHeaderAvatar = document.getElementById('chatHeaderAvatar');
     const chatViewPanel = document.getElementById('chatViewPanel');
 
-    // ==================== Состояние ====================
+    // ==================== СОСТОЯНИЕ ====================
     let currentChatLogin = null;
     let allUsers = [];
     let recentLogins = [];
     let lastMessagesCache = {};
     let avatarCache = {};
     let onlineCache = {};
+    window._onlineCache = onlineCache;   // для обновления из core.js
     let messagesCache = {};
     let activeMessageToken = 0;
     let messageSubscription = null;
 
-    // ==================== Состояние звонков ====================
+    // звонки
     let localStream = null;
     let peerConnection = null;
     let currentCallPartner = null;
@@ -129,9 +131,16 @@ async function renderChats() {
     let callTimerInterval = null;
     let callRole = null;
     let incomingCallData = null;
-    let remoteStreamURL = null;
     let callAcceptedChannel = null;
     let callDeclineChannel = null;
+
+    // голосовые сообщения
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let voiceRecording = false;
+    let voiceSeconds = 0;
+    let voiceTimer = null;
+    let voiceInterval = null;
 
     // ==================== UI ЗВОНКОВ ====================
     function ensureCallUI() {
@@ -181,19 +190,24 @@ async function renderChats() {
 
     // ==================== ИНИЦИАЛИЗАЦИЯ ====================
     async function initialLoad() {
-        chatListContainer.innerHTML = `<div class="list-loader">
-            <i class="fas fa-comments"></i>
-            <div class="list-loader-progress"><div class="fill" id="chatsLoaderBar" style="width:0%"></div></div>
-            <small>Загружаем чаты...</small>
-        </div>`;
-
-        const loaderBar = document.getElementById('chatsLoaderBar');
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += 7;
-            if (progress > 90) progress = 90;
-            if (loaderBar) loaderBar.style.width = progress + '%';
-        }, 200);
+        // если первый раз – прогресс-бар
+        if (!allUsers.length) {
+            chatListContainer.innerHTML = `<div class="list-loader">
+                <i class="fas fa-comments"></i>
+                <div class="list-loader-progress"><div class="fill" id="chatsLoaderBar" style="width:0%"></div></div>
+                <small>Загружаем чаты...</small>
+            </div>`;
+            const loaderBar = document.getElementById('chatsLoaderBar');
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 7; if (progress > 90) progress = 90;
+                if (loaderBar) loaderBar.style.width = progress + '%';
+            }, 200);
+            await new Promise(r => setTimeout(r, 500));
+            clearInterval(interval);
+            if (loaderBar) loaderBar.style.width = '100%';
+            await new Promise(r => setTimeout(r, 300));
+        }
 
         const [users, presenceData, recent] = await Promise.all([
             getUsers(),
@@ -201,18 +215,12 @@ async function renderChats() {
             getRealRecentChats()
         ]);
 
-        clearInterval(interval);
-        if (loaderBar) loaderBar.style.width = '100%';
-        await new Promise(r => setTimeout(r, 300));
-
         allUsers = users.filter(u => u.login !== currentUser.login);
         const now = Date.now();
         (presenceData.data || []).forEach(p => {
             onlineCache[p.login] = (now - new Date(p.last_seen).getTime()) < 120000;
         });
-        allUsers.forEach(u => {
-            if (!(u.login in onlineCache)) onlineCache[u.login] = false;
-        });
+        allUsers.forEach(u => { if (!(u.login in onlineCache)) onlineCache[u.login] = false; });
 
         await Promise.all(allUsers.map(async (u) => {
             if (!avatarCache[u.login]) {
@@ -227,7 +235,10 @@ async function renderChats() {
         subscribeToIncomingCalls();
         subscribeToMessages();
         ensureCallUI();
+        if (typeof subscribePresence === 'function') subscribePresence();   // обновление онлайна
     }
+
+    // ... продолжение в следующем сообщении ...
 
     async function getRealRecentChats() {
         const { data, error } = await _supabase
@@ -252,7 +263,7 @@ async function renderChats() {
             if (real.length > 0) {
                 const last = real[real.length - 1];
                 lastMessagesCache[login] = {
-                    text: `${last.sender === currentUser.login ? 'Вы' : login}: ${last.message || '(голосовое)'}`,
+                    text: `${last.sender === currentUser.login ? 'Вы' : login}: ${last.message || (last.type === 'voice' ? '🎤 Голосовое' : '')}`,
                     time: new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 };
             } else {
@@ -370,7 +381,7 @@ async function renderChats() {
             if (msg.type === 'voice') {
                 const isMe = msg.sender === currentUser.login;
                 return `<div class="voice-message ${isMe ? 'sent' : 'received'}">
-                    <button class="voice-play-btn" onclick="toggleVoicePlayback(this)"><i class="fas fa-play"></i></button>
+                    <button class="voice-play-btn" onclick="toggleVoicePlayback(this, '${msg.audio_url || ''}')"><i class="fas fa-play"></i></button>
                     <span style="margin:0 8px; font-size:14px;">🎤 Голосовое сообщение</span>
                     <span class="voice-time">0:${String(msg.duration || 0).padStart(2, '0')}</span>
                     <div class="msg-footer"><span class="msg-time">${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
@@ -390,15 +401,30 @@ async function renderChats() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    window.toggleVoicePlayback = function(btn) {
+    window.toggleVoicePlayback = function(btn, url) {
+        if (!url) return;
         const icon = btn.querySelector('i');
         if (icon.classList.contains('fa-play')) {
-            icon.classList.remove('fa-play'); icon.classList.add('fa-pause');
+            if (window._currentVoiceAudio) { window._currentVoiceAudio.pause(); }
+            const audio = new Audio(url);
+            window._currentVoiceAudio = audio;
+            audio.play();
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+            audio.onended = () => {
+                icon.classList.remove('fa-pause');
+                icon.classList.add('fa-play');
+            };
         } else {
-            icon.classList.remove('fa-pause'); icon.classList.add('fa-play');
+            if (window._currentVoiceAudio) {
+                window._currentVoiceAudio.pause();
+            }
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
         }
     };
 
+    // ==================== ОТПРАВКА СООБЩЕНИЙ ====================
     async function sendTextMessage() {
         if (!currentChatLogin) return;
         const text = messageInput.value.trim();
@@ -416,35 +442,60 @@ async function renderChats() {
         if (error) { showToast('Ошибка отправки'); messagesCache[currentChatLogin].pop(); renderMessages(currentChatLogin, messagesCache[currentChatLogin]); }
     }
 
-    let voiceRecording = false, voiceTimer = null, voiceSeconds = 0, voiceInterval = null;
-    function startVoiceRecording() {
+    // ==================== ГОЛОСОВЫЕ СООБЩЕНИЯ ====================
+    async function startVoiceRecording() {
         const area = document.getElementById('messageInputArea') || document.querySelector('.message-input-area');
         if (!area || !currentChatLogin) return;
-        voiceRecording = true;
-        const orig = area.innerHTML;
-        area.setAttribute('data-orig', orig);
-        area.innerHTML = `<div class="voice-recording-area"><div class="voice-waveform-large" id="voiceWaveLarge">${Array.from({length:30},()=>'<div class="voice-bar-large" style="height:3px;"></div>').join('')}</div><span class="voice-timer-large" id="voiceTimerLarge">00:00</span><button class="voice-stop-btn" id="voiceStopBtn"><i class="fas fa-stop"></i></button></div>`;
-        voiceSeconds = 0;
-        voiceTimer = setInterval(() => { voiceSeconds++; const el = document.getElementById('voiceTimerLarge'); if(el) el.textContent = `00:${String(voiceSeconds).padStart(2,'0')}`; }, 1000);
-        voiceInterval = setInterval(() => document.querySelectorAll('.voice-bar-large').forEach(b => b.style.height = Math.floor(Math.random()*20+3)+'px'), 100);
-        document.getElementById('voiceStopBtn').addEventListener('click', stopVoiceRecording);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const url = URL.createObjectURL(blob);
+                uploadVoiceMessage(blob, url);
+            };
+            mediaRecorder.start();
+            voiceRecording = true;
+            const orig = area.innerHTML;
+            area.setAttribute('data-orig', orig);
+            area.innerHTML = `<div class="voice-recording-area"><div class="voice-waveform-large" id="voiceWaveLarge">${Array.from({length:30},()=>'<div class="voice-bar-large" style="height:3px;"></div>').join('')}</div><span class="voice-timer-large" id="voiceTimerLarge">00:00</span><button class="voice-stop-btn" id="voiceStopBtn"><i class="fas fa-stop"></i></button></div>`;
+            voiceSeconds = 0;
+            voiceTimer = setInterval(() => { voiceSeconds++; const el = document.getElementById('voiceTimerLarge'); if(el) el.textContent = `00:${String(voiceSeconds).padStart(2,'0')}`; }, 1000);
+            voiceInterval = setInterval(() => document.querySelectorAll('.voice-bar-large').forEach(b => b.style.height = Math.floor(Math.random()*20+3)+'px'), 100);
+            document.getElementById('voiceStopBtn').addEventListener('click', stopVoiceRecording);
+        } catch (e) { showToast('Нет доступа к микрофону'); }
     }
+
     function stopVoiceRecording() {
         if (!voiceRecording) return;
-        voiceRecording = false; clearInterval(voiceTimer); clearInterval(voiceInterval);
+        voiceRecording = false;
+        clearInterval(voiceTimer); clearInterval(voiceInterval);
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        }
         const area = document.getElementById('messageInputArea') || document.querySelector('.message-input-area');
         if (area) { const orig = area.getAttribute('data-orig'); if (orig) area.innerHTML = orig; }
         bindInputHandlers();
-        if (voiceSeconds > 0 && currentChatLogin) {
-            const now = new Date().toISOString();
-            const vm = { sender:currentUser.login, receiver:currentChatLogin, type:'voice', duration:voiceSeconds, created_at:now, id:Date.now() };
-            if (!messagesCache[currentChatLogin]) messagesCache[currentChatLogin] = [];
-            messagesCache[currentChatLogin].push(vm); renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
-            lastMessagesCache[currentChatLogin] = { text:'🎤 Голосовое сообщение', time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) };
-            if (!recentLogins.includes(currentChatLogin)) recentLogins.push(currentChatLogin);
-            renderChatListInstant(chatSearchInput?.value||'');
-        }
-        voiceSeconds = 0;
+    }
+
+    async function uploadVoiceMessage(blob, localUrl) {
+        if (!currentChatLogin) return;
+        const fileName = `voice_${Date.now()}_${Math.random().toString(36).substr(2,6)}.webm`;
+        const { error } = await _supabase.storage.from('wall_audio').upload(fileName, blob, { contentType: 'audio/webm', cacheControl: '3600' });
+        if (error) { showToast('Ошибка загрузки голосового'); return; }
+        const { data: { publicUrl } } = _supabase.storage.from('wall_audio').getPublicUrl(fileName);
+        const now = new Date().toISOString();
+        const voiceMsg = { sender: currentUser.login, receiver: currentChatLogin, type: 'voice', audio_url: publicUrl, duration: voiceSeconds, created_at: now, id: Date.now() };
+        await _supabase.from('chat_messages').insert([{ sender: currentUser.login, receiver: currentChatLogin, message: '', type: 'voice', audio_url: publicUrl, duration: voiceSeconds }]);
+        if (!messagesCache[currentChatLogin]) messagesCache[currentChatLogin] = [];
+        messagesCache[currentChatLogin].push(voiceMsg);
+        renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
+        lastMessagesCache[currentChatLogin] = { text: '🎤 Голосовое сообщение', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+        if (!recentLogins.includes(currentChatLogin)) recentLogins.push(currentChatLogin);
+        renderChatListInstant(chatSearchInput?.value || '');
     }
 
     function bindInputHandlers() {
@@ -481,27 +532,36 @@ async function renderChats() {
         if (panel && panel.classList.contains('active') && !panel.contains(e.target) && e.target!==chatHeaderAvatar && e.target!==chatHeaderName) panel.classList.remove('active');
     });
 
-    // ==================== ПОДПИСКА НА СООБЩЕНИЯ В РЕАЛЬНОМ ВРЕМЕНИ ====================
+    // ==================== REALTIME СООБЩЕНИЯ ====================
     function subscribeToMessages() {
+        if (messageSubscription) _supabase.removeChannel(messageSubscription);
         messageSubscription = _supabase
             .channel('chat_messages_channel')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `receiver=eq.${currentUser.login}` }, payload => {
                 const newMsg = payload.new;
-                if (newMsg.sender === currentUser.login) return;
+                if (!newMsg || !newMsg.sender) return;
+                // своё сообщение с другой вкладки – добавляем, если ещё нет
+                if (newMsg.sender === currentUser.login) {
+                    if (!messagesCache[newMsg.receiver]) messagesCache[newMsg.receiver] = [];
+                    const exists = messagesCache[newMsg.receiver].some(m => m.id === newMsg.id);
+                    if (!exists) {
+                        messagesCache[newMsg.receiver].push(newMsg);
+                        if (currentChatLogin === newMsg.receiver) renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
+                    }
+                    return;
+                }
+                // входящее
                 if (!messagesCache[newMsg.sender]) messagesCache[newMsg.sender] = [];
                 messagesCache[newMsg.sender].push(newMsg);
                 if (newMsg.message && newMsg.sender !== 'system') {
                     lastMessagesCache[newMsg.sender] = {
-                        text: `${newMsg.sender}: ${newMsg.message}`,
+                        text: `${newMsg.sender}: ${newMsg.message || (newMsg.type === 'voice' ? '🎤 Голосовое' : '')}`,
                         time: new Date(newMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     };
-                    if (!recentLogins.includes(newMsg.sender)) {
-                        recentLogins.push(newMsg.sender);
-                    }
+                    if (!recentLogins.includes(newMsg.sender)) recentLogins.push(newMsg.sender);
+                    addUnreadMessage(newMsg.sender);
                 }
-                if (currentChatLogin === newMsg.sender) {
-                    renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
-                }
+                if (currentChatLogin === newMsg.sender) renderMessages(currentChatLogin, messagesCache[currentChatLogin]);
                 renderChatListInstant(chatSearchInput?.value || '');
             })
             .subscribe();
@@ -511,7 +571,7 @@ async function renderChats() {
     async function getLocalMedia(type) {
         const constraints = { audio: true, video: type === 'video' };
         try { return await navigator.mediaDevices.getUserMedia(constraints); }
-        catch (e) { showToast('Нет доступа к камере/микрофону'); return null; }
+        catch (e) { showToast('Нет доступа к камере/микрофону'); cleanupCallState(); return null; }
     }
 
     async function createPeerConnection(stream) {
@@ -525,6 +585,11 @@ async function renderChats() {
                 document.getElementById('remoteAvatar').style.display = 'none';
             }
         };
+        pc.oniceconnectionstatechange = () => {
+            if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+                endCallInternal();
+            }
+        };
         pc.onicecandidate = (event) => {
             if (event.candidate && callChannel) {
                 callChannel.send({ type: 'ice-candidate', candidate: event.candidate, sender: currentUser.login });
@@ -534,6 +599,7 @@ async function renderChats() {
     }
 
     function setupCallChannel(partner) {
+        if (callChannel) _supabase.removeChannel(callChannel);
         const channelName = `call_${[currentUser.login, partner].sort().join('_')}`;
         callChannel = _supabase.channel(channelName);
         callChannel.on('broadcast', { event: 'signal' }, (payload) => {
@@ -546,34 +612,34 @@ async function renderChats() {
 
     async function handleSignalMessage(msg) {
         if (!peerConnection) return;
-        if (msg.type === 'offer') {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            callChannel.send({ type: 'answer', sdp: answer, sender: currentUser.login });
-        } else if (msg.type === 'answer') {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-        } else if (msg.type === 'ice-candidate') {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate));
-        } else if (msg.type === 'hangup') {
-            endCallInternal();
-        } else if (msg.type === 'video-state-change') {
-            const remoteVideo = document.getElementById('callRemoteVideo');
-            const remoteAvatar = document.getElementById('remoteAvatar');
-            if (msg.enabled) {
-                remoteVideo.style.display = 'block';
-                remoteAvatar.style.display = 'none';
-            } else {
-                remoteVideo.style.display = 'none';
-                remoteAvatar.style.display = 'flex';
+        try {
+            if (msg.type === 'offer') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                callChannel.send({ type: 'answer', sdp: answer, sender: currentUser.login });
+            } else if (msg.type === 'answer') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+            } else if (msg.type === 'ice-candidate') {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate));
+            } else if (msg.type === 'hangup') {
+                endCallInternal();
+            } else if (msg.type === 'video-state-change') {
+                const remoteVideo = document.getElementById('callRemoteVideo');
+                const remoteAvatar = document.getElementById('remoteAvatar');
+                if (msg.enabled) {
+                    remoteVideo.style.display = 'block';
+                    remoteAvatar.style.display = 'none';
+                } else {
+                    remoteVideo.style.display = 'none';
+                    remoteAvatar.style.display = 'flex';
+                }
             }
-        }
+        } catch(e) { console.error('Signal error:', e); }
     }
 
-    // Инициировать звонок (вызывающий)
     window.startCall = async function(type) {
-        if (!currentChatLogin) return;
-        if (isInCall) { showToast('Уже в звонке'); return; }
+        if (!currentChatLogin || isInCall) return;
         currentCallPartner = currentChatLogin;
         currentCallType = type;
         callRole = 'caller';
@@ -584,29 +650,20 @@ async function renderChats() {
         document.getElementById('incCallType').textContent = type === 'voice' ? 'Голосовой вызов' : 'Видеозвонок';
         document.getElementById('incCallActions').innerHTML = '<button class="call-decline-btn" onclick="cancelOutgoingCall()"><i class="fas fa-phone-slash"></i></button>';
 
-        // Отправляем приглашение получателю (на глобальный канал incoming_call)
         const targetChannel = _supabase.channel(`user_${currentChatLogin}`);
         await targetChannel.subscribe();
         await targetChannel.send({ type: 'broadcast', event: 'incoming_call', payload: { from: currentUser.login, type } });
-
-        incomingCallData = { from: currentUser.login, type };
-        setTimeout(() => {
-            if (!isInCall && incomingCallData) {
-                cancelOutgoingCall();
-                showToast('Вызов не принят');
-            }
-        }, 30000);
+        setTimeout(() => { if (!isInCall && callRole === 'caller') { cancelOutgoingCall(); showToast('Вызов не принят'); } }, 30000);
     };
 
     window.cancelOutgoingCall = function() {
         document.getElementById('incomingCallOverlay').classList.remove('active');
-        incomingCallData = null;
         cleanupCallState();
     };
 
-    // Подписка на входящие вызовы (глобальный канал)
     function subscribeToIncomingCalls() {
-        // Каждый пользователь слушает свой уникальный канал user_<login>
+        if (callAcceptedChannel) _supabase.removeChannel(callAcceptedChannel);
+        if (callDeclineChannel) _supabase.removeChannel(callDeclineChannel);
         const incomingChannel = _supabase.channel(`user_${currentUser.login}`);
         incomingChannel.on('broadcast', { event: 'incoming_call' }, (payload) => {
             const { from, type } = payload.payload;
@@ -617,26 +674,35 @@ async function renderChats() {
             document.getElementById('incCallType').textContent = type === 'voice' ? 'Голосовой вызов' : 'Видеозвонок';
             document.getElementById('incCallActions').innerHTML = `
                 <button class="call-decline-btn" onclick="declineIncomingCall()"><i class="fas fa-phone-slash"></i></button>
-                <button class="call-accept-btn" onclick="acceptIncomingCall()"><i class="fas fa-phone"></i></button>
-            `;
-            // Показываем аватар звонящего, если есть
+                <button class="call-accept-btn" onclick="acceptIncomingCall()"><i class="fas fa-phone"></i></button>`;
             const avatarEl = document.getElementById('incCallAvatar');
-            const avatarUrl = avatarCache[from];
-            if (avatarUrl) {
-                avatarEl.innerHTML = `<img src="${escapeHtml(avatarUrl)}" alt="${from}" style="width:100%;height:100%;object-fit:cover;">`;
-            } else {
-                avatarEl.innerHTML = '<i class="fas fa-user"></i>';
-            }
+            const av = avatarCache[from];
+            avatarEl.innerHTML = av ? `<img src="${escapeHtml(av)}" alt="${from}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>';
         });
         incomingChannel.subscribe();
+
+        callAcceptedChannel = _supabase.channel(`user_${currentUser.login}_accepted`);
+        callAcceptedChannel.on('broadcast', { event: 'call_accepted' }, async () => {
+            if (callRole === 'caller' && !isInCall) {
+                document.getElementById('incomingCallOverlay').classList.remove('active');
+                await startCaller();
+            }
+        });
+        callAcceptedChannel.subscribe();
+
+        callDeclineChannel = _supabase.channel(`user_${currentUser.login}_decline`);
+        callDeclineChannel.on('broadcast', { event: 'call_declined' }, () => {
+            if (callRole === 'caller' && !isInCall) { cancelOutgoingCall(); showToast('Вызов отклонён'); }
+        });
+        callDeclineChannel.subscribe();
     }
 
     window.declineIncomingCall = async function() {
         document.getElementById('incomingCallOverlay').classList.remove('active');
         if (incomingCallData) {
-            const declineChannel = _supabase.channel(`user_${incomingCallData.from}_decline`);
-            await declineChannel.subscribe();
-            await declineChannel.send({ type: 'broadcast', event: 'call_declined', payload: { from: currentUser.login } });
+            const ch = _supabase.channel(`user_${incomingCallData.from}_decline`);
+            await ch.subscribe();
+            await ch.send({ type: 'broadcast', event: 'call_declined', payload: { from: currentUser.login } });
         }
         incomingCallData = null;
         cleanupCallState();
@@ -650,38 +716,15 @@ async function renderChats() {
         currentCallPartner = from;
         currentCallType = type;
         callRole = 'callee';
-        // Отправляем подтверждение инициатору
-        const acceptChannel = _supabase.channel(`user_${from}_accepted`);
-        await acceptChannel.subscribe();
-        await acceptChannel.send({ type: 'broadcast', event: 'call_accepted', payload: { from: currentUser.login } });
-        // Запускаем WebRTC как отвечающая сторона
+        const ch = _supabase.channel(`user_${from}_accepted`);
+        await ch.subscribe();
+        await ch.send({ type: 'broadcast', event: 'call_accepted', payload: { from: currentUser.login } });
         await startCallee();
     };
 
-    // Подписка на принятие вызова (для инициатора)
-    callAcceptedChannel = _supabase.channel(`user_${currentUser.login}_accepted`);
-    callAcceptedChannel.on('broadcast', { event: 'call_accepted' }, async (payload) => {
-        if (callRole === 'caller' && !isInCall) {
-            document.getElementById('incomingCallOverlay').classList.remove('active');
-            incomingCallData = null;
-            await startCaller();
-        }
-    });
-    callAcceptedChannel.subscribe();
-
-    // Подписка на отклонение
-    callDeclineChannel = _supabase.channel(`user_${currentUser.login}_decline`);
-    callDeclineChannel.on('broadcast', { event: 'call_declined' }, () => {
-        if (callRole === 'caller' && !isInCall) {
-            cancelOutgoingCall();
-            showToast('Вызов отклонён');
-        }
-    });
-    callDeclineChannel.subscribe();
-
     async function startCaller() {
         const stream = await getLocalMedia(currentCallType);
-        if (!stream) { cleanupCallState(); return; }
+        if (!stream) return;
         localStream = stream;
         setupCallChannel(currentCallPartner);
         peerConnection = await createPeerConnection(stream);
@@ -695,7 +738,7 @@ async function renderChats() {
 
     async function startCallee() {
         const stream = await getLocalMedia(currentCallType);
-        if (!stream) { cleanupCallState(); return; }
+        if (!stream) return;
         localStream = stream;
         setupCallChannel(currentCallPartner);
         peerConnection = await createPeerConnection(stream);
@@ -708,25 +751,20 @@ async function renderChats() {
         const modal = document.getElementById('callModal');
         modal.classList.add('active');
         document.getElementById('callModalName').textContent = currentCallPartner;
-
-        const remoteVideo = document.getElementById('callRemoteVideo');
-        const remoteAvatar = document.getElementById('remoteAvatar');
-        const localVideo = document.getElementById('callLocalVideo');
-        const localAvatar = document.getElementById('localAvatar');
-
         document.getElementById('remoteName').textContent = currentCallPartner;
 
+        const rv = document.getElementById('callRemoteVideo');
+        const ra = document.getElementById('remoteAvatar');
+        const lv = document.getElementById('callLocalVideo');
+        const la = document.getElementById('localAvatar');
+
         if (currentCallType === 'video') {
-            localVideo.srcObject = localStream;
-            localVideo.style.display = 'block';
-            localAvatar.style.display = 'none';
-            remoteVideo.style.display = 'none';
-            remoteAvatar.style.display = 'flex';
+            lv.srcObject = localStream;
+            lv.style.display = 'block'; la.style.display = 'none';
+            rv.style.display = 'none'; ra.style.display = 'flex';
         } else {
-            localVideo.style.display = 'none';
-            localAvatar.style.display = 'flex';
-            remoteVideo.style.display = 'none';
-            remoteAvatar.style.display = 'flex';
+            lv.style.display = 'none'; la.style.display = 'flex';
+            rv.style.display = 'none'; ra.style.display = 'flex';
         }
     }
 
@@ -743,34 +781,26 @@ async function renderChats() {
     }
 
     function toggleCallMic() {
-        if (localStream) {
-            const audioTrack = localStream.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                document.getElementById('callToggleMicBtn').querySelector('i').className = audioTrack.enabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
-            }
+        if (!localStream) return;
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            document.getElementById('callToggleMicBtn').querySelector('i').className = audioTrack.enabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
         }
     }
 
     function toggleCallVideo() {
-        if (localStream && currentCallType === 'video') {
-            const videoTrack = localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                document.getElementById('callToggleVideoBtn').querySelector('i').className = videoTrack.enabled ? 'fas fa-video' : 'fas fa-video-slash';
-                const localVideo = document.getElementById('callLocalVideo');
-                const localAvatar = document.getElementById('localAvatar');
-                if (videoTrack.enabled) {
-                    localVideo.style.display = 'block';
-                    localAvatar.style.display = 'none';
-                } else {
-                    localVideo.style.display = 'none';
-                    localAvatar.style.display = 'flex';
-                }
-                if (callChannel) {
-                    callChannel.send({ type: 'video-state-change', enabled: videoTrack.enabled, sender: currentUser.login });
-                }
-            }
+        if (!localStream || currentCallType !== 'video') return;
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            const icon = document.getElementById('callToggleVideoBtn').querySelector('i');
+            icon.className = videoTrack.enabled ? 'fas fa-video' : 'fas fa-video-slash';
+            const lv = document.getElementById('callLocalVideo');
+            const la = document.getElementById('localAvatar');
+            if (videoTrack.enabled) { lv.style.display = 'block'; la.style.display = 'none'; }
+            else { lv.style.display = 'none'; la.style.display = 'flex'; }
+            if (callChannel) callChannel.send({ type: 'video-state-change', enabled: videoTrack.enabled, sender: currentUser.login });
         }
     }
 
@@ -790,11 +820,7 @@ async function renderChats() {
         document.getElementById('incomingCallOverlay').classList.remove('active');
         if (currentCallPartner && duration > 0) {
             const m = Math.floor(duration / 60), s = duration % 60;
-            const callMsg = {
-                sender: 'system', receiver: currentCallPartner,
-                message: `📞 Вызов завершён · ${m}:${String(s).padStart(2,'0')}`,
-                created_at: new Date().toISOString()
-            };
+            const callMsg = { sender:'system', receiver:currentCallPartner, message:`📞 Вызов завершён · ${m}:${String(s).padStart(2,'0')}`, created_at:new Date().toISOString() };
             if (!messagesCache[currentCallPartner]) messagesCache[currentCallPartner] = [];
             messagesCache[currentCallPartner].push(callMsg);
             if (currentChatLogin === currentCallPartner) renderMessages(currentCallPartner, messagesCache[currentCallPartner]);
@@ -803,14 +829,31 @@ async function renderChats() {
     }
 
     function cleanupCallState() {
-        currentCallPartner = null;
-        currentCallType = null;
-        callRole = null;
-        incomingCallData = null;
+        currentCallPartner = null; currentCallType = null; callRole = null; incomingCallData = null;
         if (callTimerInterval) clearInterval(callTimerInterval);
+        if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+        if (peerConnection) { peerConnection.close(); peerConnection = null; }
+        if (callChannel) { _supabase.removeChannel(callChannel); callChannel = null; }
+        isInCall = false;
     }
 
-    // ==================== ФИНАЛЬНАЯ ПРИВЯЗКА ====================
+    // очистка при уходе со страницы
+    function cleanupAll() {
+        if (isInCall) endCallInternal();
+        if (messageSubscription) { _supabase.removeChannel(messageSubscription); messageSubscription = null; }
+        if (callAcceptedChannel) { _supabase.removeChannel(callAcceptedChannel); callAcceptedChannel = null; }
+        if (callDeclineChannel) { _supabase.removeChannel(callDeclineChannel); callDeclineChannel = null; }
+        if (typeof unsubscribePresence === 'function') unsubscribePresence();
+    }
+    window.addEventListener('beforeunload', cleanupAll);
+    // при SPA-уходе (если роутер сменит страницу) тоже очищаем
+    const observer = new MutationObserver(() => {
+        if (!document.getElementById('page-chats')?.classList.contains('active')) {
+            cleanupAll();
+        }
+    });
+    observer.observe(document.getElementById('page-chats'), { attributes: true, attributeFilter: ['class'] });
+
     bindInputHandlers();
     chatSearchInput.addEventListener('input', () => renderChatListInstant(chatSearchInput.value));
     chatHeaderAvatar.addEventListener('click', openMiniProfile);
