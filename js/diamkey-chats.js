@@ -1,14 +1,13 @@
-// diamkey-chats.js — чаты DiamKey (полный, без сокращений, все баги пофикшены)
+// diamkey-chats.js — чаты DiamKey (ФИНАЛЬНЫЙ ФИКС ВСЕХ БАГОВ, ВЕБКИ, СООБЩЕНИЯ, ЗВОНКИ)
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
         return;
     }
 
-    // ==================== СТИЛИ ====================
+    // ==================== ВНЕДРЯЕМ СТИЛИ ЗВОНКОВ ====================
     const callStyles = document.createElement('style');
     callStyles.textContent = `
-        /* входящий вызов */
         .incoming-call-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
@@ -41,7 +40,6 @@ async function renderChats() {
         .call-accept-btn:hover { transform: scale(1.1); background: rgba(46,204,113,0.4); }
         .call-decline-btn:hover { transform: scale(1.1); background: rgba(224,93,93,0.4); }
 
-        /* активный звонок */
         .call-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.92); backdrop-filter: blur(30px);
@@ -90,11 +88,11 @@ async function renderChats() {
     `;
     document.head.appendChild(callStyles);
 
-    // удаляем старый оверлей, если остался
+    // Удаляем старый оверлей, если остался
     const oldCallOverlay = document.getElementById('callOverlay');
     if (oldCallOverlay) oldCallOverlay.remove();
 
-    // ==================== DOM ====================
+    // ==================== DOM‑элементы чатов ====================
     const chatListContainer = document.getElementById('chatListContainer');
     const chatSearchInput = document.getElementById('chatSearchInput');
     const noChatSelected = document.getElementById('noChatSelected');
@@ -108,19 +106,19 @@ async function renderChats() {
     const chatHeaderAvatar = document.getElementById('chatHeaderAvatar');
     const chatViewPanel = document.getElementById('chatViewPanel');
 
-    // ==================== СОСТОЯНИЕ ====================
+    // ==================== Состояние ====================
     let currentChatLogin = null;
     let allUsers = [];
     let recentLogins = [];
     let lastMessagesCache = {};
     let avatarCache = {};
     let onlineCache = {};
-    window._onlineCache = onlineCache;   // для обновления из core.js
+    window._onlineCache = onlineCache;
     let messagesCache = {};
     let activeMessageToken = 0;
     let messageSubscription = null;
 
-    // звонки
+    // ==================== Состояние звонков ====================
     let localStream = null;
     let peerConnection = null;
     let currentCallPartner = null;
@@ -133,14 +131,6 @@ async function renderChats() {
     let incomingCallData = null;
     let callAcceptedChannel = null;
     let callDeclineChannel = null;
-
-    // голосовые сообщения
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let voiceRecording = false;
-    let voiceSeconds = 0;
-    let voiceTimer = null;
-    let voiceInterval = null;
 
     // ==================== UI ЗВОНКОВ ====================
     function ensureCallUI() {
@@ -190,7 +180,7 @@ async function renderChats() {
 
     // ==================== ИНИЦИАЛИЗАЦИЯ ====================
     async function initialLoad() {
-        // если первый раз – прогресс-бар
+        // Если первый раз — прогресс-бар
         if (!allUsers.length) {
             chatListContainer.innerHTML = `<div class="list-loader">
                 <i class="fas fa-comments"></i>
@@ -235,10 +225,8 @@ async function renderChats() {
         subscribeToIncomingCalls();
         subscribeToMessages();
         ensureCallUI();
-        if (typeof subscribePresence === 'function') subscribePresence();   // обновление онлайна
+        if (typeof subscribePresence === 'function') subscribePresence();
     }
-
-    // ... продолжение в следующем сообщении ...
 
     async function getRealRecentChats() {
         const { data, error } = await _supabase
@@ -352,24 +340,21 @@ async function renderChats() {
         chatHeaderAvatar.innerHTML = getAvatarHTML(login);
         chatHeaderStatus.textContent = onlineCache[login] ? 'В сети' : 'Не в сети';
         chatHeaderStatus.className = 'chat-header-status ' + (onlineCache[login] ? 'online' : '');
-        if (messagesCache[login]) {
-            if (token === activeMessageToken) renderMessages(login, messagesCache[login]);
-        } else {
-            const msgs = await loadMessagesFromDB(login);
-            if (token !== activeMessageToken) return;
-            if (msgs.length === 0) {
-                const sysMsg = {
-                    sender: 'system',
-                    receiver: login,
-                    message: `Это ваш чат с ${escapeHtml(profile?.name || login)}! Можете начинать свое общение.`,
-                    created_at: new Date().toISOString()
-                };
-                await _supabase.from('chat_messages').insert([sysMsg]);
-                msgs.push(sysMsg);
-            }
-            messagesCache[login] = msgs;
-            renderMessages(login, msgs);
+        // ВСЕГДА загружаем свежие сообщения из БД, чтобы не потерять историю после звонков
+        const msgs = await loadMessagesFromDB(login);
+        if (token !== activeMessageToken) return;
+        if (msgs.length === 0) {
+            const sysMsg = {
+                sender: 'system',
+                receiver: login,
+                message: `Это ваш чат с ${escapeHtml(profile?.name || login)}! Можете начинать свое общение.`,
+                created_at: new Date().toISOString()
+            };
+            await _supabase.from('chat_messages').insert([sysMsg]);
+            msgs.push(sysMsg);
         }
+        messagesCache[login] = msgs;
+        renderMessages(login, msgs);
         markChatAsRead(login);
         renderChatListInstant(chatSearchInput?.value || '');
     };
@@ -443,6 +428,13 @@ async function renderChats() {
     }
 
     // ==================== ГОЛОСОВЫЕ СООБЩЕНИЯ ====================
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let voiceRecording = false;
+    let voiceSeconds = 0;
+    let voiceTimer = null;
+    let voiceInterval = null;
+
     async function startVoiceRecording() {
         const area = document.getElementById('messageInputArea') || document.querySelector('.message-input-area');
         if (!area || !currentChatLogin) return;
@@ -532,15 +524,19 @@ async function renderChats() {
         if (panel && panel.classList.contains('active') && !panel.contains(e.target) && e.target!==chatHeaderAvatar && e.target!==chatHeaderName) panel.classList.remove('active');
     });
 
-    // ==================== REALTIME СООБЩЕНИЯ ====================
+    // ==================== ПОДПИСКА НА СООБЩЕНИЯ В РЕАЛЬНОМ ВРЕМЕНИ (ФИКС) ====================
     function subscribeToMessages() {
-        if (messageSubscription) _supabase.removeChannel(messageSubscription);
+        if (messageSubscription) {
+            _supabase.removeChannel(messageSubscription);
+            messageSubscription = null;
+        }
+        const channelName = 'chat_messages_' + currentUser.login; // УНИКАЛЬНОЕ ИМЯ
         messageSubscription = _supabase
-            .channel('chat_messages_channel')
+            .channel(channelName)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `receiver=eq.${currentUser.login}` }, payload => {
                 const newMsg = payload.new;
                 if (!newMsg || !newMsg.sender) return;
-                // своё сообщение с другой вкладки – добавляем, если ещё нет
+                // Своё сообщение с другой вкладки
                 if (newMsg.sender === currentUser.login) {
                     if (!messagesCache[newMsg.receiver]) messagesCache[newMsg.receiver] = [];
                     const exists = messagesCache[newMsg.receiver].some(m => m.id === newMsg.id);
@@ -550,7 +546,7 @@ async function renderChats() {
                     }
                     return;
                 }
-                // входящее
+                // Входящее
                 if (!messagesCache[newMsg.sender]) messagesCache[newMsg.sender] = [];
                 messagesCache[newMsg.sender].push(newMsg);
                 if (newMsg.message && newMsg.sender !== 'system') {
@@ -581,8 +577,11 @@ async function renderChats() {
             const remoteVideo = document.getElementById('callRemoteVideo');
             if (remoteVideo && event.streams[0]) {
                 remoteVideo.srcObject = event.streams[0];
-                remoteVideo.style.display = 'block';
-                document.getElementById('remoteAvatar').style.display = 'none';
+                // Показываем видео, если трек видео
+                if (event.track.kind === 'video') {
+                    remoteVideo.style.display = 'block';
+                    document.getElementById('remoteAvatar').style.display = 'none';
+                }
             }
         };
         pc.oniceconnectionstatechange = () => {
@@ -813,18 +812,32 @@ async function renderChats() {
         const duration = callStartTime ? Math.floor((Date.now() - callStartTime) / 1000) : 0;
         if (localStream) localStream.getTracks().forEach(t => t.stop());
         if (peerConnection) peerConnection.close();
-        if (callChannel) _supabase.removeChannel(callChannel);
-        localStream = null; peerConnection = null; callChannel = null;
+        // НЕ УДАЛЯЕМ КАНАЛ СРАЗУ, ДАЁМ ВРЕМЯ ДЛЯ ДОСТАВКИ HANGUP
+        if (callChannel) {
+            setTimeout(() => {
+                _supabase.removeChannel(callChannel);
+                callChannel = null;
+            }, 500);
+        }
+        localStream = null; peerConnection = null;
         isInCall = false; clearInterval(callTimerInterval);
         document.getElementById('callModal').classList.remove('active');
         document.getElementById('incomingCallOverlay').classList.remove('active');
+
+        // Только если чат открыт, добавляем сообщение в кэш, иначе оно загрузится из БД
         if (currentCallPartner && duration > 0) {
             const m = Math.floor(duration / 60), s = duration % 60;
             const callMsg = { sender:'system', receiver:currentCallPartner, message:`📞 Вызов завершён · ${m}:${String(s).padStart(2,'0')}`, created_at:new Date().toISOString() };
-            if (!messagesCache[currentCallPartner]) messagesCache[currentCallPartner] = [];
-            messagesCache[currentCallPartner].push(callMsg);
-            if (currentChatLogin === currentCallPartner) renderMessages(currentCallPartner, messagesCache[currentCallPartner]);
+            // Сохраняем в БД
+            _supabase.from('chat_messages').insert([callMsg]);
+            // Если чат открыт, добавляем в кэш и показываем
+            if (currentChatLogin === currentCallPartner) {
+                if (!messagesCache[currentCallPartner]) messagesCache[currentCallPartner] = [];
+                messagesCache[currentCallPartner].push(callMsg);
+                renderMessages(currentCallPartner, messagesCache[currentCallPartner]);
+            }
         }
+
         cleanupCallState();
     }
 
@@ -833,8 +846,7 @@ async function renderChats() {
         if (callTimerInterval) clearInterval(callTimerInterval);
         if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
         if (peerConnection) { peerConnection.close(); peerConnection = null; }
-        if (callChannel) { _supabase.removeChannel(callChannel); callChannel = null; }
-        isInCall = false;
+        // callChannel очистится по таймеру
     }
 
     // очистка при уходе со страницы
@@ -843,10 +855,10 @@ async function renderChats() {
         if (messageSubscription) { _supabase.removeChannel(messageSubscription); messageSubscription = null; }
         if (callAcceptedChannel) { _supabase.removeChannel(callAcceptedChannel); callAcceptedChannel = null; }
         if (callDeclineChannel) { _supabase.removeChannel(callDeclineChannel); callDeclineChannel = null; }
+        if (callChannel) { _supabase.removeChannel(callChannel); callChannel = null; }
         if (typeof unsubscribePresence === 'function') unsubscribePresence();
     }
     window.addEventListener('beforeunload', cleanupAll);
-    // при SPA-уходе (если роутер сменит страницу) тоже очищаем
     const observer = new MutationObserver(() => {
         if (!document.getElementById('page-chats')?.classList.contains('active')) {
             cleanupAll();
