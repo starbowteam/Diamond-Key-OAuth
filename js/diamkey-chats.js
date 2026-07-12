@@ -22,6 +22,7 @@ async function renderChats() {
             animation: callPulse 1.5s ease-in-out infinite;
             overflow: hidden;
         }
+        .caller-avatar img { width: 100%; height: 100%; object-fit: cover; }
         @keyframes callPulse {
             0%,100% { box-shadow: 0 0 0 0 rgba(192,192,208,0.6); }
             50% { box-shadow: 0 0 0 25px rgba(192,192,208,0); }
@@ -60,6 +61,7 @@ async function renderChats() {
             background: #1a1a24; border: 2px solid var(--accent);
             box-shadow: 0 0 40px rgba(0,0,0,0.8);
             display: flex; align-items: center; justify-content: center;
+            position: relative;
         }
         .call-box video { width: 100%; height: 100%; object-fit: cover; }
         .call-box-avatar {
@@ -127,8 +129,11 @@ async function renderChats() {
     let callTimerInterval = null;
     let callRole = null;
     let incomingCallData = null;
+    let remoteStreamURL = null;
+    let callAcceptedChannel = null;
+    let callDeclineChannel = null;
 
-    // ==================== UI ЗВОНКОВ (НОВЫЙ ДИЗАЙН) ====================
+    // ==================== UI ЗВОНКОВ ====================
     function ensureCallUI() {
         if (document.getElementById('incomingCallOverlay')) return;
 
@@ -152,11 +157,11 @@ async function renderChats() {
                 <div class="call-modal-timer" id="callModalTimer">00:00</div>
                 <div class="call-boxes">
                     <div class="call-box" id="remoteBox">
-                        <video id="callRemoteVideo" autoplay playsinline style="display:none;"></video>
+                        <video id="callRemoteVideo" autoplay playsinline></video>
                         <div class="call-box-avatar" id="remoteAvatar"><i class="fas fa-user"></i> <span id="remoteName"></span></div>
                     </div>
                     <div class="call-box" id="localBox">
-                        <video id="callLocalVideo" autoplay muted playsinline style="display:none;"></video>
+                        <video id="callLocalVideo" autoplay muted playsinline></video>
                         <div class="call-box-avatar" id="localAvatar"><i class="fas fa-user"></i> <span>Вы</span></div>
                     </div>
                 </div>
@@ -514,7 +519,7 @@ async function renderChats() {
         stream.getTracks().forEach(track => pc.addTrack(track, stream));
         pc.ontrack = (event) => {
             const remoteVideo = document.getElementById('callRemoteVideo');
-            if (remoteVideo) {
+            if (remoteVideo && event.streams[0]) {
                 remoteVideo.srcObject = event.streams[0];
                 remoteVideo.style.display = 'block';
                 document.getElementById('remoteAvatar').style.display = 'none';
@@ -553,7 +558,6 @@ async function renderChats() {
         } else if (msg.type === 'hangup') {
             endCallInternal();
         } else if (msg.type === 'video-state-change') {
-            // удалённое переключение видео
             const remoteVideo = document.getElementById('callRemoteVideo');
             const remoteAvatar = document.getElementById('remoteAvatar');
             if (msg.enabled) {
@@ -566,6 +570,7 @@ async function renderChats() {
         }
     }
 
+    // Инициировать звонок (вызывающий)
     window.startCall = async function(type) {
         if (!currentChatLogin) return;
         if (isInCall) { showToast('Уже в звонке'); return; }
@@ -579,6 +584,7 @@ async function renderChats() {
         document.getElementById('incCallType').textContent = type === 'voice' ? 'Голосовой вызов' : 'Видеозвонок';
         document.getElementById('incCallActions').innerHTML = '<button class="call-decline-btn" onclick="cancelOutgoingCall()"><i class="fas fa-phone-slash"></i></button>';
 
+        // Отправляем приглашение получателю (на глобальный канал incoming_call)
         const targetChannel = _supabase.channel(`user_${currentChatLogin}`);
         await targetChannel.subscribe();
         await targetChannel.send({ type: 'broadcast', event: 'incoming_call', payload: { from: currentUser.login, type } });
@@ -598,7 +604,9 @@ async function renderChats() {
         cleanupCallState();
     };
 
+    // Подписка на входящие вызовы (глобальный канал)
     function subscribeToIncomingCalls() {
+        // Каждый пользователь слушает свой уникальный канал user_<login>
         const incomingChannel = _supabase.channel(`user_${currentUser.login}`);
         incomingChannel.on('broadcast', { event: 'incoming_call' }, (payload) => {
             const { from, type } = payload.payload;
@@ -611,6 +619,14 @@ async function renderChats() {
                 <button class="call-decline-btn" onclick="declineIncomingCall()"><i class="fas fa-phone-slash"></i></button>
                 <button class="call-accept-btn" onclick="acceptIncomingCall()"><i class="fas fa-phone"></i></button>
             `;
+            // Показываем аватар звонящего, если есть
+            const avatarEl = document.getElementById('incCallAvatar');
+            const avatarUrl = avatarCache[from];
+            if (avatarUrl) {
+                avatarEl.innerHTML = `<img src="${escapeHtml(avatarUrl)}" alt="${from}" style="width:100%;height:100%;object-fit:cover;">`;
+            } else {
+                avatarEl.innerHTML = '<i class="fas fa-user"></i>';
+            }
         });
         incomingChannel.subscribe();
     }
@@ -634,30 +650,34 @@ async function renderChats() {
         currentCallPartner = from;
         currentCallType = type;
         callRole = 'callee';
+        // Отправляем подтверждение инициатору
         const acceptChannel = _supabase.channel(`user_${from}_accepted`);
         await acceptChannel.subscribe();
         await acceptChannel.send({ type: 'broadcast', event: 'call_accepted', payload: { from: currentUser.login } });
+        // Запускаем WebRTC как отвечающая сторона
         await startCallee();
     };
 
-    const acceptedChannel = _supabase.channel(`user_${currentUser.login}_accepted`);
-    acceptedChannel.on('broadcast', { event: 'call_accepted' }, async (payload) => {
+    // Подписка на принятие вызова (для инициатора)
+    callAcceptedChannel = _supabase.channel(`user_${currentUser.login}_accepted`);
+    callAcceptedChannel.on('broadcast', { event: 'call_accepted' }, async (payload) => {
         if (callRole === 'caller' && !isInCall) {
             document.getElementById('incomingCallOverlay').classList.remove('active');
             incomingCallData = null;
             await startCaller();
         }
     });
-    acceptedChannel.subscribe();
+    callAcceptedChannel.subscribe();
 
-    const declineChannel = _supabase.channel(`user_${currentUser.login}_decline`);
-    declineChannel.on('broadcast', { event: 'call_declined' }, () => {
+    // Подписка на отклонение
+    callDeclineChannel = _supabase.channel(`user_${currentUser.login}_decline`);
+    callDeclineChannel.on('broadcast', { event: 'call_declined' }, () => {
         if (callRole === 'caller' && !isInCall) {
             cancelOutgoingCall();
             showToast('Вызов отклонён');
         }
     });
-    declineChannel.subscribe();
+    callDeclineChannel.subscribe();
 
     async function startCaller() {
         const stream = await getLocalMedia(currentCallType);
@@ -700,7 +720,6 @@ async function renderChats() {
             localVideo.srcObject = localStream;
             localVideo.style.display = 'block';
             localAvatar.style.display = 'none';
-            // удалённое видео появится, когда придёт трек
             remoteVideo.style.display = 'none';
             remoteAvatar.style.display = 'flex';
         } else {
@@ -748,7 +767,6 @@ async function renderChats() {
                     localVideo.style.display = 'none';
                     localAvatar.style.display = 'flex';
                 }
-                // Отправляем состояние партнёру
                 if (callChannel) {
                     callChannel.send({ type: 'video-state-change', enabled: videoTrack.enabled, sender: currentUser.login });
                 }
