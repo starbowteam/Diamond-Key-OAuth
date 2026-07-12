@@ -1,4 +1,4 @@
-// diamkey-core.js — ядро DiamKey (чаты, онлайн, уведомления)
+// diamkey-core.js — ядро DiamKey (чаты, онлайн, уведомления, Realtime-утечки убраны)
 const SUPABASE_URL = 'https://pqgwrokpizeelfrjmgoc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZ3dyb2twaXplZWxmcmptZ29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNTAyMDksImV4cCI6MjA5MjcyNjIwOX0.qtFCGBnpwdQbtmpwSZxI_hH3arq4HBAw62vs5h8WmAk';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -201,15 +201,47 @@ async function getUserBadges(login) {
     return data || [];
 }
 
-async function assignBadge(userLogin, badgeId) { return { error: null }; }
-async function removeBadge(userLogin, badgeId) { return { error: null }; }
+// ======== ОНЛАЙН-СТАТУС ========
+let presenceSubscription = null;
 
 async function updatePresence() {
     if (!currentUser) return;
     await _supabase.from('user_presence').upsert({ login: currentUser.login, last_seen: new Date().toISOString() }, { onConflict: 'login' });
 }
+
+function subscribePresence() {
+    if (presenceSubscription) return;
+    presenceSubscription = _supabase
+        .channel('user_presence_channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_presence' }, (payload) => {
+            // обновляем кэш при изменении
+            if (payload.new && payload.new.login && window._onlineCache) {
+                const now = Date.now();
+                window._onlineCache[payload.new.login] = (now - new Date(payload.new.last_seen).getTime()) < 120000;
+                // если функция рендера списка чатов доступна, перерисовываем
+                if (typeof renderChatListInstant === 'function') renderChatListInstant();
+            }
+        })
+        .subscribe();
+}
+
+function unsubscribePresence() {
+    if (presenceSubscription) {
+        _supabase.removeChannel(presenceSubscription);
+        presenceSubscription = null;
+    }
+}
+
+// отправляем присутствие раз в 30 сек
 setInterval(updatePresence, 30000);
 if (currentUser) updatePresence();
+
+// при закрытии вкладки – goodbye
+window.addEventListener('beforeunload', () => {
+    if (currentUser) {
+        _supabase.from('user_presence').update({ last_seen: new Date(0).toISOString() }).eq('login', currentUser.login);
+    }
+});
 
 async function isUserOnline(login) {
     const { data } = await _supabase.from('user_presence').select('last_seen').eq('login', login).maybeSingle();
@@ -227,7 +259,6 @@ function saveUnreadChats(data) {
     localStorage.setItem('diamkey_unread_chats', JSON.stringify(data));
 }
 
-// Добавить непрочитанное сообщение от пользователя fromLogin
 function addUnreadMessage(fromLogin) {
     if (!currentUser || fromLogin === currentUser.login) return;
     const unread = getUnreadChats();
@@ -236,7 +267,6 @@ function addUnreadMessage(fromLogin) {
     updateChatNotificationDot();
 }
 
-// Пометить чат как прочитанный (удалить все непрочитанные от этого пользователя)
 function markChatAsRead(login) {
     const unread = getUnreadChats();
     delete unread[login];
@@ -244,7 +274,6 @@ function markChatAsRead(login) {
     updateChatNotificationDot();
 }
 
-// Обновить красную точку на иконке чатов
 function updateChatNotificationDot() {
     const chatsIcon = document.querySelector('.sidebar-icon[href="/chats"]');
     if (!chatsIcon) return;
@@ -260,7 +289,6 @@ function updateChatNotificationDot() {
     dot.style.display = total > 0 ? 'block' : 'none';
 }
 
-// Функция для получения системного сообщения (используется в чатах)
 function getSystemMessage(contactLogin) {
     return {
         sender: 'system',
@@ -269,6 +297,5 @@ function getSystemMessage(contactLogin) {
     };
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    updateChatNotificationDot();
-});
+// ======== ЗАГЛУШКИ УДАЛЁННЫХ ФУНКЦИЙ ========
+// (их больше нет, друзья выпилены, assignBadge/removeBadge тоже)
