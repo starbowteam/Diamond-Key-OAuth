@@ -1,11 +1,11 @@
-// diamkey-chats.js — чаты DiamKey (без реакций, с ГС)
+// diamkey-chats.js — чаты DiamKey (с реальными аудио/видео звонками через WebRTC + Supabase Realtime)
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
         return;
     }
 
-    // DOM-элементы
+    // ==================== DOM‑элементы ====================
     const chatListContainer = document.getElementById('chatListContainer');
     const chatSearchInput = document.getElementById('chatSearchInput');
     const noChatSelected = document.getElementById('noChatSelected');
@@ -22,6 +22,7 @@ async function renderChats() {
     const callStatusText = document.getElementById('callStatusText');
     const chatViewPanel = document.getElementById('chatViewPanel');
 
+    // ==================== Состояние ====================
     let currentChatLogin = null;
     let allUsers = [];
     let recentLogins = [];
@@ -31,7 +32,14 @@ async function renderChats() {
     let messagesCache = {};
     let activeMessageToken = 0;
 
-    // Инициализация
+    // ==================== WebRTC состояние ====================
+    let localStream = null;
+    let peerConnection = null;
+    let currentCallType = null;        // 'voice' или 'video'
+    let callChannel = null;           // Supabase Realtime канал для сигналинга
+    let isInCall = false;
+
+    // Инициализация (список чатов)
     async function initialLoad() {
         chatListContainer.innerHTML = `<div class="list-loader">
             <i class="fas fa-comments"></i>
@@ -68,6 +76,7 @@ async function renderChats() {
         recentLogins = recent;
         await updateLastMessagesCache();
         renderChatListInstant();
+        subscribeToIncomingCalls();
     }
 
     async function getRealRecentChats() {
@@ -252,8 +261,179 @@ async function renderChats() {
         if (panel && panel.classList.contains('active') && !panel.contains(e.target) && e.target!==chatHeaderAvatar && e.target!==chatHeaderName) panel.classList.remove('active');
     });
 
-    window.startCall = type => { if(!currentChatLogin) return; callOverlay.style.display='flex'; callName.textContent=currentChatLogin; callStatusText.textContent=type==='voice'?'Голосовой вызов...':'Видеозвонок...'; };
-    window.endCall = () => { callOverlay.style.display='none'; };
+    // ==================== ЗВОНКИ WebRTC ====================
+    async function getLocalMedia(type) {
+        const constraints = { audio: true, video: type === 'video' };
+        try {
+            return await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (e) {
+            showToast('Нет доступа к камере/микрофону');
+            return null;
+        }
+    }
+
+    async function createPeerConnection(stream) {
+        const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+        pc.ontrack = (event) => {
+            const remoteVideo = document.getElementById('remoteVideo');
+            if (remoteVideo) remoteVideo.srcObject = event.streams[0];
+        };
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate && callChannel) {
+                callChannel.send({ type: 'ice-candidate', candidate: event.candidate });
+            }
+        };
+
+        return pc;
+    }
+
+    function setupCallChannel(partner) {
+        const channelName = `call_${[currentUser.login, partner].sort().join('_')}`;
+        callChannel = _supabase.channel(channelName);
+        callChannel.on('broadcast', { event: 'signal' }, (payload) => {
+            const msg = payload.payload;
+            if (msg.sender === currentUser.login) return;  // игнорируем свои сообщения
+            handleSignalMessage(msg);
+        });
+        callChannel.subscribe();
+    }
+
+    async function handleSignalMessage(msg) {
+        if (!peerConnection) return;
+        if (msg.type === 'offer') {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            callChannel.send({ type: 'answer', sdp: answer, sender: currentUser.login });
+        } else if (msg.type === 'answer') {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+        } else if (msg.type === 'ice-candidate') {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate));
+        } else if (msg.type === 'hangup') {
+            endCallInternal();
+        }
+    }
+
+    window.startCall = async function(type) {
+        if (!currentChatLogin) return;
+        if (isInCall) { showToast('Уже в звонке'); return; }
+
+        const stream = await getLocalMedia(type);
+        if (!stream) return;
+        localStream = stream;
+        currentCallType = type;
+
+        // Показываем оверлей
+        callOverlay.style.display = 'flex';
+        callName.textContent = currentChatLogin;
+        callStatusText.textContent = 'Соединение...';
+
+        // Создаём видеоэлементы, если их нет
+        if (!document.getElementById('localVideo')) {
+            const localVid = document.createElement('video');
+            localVid.id = 'localVideo'; localVid.autoplay = true; localVid.muted = true; localVid.playsinline = true;
+            localVid.style.cssText = 'width:120px; height:90px; border-radius:12px; position:absolute; bottom:20px; left:20px; z-index:101; object-fit:cover; border:1px solid var(--border-glass);';
+            callOverlay.appendChild(localVid);
+        }
+        if (!document.getElementById('remoteVideo')) {
+            const remoteVid = document.createElement('video');
+            remoteVid.id = 'remoteVideo'; remoteVid.autoplay = true; remoteVid.playsinline = true;
+            remoteVid.style.cssText = 'width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:99;';
+            callOverlay.appendChild(remoteVid);
+        }
+
+        document.getElementById('localVideo').srcObject = stream;
+
+        setupCallChannel(currentChatLogin);
+        peerConnection = await createPeerConnection(stream);
+
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        callChannel.send({ type: 'offer', sdp: offer, sender: currentUser.login });
+
+        isInCall = true;
+    };
+
+    // Обработка входящего звонка (автоприём)
+    function subscribeToIncomingCalls() {
+        // Подписываемся на все потенциальные каналы? Лучше подписаться при вызове.
+    }
+
+    // При получении звонка извне (через канал)
+    async function acceptIncomingCall(fromLogin, type) {
+        if (isInCall) return;
+        const stream = await getLocalMedia(type);
+        if (!stream) return;
+        localStream = stream;
+        currentCallType = type;
+        currentChatLogin = fromLogin;
+
+        callOverlay.style.display = 'flex';
+        callName.textContent = fromLogin;
+        callStatusText.textContent = 'Входящий звонок...';
+
+        if (!document.getElementById('localVideo')) {
+            const localVid = document.createElement('video');
+            localVid.id = 'localVideo'; localVid.autoplay = true; localVid.muted = true; localVid.playsinline = true;
+            localVid.style.cssText = 'width:120px; height:90px; border-radius:12px; position:absolute; bottom:20px; left:20px; z-index:101; object-fit:cover; border:1px solid var(--border-glass);';
+            callOverlay.appendChild(localVid);
+        }
+        if (!document.getElementById('remoteVideo')) {
+            const remoteVid = document.createElement('video');
+            remoteVid.id = 'remoteVideo'; remoteVid.autoplay = true; remoteVid.playsinline = true;
+            remoteVid.style.cssText = 'width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:99;';
+            callOverlay.appendChild(remoteVid);
+        }
+
+        document.getElementById('localVideo').srcObject = stream;
+
+        setupCallChannel(fromLogin);
+        peerConnection = await createPeerConnection(stream);
+        isInCall = true;
+    }
+
+    // Слушаем все входящие предложения (подписка на общий канал? Лучше подписаться на personal канал: `user_${currentUser.login}`)
+    const incomingChannel = _supabase.channel(`user_${currentUser.login}`);
+    incomingChannel.on('broadcast', { event: 'incoming_call' }, (payload) => {
+        const { from, type } = payload.payload;
+        acceptIncomingCall(from, type);
+    });
+    incomingChannel.subscribe();
+
+    // Функция отправки приглашения
+    async function initiateCall(type) {
+        if (!currentChatLogin) return;
+        // Отправляем приглашение получателю
+        const targetChannel = _supabase.channel(`user_${currentChatLogin}`);
+        await targetChannel.subscribe();
+        await targetChannel.send({ type: 'broadcast', event: 'incoming_call', payload: { from: currentUser.login, type } });
+        // Затем запускаем свой звонок
+        window.startCall(type);
+    }
+
+    // Переопределяем кнопки в шапке
+    window.startCall = function(type) {
+        initiateCall(type);
+    };
+
+    window.endCall = function() {
+        if (callChannel) callChannel.send({ type: 'hangup', sender: currentUser.login });
+        endCallInternal();
+    };
+
+    function endCallInternal() {
+        if (localStream) localStream.getTracks().forEach(t => t.stop());
+        if (peerConnection) peerConnection.close();
+        if (callChannel) _supabase.removeChannel(callChannel);
+        localStream = null; peerConnection = null; callChannel = null;
+        isInCall = false;
+        callOverlay.style.display = 'none';
+        const localVid = document.getElementById('localVideo'); if (localVid) localVid.remove();
+        const remoteVid = document.getElementById('remoteVideo'); if (remoteVid) remoteVid.remove();
+    }
 
     bindInputHandlers();
     chatSearchInput.addEventListener('input', () => renderChatListInstant(chatSearchInput.value));
