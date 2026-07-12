@@ -1,4 +1,4 @@
-// diamkey-chats.js — чаты DiamKey (ФИНАЛЬНЫЙ ФИКС ВСЕХ БАГОВ, ВЕБКИ, СООБЩЕНИЯ, ЗВОНКИ)
+// diamkey-chats.js — чаты DiamKey (исправлены ВСЕ баги: вебка, звонки, сообщения, история)
 async function renderChats() {
     if (!currentUser) {
         navigateTo('/home');
@@ -180,7 +180,6 @@ async function renderChats() {
 
     // ==================== ИНИЦИАЛИЗАЦИЯ ====================
     async function initialLoad() {
-        // Если первый раз — прогресс-бар
         if (!allUsers.length) {
             chatListContainer.innerHTML = `<div class="list-loader">
                 <i class="fas fa-comments"></i>
@@ -340,7 +339,7 @@ async function renderChats() {
         chatHeaderAvatar.innerHTML = getAvatarHTML(login);
         chatHeaderStatus.textContent = onlineCache[login] ? 'В сети' : 'Не в сети';
         chatHeaderStatus.className = 'chat-header-status ' + (onlineCache[login] ? 'online' : '');
-        // ВСЕГДА загружаем свежие сообщения из БД, чтобы не потерять историю после звонков
+        // ВСЕГДА загружаем свежие сообщения из БД, чтобы не потерять историю
         const msgs = await loadMessagesFromDB(login);
         if (token !== activeMessageToken) return;
         if (msgs.length === 0) {
@@ -396,20 +395,13 @@ async function renderChats() {
             audio.play();
             icon.classList.remove('fa-play');
             icon.classList.add('fa-pause');
-            audio.onended = () => {
-                icon.classList.remove('fa-pause');
-                icon.classList.add('fa-play');
-            };
+            audio.onended = () => { icon.classList.remove('fa-pause'); icon.classList.add('fa-play'); };
         } else {
-            if (window._currentVoiceAudio) {
-                window._currentVoiceAudio.pause();
-            }
-            icon.classList.remove('fa-pause');
-            icon.classList.add('fa-play');
+            if (window._currentVoiceAudio) window._currentVoiceAudio.pause();
+            icon.classList.remove('fa-pause'); icon.classList.add('fa-play');
         }
     };
 
-    // ==================== ОТПРАВКА СООБЩЕНИЙ ====================
     async function sendTextMessage() {
         if (!currentChatLogin) return;
         const text = messageInput.value.trim();
@@ -427,14 +419,7 @@ async function renderChats() {
         if (error) { showToast('Ошибка отправки'); messagesCache[currentChatLogin].pop(); renderMessages(currentChatLogin, messagesCache[currentChatLogin]); }
     }
 
-    // ==================== ГОЛОСОВЫЕ СООБЩЕНИЯ ====================
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let voiceRecording = false;
-    let voiceSeconds = 0;
-    let voiceTimer = null;
-    let voiceInterval = null;
-
+    let mediaRecorder = null, audioChunks = [], voiceRecording = false, voiceSeconds = 0, voiceTimer = null, voiceInterval = null;
     async function startVoiceRecording() {
         const area = document.getElementById('messageInputArea') || document.querySelector('.message-input-area');
         if (!area || !currentChatLogin) return;
@@ -443,15 +428,10 @@ async function renderChats() {
             mediaRecorder = new MediaRecorder(stream);
             audioChunks = [];
             mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                const url = URL.createObjectURL(blob);
-                uploadVoiceMessage(blob, url);
-            };
+            mediaRecorder.onstop = () => { const blob = new Blob(audioChunks, { type: 'audio/webm' }); const url = URL.createObjectURL(blob); uploadVoiceMessage(blob, url); };
             mediaRecorder.start();
             voiceRecording = true;
-            const orig = area.innerHTML;
-            area.setAttribute('data-orig', orig);
+            const orig = area.innerHTML; area.setAttribute('data-orig', orig);
             area.innerHTML = `<div class="voice-recording-area"><div class="voice-waveform-large" id="voiceWaveLarge">${Array.from({length:30},()=>'<div class="voice-bar-large" style="height:3px;"></div>').join('')}</div><span class="voice-timer-large" id="voiceTimerLarge">00:00</span><button class="voice-stop-btn" id="voiceStopBtn"><i class="fas fa-stop"></i></button></div>`;
             voiceSeconds = 0;
             voiceTimer = setInterval(() => { voiceSeconds++; const el = document.getElementById('voiceTimerLarge'); if(el) el.textContent = `00:${String(voiceSeconds).padStart(2,'0')}`; }, 1000);
@@ -459,20 +439,14 @@ async function renderChats() {
             document.getElementById('voiceStopBtn').addEventListener('click', stopVoiceRecording);
         } catch (e) { showToast('Нет доступа к микрофону'); }
     }
-
     function stopVoiceRecording() {
         if (!voiceRecording) return;
-        voiceRecording = false;
-        clearInterval(voiceTimer); clearInterval(voiceInterval);
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-            mediaRecorder.stream.getTracks().forEach(t => t.stop());
-        }
+        voiceRecording = false; clearInterval(voiceTimer); clearInterval(voiceInterval);
+        if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop()); }
         const area = document.getElementById('messageInputArea') || document.querySelector('.message-input-area');
         if (area) { const orig = area.getAttribute('data-orig'); if (orig) area.innerHTML = orig; }
         bindInputHandlers();
     }
-
     async function uploadVoiceMessage(blob, localUrl) {
         if (!currentChatLogin) return;
         const fileName = `voice_${Date.now()}_${Math.random().toString(36).substr(2,6)}.webm`;
@@ -524,19 +498,16 @@ async function renderChats() {
         if (panel && panel.classList.contains('active') && !panel.contains(e.target) && e.target!==chatHeaderAvatar && e.target!==chatHeaderName) panel.classList.remove('active');
     });
 
-    // ==================== ПОДПИСКА НА СООБЩЕНИЯ В РЕАЛЬНОМ ВРЕМЕНИ (ФИКС) ====================
+    // ==================== ПОДПИСКА НА СООБЩЕНИЯ В РЕАЛЬНОМ ВРЕМЕНИ ====================
     function subscribeToMessages() {
-        if (messageSubscription) {
-            _supabase.removeChannel(messageSubscription);
-            messageSubscription = null;
-        }
-        const channelName = 'chat_messages_' + currentUser.login; // УНИКАЛЬНОЕ ИМЯ
+        if (messageSubscription) { _supabase.removeChannel(messageSubscription); messageSubscription = null; }
+        const channelName = 'chat_messages_' + currentUser.login;
         messageSubscription = _supabase
             .channel(channelName)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `receiver=eq.${currentUser.login}` }, payload => {
                 const newMsg = payload.new;
                 if (!newMsg || !newMsg.sender) return;
-                // Своё сообщение с другой вкладки
+                // Своё сообщение с другой вкладки – добавляем, если ещё нет
                 if (newMsg.sender === currentUser.login) {
                     if (!messagesCache[newMsg.receiver]) messagesCache[newMsg.receiver] = [];
                     const exists = messagesCache[newMsg.receiver].some(m => m.id === newMsg.id);
@@ -563,7 +534,7 @@ async function renderChats() {
             .subscribe();
     }
 
-    // ==================== ЗВОНКИ ====================
+    // ==================== ЗВОНКИ (ИСПРАВЛЕНО) ====================
     async function getLocalMedia(type) {
         const constraints = { audio: true, video: type === 'video' };
         try { return await navigator.mediaDevices.getUserMedia(constraints); }
@@ -577,7 +548,6 @@ async function renderChats() {
             const remoteVideo = document.getElementById('callRemoteVideo');
             if (remoteVideo && event.streams[0]) {
                 remoteVideo.srcObject = event.streams[0];
-                // Показываем видео, если трек видео
                 if (event.track.kind === 'video') {
                     remoteVideo.style.display = 'block';
                     document.getElementById('remoteAvatar').style.display = 'none';
@@ -586,7 +556,8 @@ async function renderChats() {
         };
         pc.oniceconnectionstatechange = () => {
             if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-                endCallInternal();
+                // Вызываем endCall, чтобы отправить hangup и уведомить партнёра
+                if (isInCall) endCall();
             }
         };
         pc.onicecandidate = (event) => {
@@ -626,13 +597,8 @@ async function renderChats() {
             } else if (msg.type === 'video-state-change') {
                 const remoteVideo = document.getElementById('callRemoteVideo');
                 const remoteAvatar = document.getElementById('remoteAvatar');
-                if (msg.enabled) {
-                    remoteVideo.style.display = 'block';
-                    remoteAvatar.style.display = 'none';
-                } else {
-                    remoteVideo.style.display = 'none';
-                    remoteAvatar.style.display = 'flex';
-                }
+                if (msg.enabled) { remoteVideo.style.display = 'block'; remoteAvatar.style.display = 'none'; }
+                else { remoteVideo.style.display = 'none'; remoteAvatar.style.display = 'flex'; }
             }
         } catch(e) { console.error('Signal error:', e); }
     }
@@ -642,23 +608,17 @@ async function renderChats() {
         currentCallPartner = currentChatLogin;
         currentCallType = type;
         callRole = 'caller';
-
         const overlay = document.getElementById('incomingCallOverlay');
         overlay.classList.add('active');
         document.getElementById('incCallName').textContent = currentChatLogin;
         document.getElementById('incCallType').textContent = type === 'voice' ? 'Голосовой вызов' : 'Видеозвонок';
         document.getElementById('incCallActions').innerHTML = '<button class="call-decline-btn" onclick="cancelOutgoingCall()"><i class="fas fa-phone-slash"></i></button>';
-
-        const targetChannel = _supabase.channel(`user_${currentChatLogin}`);
-        await targetChannel.subscribe();
+        const targetChannel = _supabase.channel(`user_${currentChatLogin}`); await targetChannel.subscribe();
         await targetChannel.send({ type: 'broadcast', event: 'incoming_call', payload: { from: currentUser.login, type } });
         setTimeout(() => { if (!isInCall && callRole === 'caller') { cancelOutgoingCall(); showToast('Вызов не принят'); } }, 30000);
     };
 
-    window.cancelOutgoingCall = function() {
-        document.getElementById('incomingCallOverlay').classList.remove('active');
-        cleanupCallState();
-    };
+    window.cancelOutgoingCall = function() { document.getElementById('incomingCallOverlay').classList.remove('active'); cleanupCallState(); };
 
     function subscribeToIncomingCalls() {
         if (callAcceptedChannel) _supabase.removeChannel(callAcceptedChannel);
@@ -667,25 +627,18 @@ async function renderChats() {
         incomingChannel.on('broadcast', { event: 'incoming_call' }, (payload) => {
             const { from, type } = payload.payload;
             incomingCallData = { from, type };
-            const overlay = document.getElementById('incomingCallOverlay');
-            overlay.classList.add('active');
+            const overlay = document.getElementById('incomingCallOverlay'); overlay.classList.add('active');
             document.getElementById('incCallName').textContent = from;
             document.getElementById('incCallType').textContent = type === 'voice' ? 'Голосовой вызов' : 'Видеозвонок';
-            document.getElementById('incCallActions').innerHTML = `
-                <button class="call-decline-btn" onclick="declineIncomingCall()"><i class="fas fa-phone-slash"></i></button>
-                <button class="call-accept-btn" onclick="acceptIncomingCall()"><i class="fas fa-phone"></i></button>`;
-            const avatarEl = document.getElementById('incCallAvatar');
-            const av = avatarCache[from];
-            avatarEl.innerHTML = av ? `<img src="${escapeHtml(av)}" alt="${from}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fas fa-user"></i>';
+            document.getElementById('incCallActions').innerHTML = `<button class="call-decline-btn" onclick="declineIncomingCall()"><i class="fas fa-phone-slash"></i></button><button class="call-accept-btn" onclick="acceptIncomingCall()"><i class="fas fa-phone"></i></button>`;
+            const avatarEl = document.getElementById('incCallAvatar'); const av = avatarCache[from];
+            avatarEl.innerHTML = av ? `<img src="${escapeHtml(av)}" alt="${from}">` : '<i class="fas fa-user"></i>';
         });
         incomingChannel.subscribe();
 
         callAcceptedChannel = _supabase.channel(`user_${currentUser.login}_accepted`);
         callAcceptedChannel.on('broadcast', { event: 'call_accepted' }, async () => {
-            if (callRole === 'caller' && !isInCall) {
-                document.getElementById('incomingCallOverlay').classList.remove('active');
-                await startCaller();
-            }
+            if (callRole === 'caller' && !isInCall) { document.getElementById('incomingCallOverlay').classList.remove('active'); await startCaller(); }
         });
         callAcceptedChannel.subscribe();
 
@@ -699,104 +652,75 @@ async function renderChats() {
     window.declineIncomingCall = async function() {
         document.getElementById('incomingCallOverlay').classList.remove('active');
         if (incomingCallData) {
-            const ch = _supabase.channel(`user_${incomingCallData.from}_decline`);
-            await ch.subscribe();
+            const ch = _supabase.channel(`user_${incomingCallData.from}_decline`); await ch.subscribe();
             await ch.send({ type: 'broadcast', event: 'call_declined', payload: { from: currentUser.login } });
         }
-        incomingCallData = null;
-        cleanupCallState();
+        incomingCallData = null; cleanupCallState();
     };
 
     window.acceptIncomingCall = async function() {
         if (!incomingCallData) return;
-        const { from, type } = incomingCallData;
-        incomingCallData = null;
+        const { from, type } = incomingCallData; incomingCallData = null;
         document.getElementById('incomingCallOverlay').classList.remove('active');
-        currentCallPartner = from;
-        currentCallType = type;
-        callRole = 'callee';
-        const ch = _supabase.channel(`user_${from}_accepted`);
-        await ch.subscribe();
+        currentCallPartner = from; currentCallType = type; callRole = 'callee';
+        const ch = _supabase.channel(`user_${from}_accepted`); await ch.subscribe();
         await ch.send({ type: 'broadcast', event: 'call_accepted', payload: { from: currentUser.login } });
         await startCallee();
     };
 
     async function startCaller() {
-        const stream = await getLocalMedia(currentCallType);
-        if (!stream) return;
+        const stream = await getLocalMedia(currentCallType); if (!stream) return;
         localStream = stream;
+        showCallModal(); // сначала показываем модалку, чтобы видео-элементы были готовы
         setupCallChannel(currentCallPartner);
         peerConnection = await createPeerConnection(stream);
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
+        const offer = await peerConnection.createOffer(); await peerConnection.setLocalDescription(offer);
         callChannel.send({ type: 'offer', sdp: offer, sender: currentUser.login });
-        showCallModal();
-        startCallTimer();
-        isInCall = true;
+        startCallTimer(); isInCall = true;
     }
 
     async function startCallee() {
-        const stream = await getLocalMedia(currentCallType);
-        if (!stream) return;
+        const stream = await getLocalMedia(currentCallType); if (!stream) return;
         localStream = stream;
+        showCallModal();
         setupCallChannel(currentCallPartner);
         peerConnection = await createPeerConnection(stream);
-        showCallModal();
-        startCallTimer();
-        isInCall = true;
+        startCallTimer(); isInCall = true;
     }
 
     function showCallModal() {
-        const modal = document.getElementById('callModal');
-        modal.classList.add('active');
+        const modal = document.getElementById('callModal'); modal.classList.add('active');
         document.getElementById('callModalName').textContent = currentCallPartner;
         document.getElementById('remoteName').textContent = currentCallPartner;
-
-        const rv = document.getElementById('callRemoteVideo');
-        const ra = document.getElementById('remoteAvatar');
-        const lv = document.getElementById('callLocalVideo');
-        const la = document.getElementById('localAvatar');
-
+        const rv = document.getElementById('callRemoteVideo'), ra = document.getElementById('remoteAvatar');
+        const lv = document.getElementById('callLocalVideo'), la = document.getElementById('localAvatar');
         if (currentCallType === 'video') {
-            lv.srcObject = localStream;
-            lv.style.display = 'block'; la.style.display = 'none';
-            rv.style.display = 'none'; ra.style.display = 'flex';
+            lv.srcObject = localStream; lv.style.display = 'block'; la.style.display = 'none';
+            rv.style.display = 'none'; ra.style.display = 'flex'; // удалённое видео пока скрыто, появится по ontrack
         } else {
             lv.style.display = 'none'; la.style.display = 'flex';
             rv.style.display = 'none'; ra.style.display = 'flex';
         }
     }
 
-    function startCallTimer() {
-        callStartTime = Date.now();
-        updateCallTimer();
-        callTimerInterval = setInterval(updateCallTimer, 1000);
-    }
-
+    function startCallTimer() { callStartTime = Date.now(); updateCallTimer(); callTimerInterval = setInterval(updateCallTimer, 1000); }
     function updateCallTimer() {
-        const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
-        const m = Math.floor(elapsed / 60), s = elapsed % 60;
+        const elapsed = Math.floor((Date.now() - callStartTime)/1000), m = Math.floor(elapsed/60), s = elapsed%60;
         document.getElementById('callModalTimer').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
 
     function toggleCallMic() {
         if (!localStream) return;
         const audioTrack = localStream.getAudioTracks()[0];
-        if (audioTrack) {
-            audioTrack.enabled = !audioTrack.enabled;
-            document.getElementById('callToggleMicBtn').querySelector('i').className = audioTrack.enabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
-        }
+        if (audioTrack) { audioTrack.enabled = !audioTrack.enabled; document.getElementById('callToggleMicBtn').querySelector('i').className = audioTrack.enabled ? 'fas fa-microphone' : 'fas fa-microphone-slash'; }
     }
-
     function toggleCallVideo() {
         if (!localStream || currentCallType !== 'video') return;
         const videoTrack = localStream.getVideoTracks()[0];
         if (videoTrack) {
             videoTrack.enabled = !videoTrack.enabled;
-            const icon = document.getElementById('callToggleVideoBtn').querySelector('i');
-            icon.className = videoTrack.enabled ? 'fas fa-video' : 'fas fa-video-slash';
-            const lv = document.getElementById('callLocalVideo');
-            const la = document.getElementById('localAvatar');
+            const icon = document.getElementById('callToggleVideoBtn').querySelector('i'); icon.className = videoTrack.enabled ? 'fas fa-video' : 'fas fa-video-slash';
+            const lv = document.getElementById('callLocalVideo'), la = document.getElementById('localAvatar');
             if (videoTrack.enabled) { lv.style.display = 'block'; la.style.display = 'none'; }
             else { lv.style.display = 'none'; la.style.display = 'flex'; }
             if (callChannel) callChannel.send({ type: 'video-state-change', enabled: videoTrack.enabled, sender: currentUser.login });
@@ -809,35 +733,32 @@ async function renderChats() {
     };
 
     function endCallInternal() {
-        const duration = callStartTime ? Math.floor((Date.now() - callStartTime) / 1000) : 0;
+        const duration = callStartTime ? Math.floor((Date.now() - callStartTime)/1000) : 0;
         if (localStream) localStream.getTracks().forEach(t => t.stop());
         if (peerConnection) peerConnection.close();
-        // НЕ УДАЛЯЕМ КАНАЛ СРАЗУ, ДАЁМ ВРЕМЯ ДЛЯ ДОСТАВКИ HANGUP
         if (callChannel) {
-            setTimeout(() => {
-                _supabase.removeChannel(callChannel);
-                callChannel = null;
-            }, 500);
+            // Даём время на доставку hangup, потом удаляем канал
+            setTimeout(() => { if (callChannel) { _supabase.removeChannel(callChannel); callChannel = null; } }, 500);
         }
         localStream = null; peerConnection = null;
         isInCall = false; clearInterval(callTimerInterval);
         document.getElementById('callModal').classList.remove('active');
         document.getElementById('incomingCallOverlay').classList.remove('active');
 
-        // Только если чат открыт, добавляем сообщение в кэш, иначе оно загрузится из БД
+        // Добавляем сообщение о завершении в БД и, если чат открыт, обновляем кэш и показываем
         if (currentCallPartner && duration > 0) {
-            const m = Math.floor(duration / 60), s = duration % 60;
+            const m = Math.floor(duration/60), s = duration%60;
             const callMsg = { sender:'system', receiver:currentCallPartner, message:`📞 Вызов завершён · ${m}:${String(s).padStart(2,'0')}`, created_at:new Date().toISOString() };
-            // Сохраняем в БД
-            _supabase.from('chat_messages').insert([callMsg]);
-            // Если чат открыт, добавляем в кэш и показываем
-            if (currentChatLogin === currentCallPartner) {
-                if (!messagesCache[currentCallPartner]) messagesCache[currentCallPartner] = [];
-                messagesCache[currentCallPartner].push(callMsg);
-                renderMessages(currentCallPartner, messagesCache[currentCallPartner]);
-            }
+            _supabase.from('chat_messages').insert([callMsg]).then(() => {
+                // Если чат с партнёром сейчас открыт, перезагружаем историю полностью из БД
+                if (currentChatLogin === currentCallPartner) {
+                    loadMessagesFromDB(currentCallPartner).then(msgs => {
+                        messagesCache[currentCallPartner] = msgs;
+                        renderMessages(currentCallPartner, msgs);
+                    });
+                }
+            });
         }
-
         cleanupCallState();
     }
 
@@ -846,10 +767,10 @@ async function renderChats() {
         if (callTimerInterval) clearInterval(callTimerInterval);
         if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
         if (peerConnection) { peerConnection.close(); peerConnection = null; }
-        // callChannel очистится по таймеру
+        // callChannel удалится по таймеру
     }
 
-    // очистка при уходе со страницы
+    // Очистка при уходе со страницы
     function cleanupAll() {
         if (isInCall) endCallInternal();
         if (messageSubscription) { _supabase.removeChannel(messageSubscription); messageSubscription = null; }
@@ -860,9 +781,7 @@ async function renderChats() {
     }
     window.addEventListener('beforeunload', cleanupAll);
     const observer = new MutationObserver(() => {
-        if (!document.getElementById('page-chats')?.classList.contains('active')) {
-            cleanupAll();
-        }
+        if (!document.getElementById('page-chats')?.classList.contains('active')) cleanupAll();
     });
     observer.observe(document.getElementById('page-chats'), { attributes: true, attributeFilter: ['class'] });
 
